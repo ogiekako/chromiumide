@@ -6,10 +6,16 @@ This plugin consolidates commonly used tools for Chromium OS Development.
 
 ## Getting Started with Development
 
-* Run `npm start` to install required modules
+* Run `npm install` to install required modules
 * There are two preconfigured run configurations
   * `Run Extension` launches up a new vsCode window and starts up the cros-ide. This plugin is displayed as an icon on the side shelf
   * `Extension Tests` kicks off tests
+
+## Building vsix package
+
+* Outside chroot, run `npm run vsix`, and a .vsix file will be generated under `output/`
+
+  TODO(oka): Make the command work inside chroot.
 
 ## Features
 

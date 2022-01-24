@@ -3,8 +3,9 @@
 	"displayName": "cros-ide",
 	"description": "Connect to Chrome OS DUTs over VNC",
 	"version": "0.0.1",
+	"publisher": "cros-velocity",
 	"engines": {
-		"vscode": "^1.60.0"
+		"vscode": "^1.63.1"
 	},
 	"categories": [
 		"Other"
@@ -146,7 +147,8 @@
 		"watch-tests": "tsc -p . -w --outDir out",
 		"pretest": "npm run compile-tests && npm run compile && npm run lint",
 		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js"
+		"test": "node ./out/test/runTest.js",
+		"vsix": "npx vsce@1.103.1 package -o output/"
 	},
 	"devDependencies": {
 		"@types/vscode": "^1.63.1",
