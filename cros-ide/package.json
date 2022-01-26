@@ -54,6 +54,11 @@
         "command": "cros-ide.addFleetHost",
         "title": "CrOS: Add crosfleet Host",
         "icon": "$(add)"
+      },
+      {
+        "command": "cros-ide.refreshBoardsPackages",
+        "title": "CrOS: Refresh Boards and Packages",
+        "icon": "$(refresh)"
       }
     ],
     "viewsContainers": {
@@ -96,6 +101,11 @@
         {
           "command": "cros-ide.refreshCrosfleet",
           "when": "view == fleet-devices",
+          "group": "navigation"
+        },
+        {
+          "command": "cros-ide.refreshBoardsPackages",
+          "when": "view == boards-packages",
           "group": "navigation"
         }
       ],

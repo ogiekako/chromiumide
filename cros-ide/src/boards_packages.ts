@@ -9,9 +9,16 @@ import * as util from 'util';
 import * as vscode from 'vscode';
 
 export function activate() {
+  const boardPackageProvider = new BoardPackageProvider();
+
   vscode.window.registerTreeDataProvider(
     'boards-packages',
-    new BoardPackageProvider()
+    boardPackageProvider
+  );
+
+  vscode.commands.registerCommand(
+    'cros-ide.refreshBoardsPackages',
+    () => boardPackageProvider.refresh()
   );
 }
 
@@ -23,6 +30,10 @@ export function activate() {
  * Everything is read-only and does not refresh after the IDE is loaded.
  */
 class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
+  private onDidChangeTreeDataEmitter =
+    new vscode.EventEmitter<ChrootItem | undefined | null | void>();
+  readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
+
   getChildren(element?: ChrootItem): Thenable<ChrootItem[]> {
     if (element === undefined) {
       return this.getBoards();
@@ -52,6 +63,10 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
 
   getTreeItem(element: ChrootItem): vscode.TreeItem {
     return element;
+  }
+
+  refresh(): void {
+    this.onDidChangeTreeDataEmitter.fire();
   }
 }
 
