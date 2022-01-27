@@ -23,7 +23,6 @@ module.exports = {
     // violations are removed from the code.
     'require-jsdoc': 0,
     'max-len': 0,
-    'camelcase': 0,
     'arrow-parens': 0,
     'no-throw-literal': 0,
   },

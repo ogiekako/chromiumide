@@ -4,13 +4,13 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 
-import * as ide_utilities from '../../ide_utilities';
+import * as ideUtilities from '../../ide_utilities';
 
 suite('Extension Test Suite', () => {
   vscode.window.showInformationMessage('Start all tests.');
 
   test('execFile', async () => {
-    const result = await ide_utilities.execFile('/bin/echo', ['hoge']);
+    const result = await ideUtilities.execFile('/bin/echo', ['hoge']);
     assert.strictEqual('', result.stderr);
     assert.strictEqual('hoge\n', result.stdout);
   });
