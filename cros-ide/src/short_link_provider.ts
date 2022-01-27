@@ -14,17 +14,7 @@ export function activate(context: vscode.ExtensionContext) {
 /**
  * Tell VS Code that things like go/example, crbug/123456 are links.
  */
-class ShortLinkProvider implements vscode.DocumentLinkProvider {
-  // Match (up-to-5-letters)/(path). There are two capturing groups:
-  //   - host (for example, crbug)
-  //   - url (for example, 123456)
-  // For robustness, the regex starts with a lookbehind matching one of:
-  //  - start of line
-  //  - whitespace
-  //  - match to '(', because links are often used in "TODO(link)"
-  private readonly linkPattern =
-    /(?<=^|\s|\()\b([a-z]{1,5})\/([^)\s.,;'\"]+)/g;
-
+export class ShortLinkProvider implements vscode.DocumentLinkProvider {
   public provideDocumentLinks(
       document: vscode.TextDocument, token: vscode.CancellationToken)
     : vscode.ProviderResult<vscode.DocumentLink[]> {
@@ -32,13 +22,12 @@ class ShortLinkProvider implements vscode.DocumentLinkProvider {
     return this.analyzeDocument(document);
   }
 
-  // TODO(b/216429126): add unit tests
   private analyzeDocument(
       document: vscode.TextDocument): vscode.DocumentLink[] {
     const links: vscode.DocumentLink[] = [];
     const text = document.getText();
     let match: RegExpMatchArray | null;
-    while ((match = this.linkPattern.exec(text)) !== null) {
+    while ((match = linkPattern.exec(text)) !== null) {
       const host = match[1];
       const path = match[2];
       // TODO(b/216429126): check when match.index can be undefined
@@ -53,3 +42,15 @@ class ShortLinkProvider implements vscode.DocumentLinkProvider {
     return links;
   }
 }
+
+// Match (up-to-5-letters)/(path). There are two capturing groups:
+//   - host (for example, crbug)
+//   - url (for example, 123456)
+// For robustness, the regex starts with a lookbehind matching one of:
+//  - start of line
+//  - whitespace
+//  - match to '(', because links are often used in "TODO(link)"
+//
+// The this RegExp is at the end of the file to work around Gerrit syntax
+// highlighting bug.
+const linkPattern = /(?<=^|\s|\()\b([a-z]{1,5})\/([^)\s.,;'\"]+)/g;
