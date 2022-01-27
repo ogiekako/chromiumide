@@ -6,5 +6,5 @@
 import * as fs from 'fs'
 
 export function isInsideChroot(): boolean {
-    return fs.existsSync('/etc/cros_chroot_version')
+  return fs.existsSync('/etc/cros_chroot_version')
 }

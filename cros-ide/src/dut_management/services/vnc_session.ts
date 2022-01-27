@@ -59,14 +59,14 @@ export class VncSession {
 
   private static createWebview(host: string, localPort: number): vscode.WebviewPanel {
     const panel = vscode.window.createWebviewPanel(
-      'vncclient',
-      `CrOS VNC Client: ${host}`,
-      vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        // https://code.visualstudio.com/api/extension-guides/webview#retaincontextwhenhidden
-        retainContextWhenHidden: true
-      }
+        'vncclient',
+        `CrOS VNC Client: ${host}`,
+        vscode.ViewColumn.One,
+        {
+          enableScripts: true,
+          // https://code.visualstudio.com/api/extension-guides/webview#retaincontextwhenhidden
+          retainContextWhenHidden: true
+        }
     );
     panel.webview.html = VncSession.getWebviewContent(localPort);
     return panel;

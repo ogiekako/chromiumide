@@ -12,13 +12,13 @@ export function activate() {
   const boardPackageProvider = new BoardPackageProvider();
 
   vscode.window.registerTreeDataProvider(
-    'boards-packages',
-    boardPackageProvider
+      'boards-packages',
+      boardPackageProvider
   );
 
   vscode.commands.registerCommand(
-    'cros-ide.refreshBoardsPackages',
-    () => boardPackageProvider.refresh()
+      'cros-ide.refreshBoardsPackages',
+      () => boardPackageProvider.refresh()
   );
 }
 
@@ -47,8 +47,8 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
   async getBoards(): Promise<Board[]> {
     const dirs = await fs.promises.readdir("/build")
     return dirs
-      .filter(dir => dir !== "bin")
-      .map(dir => new Board(dir));
+        .filter(dir => dir !== "bin")
+        .map(dir => new Board(dir));
   }
 
   async getPackages(board: Board): Promise<Package[]> {
@@ -56,9 +56,9 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
     const { stdout } = await util.promisify(childProcess.exec)(cmd)
 
     return stdout
-      .split(/\r?\n/)
-      .filter(line => line.trim() !== "")
-      .map(pkg => new Package(pkg));
+        .split(/\r?\n/)
+        .filter(line => line.trim() !== "")
+        .map(pkg => new Package(pkg));
   }
 
   getTreeItem(element: ChrootItem): vscode.TreeItem {

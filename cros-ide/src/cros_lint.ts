@@ -44,8 +44,8 @@ function parseCrosLint(stdout: string, stderr: string, document: vscode.TextDocu
       const diagnostic: vscode.Diagnostic = {
         severity: vscode.DiagnosticSeverity.Warning,
         range: new vscode.Range(
-          new vscode.Position(line - 1, 0),
-          new vscode.Position(line - 1, Number.MAX_VALUE)
+            new vscode.Position(line - 1, 0),
+            new vscode.Position(line - 1, Number.MAX_VALUE)
         ),
         message: message
       };
