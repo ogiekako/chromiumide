@@ -6,6 +6,8 @@
   "publisher": "cros-velocity",
   "repository": "https://chromium.googlesource.com/chromiumos/ide_tooling",
   "engines": {
+    "node": "~12.16.1",
+    "npm": "~6.13.4",
     "vscode": "^1.63.1"
   },
   "categories": [
