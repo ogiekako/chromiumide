@@ -28,17 +28,17 @@ function updateCrosLintDiagnostics(
   if (document && document.uri.scheme === 'file') {
     childProcess.exec(`cros lint ${document.uri.fsPath}`,
         (_error, stdout, stderr) => {
-          parseCrosLint(stdout, stderr, document, collection);
+          const diagnostics = parseCrosLint(stdout, stderr, document);
+          collection.set(document.uri, diagnostics);
         });
   } else {
     collection.clear();
   }
 }
 
-// TODO(b/214322467): Add a unit test for the parser.
-function parseCrosLint(
-    stdout: string, stderr: string, document: vscode.TextDocument,
-    collection: vscode.DiagnosticCollection) {
+export function parseCrosLint(
+    stdout: string, stderr: string, document: vscode.TextDocument)
+    :vscode.Diagnostic[] {
   const lineRE = /^([^ \n]+):([0-9]+):  (.*)  \[([^ ]+)\] \[([1-5])\]/gm;
   const diagnostics: vscode.Diagnostic[] = [];
   let match: RegExpExecArray | null;
@@ -47,19 +47,25 @@ function parseCrosLint(
   // TODO(b/214322467): Figure out when we should use stderr and when stdout.
   while ((match = lineRE.exec(stdout + '\n' + stderr)) !== null) {
     const file = match[1];
-    const line = parseInt(match[2]);
+    let line = Number(match[2]);
+    // Warning about missing copyright is reported at hard coded line 0.
+    // This seems like a bug in cpplint.py, which otherwise uses 1-based
+    // line numbers.
+    if (line === 0) {
+      line = 1;
+    }
     const message = match[3];
     if (file === document.uri.fsPath) {
-      const diagnostic: vscode.Diagnostic = {
-        severity: vscode.DiagnosticSeverity.Warning,
-        range: new vscode.Range(
-            new vscode.Position(line - 1, 0),
-            new vscode.Position(line - 1, Number.MAX_VALUE),
-        ),
-        message: message,
-      };
+      const diagnostic = new vscode.Diagnostic(
+          new vscode.Range(
+              new vscode.Position(line - 1, 0),
+              new vscode.Position(line - 1, Number.MAX_VALUE),
+          ),
+          message,
+          vscode.DiagnosticSeverity.Warning,
+      );
       diagnostics.push(diagnostic);
     }
   }
-  collection.set(document.uri, diagnostics);
+  return diagnostics;
 }
