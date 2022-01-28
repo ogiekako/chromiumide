@@ -24,5 +24,6 @@ module.exports = {
     'require-jsdoc': 0,
     'arrow-parens': 0,
     'no-throw-literal': 0,
+    'no-invalid-this': 0,
   },
 };
