@@ -20,6 +20,8 @@
     "onCommand:cros-ide.addFleetHost",
     "onCommand:cros-ide.codeSearchOpenCurrentFile",
     "onCommand:cros-ide.codeSearchSearchForSelection",
+    "onCommand:cros-ide.crosWorkonStart",
+    "onCommand:cros-ide.crosWorkonStop",
     "onView:static-devices",
     "onView:fleet-devices",
     "onView:boards-packages",
@@ -70,6 +72,14 @@
       {
         "command": "cros-ide.codeSearchSearchForSelection",
         "title": "Search for selection in Code Search"
+      },
+      {
+        "command": "cros-ide.crosWorkonStart",
+        "title": "CrOS: Start Working on a Package"
+      },
+      {
+        "command": "cros-ide.crosWorkonStop",
+        "title": "CrOS: Stop Working on a Package"
       }
     ],
     "viewsContainers": {

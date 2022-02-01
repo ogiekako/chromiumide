@@ -13,6 +13,7 @@ import * as crosLint from './cros_lint';
 import * as boardsPackages from './boards_packages';
 import * as shortLinkProvider from './short_link_provider';
 import * as codesearch from './codesearch';
+import * as workon from './workon';
 
 export function activate(context: vscode.ExtensionContext) {
   dutManager.activateDutManager(context);
@@ -20,4 +21,5 @@ export function activate(context: vscode.ExtensionContext) {
   boardsPackages.activate();
   shortLinkProvider.activate(context);
   codesearch.activate(context);
+  workon.activate(context);
 }
