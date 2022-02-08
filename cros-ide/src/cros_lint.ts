@@ -20,6 +20,10 @@ export function activate(context: vscode.ExtensionContext) {
       document => {
         updateCrosLintDiagnostics(document, collection);
       }));
+  context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(
+      document => {
+        collection.delete(document.uri);
+      }));
 }
 
 // Describes how to run a linter and parse its output.
