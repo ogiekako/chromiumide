@@ -14,6 +14,7 @@ import * as boardsPackages from './boards_packages';
 import * as shortLinkProvider from './short_link_provider';
 import * as codesearch from './codesearch';
 import * as workon from './workon';
+import * as cppCodeCompletion from './cpp_code_completion';
 
 export function activate(context: vscode.ExtensionContext) {
   dutManager.activateDutManager(context);
@@ -22,4 +23,5 @@ export function activate(context: vscode.ExtensionContext) {
   shortLinkProvider.activate(context);
   codesearch.activate(context);
   workon.activate(context);
+  cppCodeCompletion.activate(context);
 }
