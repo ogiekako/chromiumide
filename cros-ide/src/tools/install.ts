@@ -21,7 +21,7 @@ const GS_PREFIX = 'gs://chromeos-velocity/ide/cros-ide';
 
 async function execute(name: string, args: string[], showStdout?: boolean) {
   return await commonUtil.exec(
-      name, args, process.stderr.write, {logStdout: showStdout});
+      name, args, log => process.stderr.write(log), {logStdout: showStdout});
 }
 
 async function latestArchive(): Promise<Archive> {
