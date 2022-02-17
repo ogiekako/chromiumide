@@ -6,4 +6,4 @@
 cd "$(dirname "$0")" || exit 1
 
 npm list typescript || npm install typescript
-npx ts-node ./src/tools/install.ts "$*"
+npx ts-node ./src/tools/install.ts "$@"

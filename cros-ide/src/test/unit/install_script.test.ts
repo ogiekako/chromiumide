@@ -92,6 +92,40 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.2.vsix@253d24b6b54fa72d21f622b8
     }
   });
 
+  test('Install with version', async () => {
+    let tempFile = '';
+    let installed = false;
+    const fake = new FakeExec().on('gsutil', exectMatch(['ls', 'gs://chromeos-velocity/ide/cros-ide'],
+        async () => {
+          return `gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.1.vsix
+gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.2.vsix@253d24b6b54fa72d21f622b8f1bb6cc9b6f3d435
+`;
+        }),
+    ).on('gsutil', prefixMatch(['cp', 'gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.1.vsix'],
+        async args => {
+          tempFile = args[0];
+          return '';
+        }),
+    ).on('code', lazyHandler(() => exectMatch(
+        ['--install-extension', tempFile, '--force'], async () => {
+          installed = true;
+          return '';
+        })),
+    );
+
+    const revert = install.setExecForTesting(fake.exec.bind(fake));
+    try {
+      await install.install({major: 0, minor: 0, patch: 1});
+      assert.deepStrictEqual(installed, true);
+      const name = tempFile.split('/').pop();
+      assert.deepStrictEqual(name, 'cros-ide-0.0.1.vsix');
+
+      await assert.rejects(install.install({major: 0, minor: 0, patch: 99}));
+    } finally {
+      revert();
+    }
+  });
+
   test('Build and upload', async () => {
     const gitHash = 'b9dfaf485e2caf5030199166469ce28e91680255';
     let tempDir = '';
@@ -168,5 +202,39 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.2.vsix@253d24b6b54fa72d21f622b8
     } finally {
       revert();
     }
+  });
+});
+
+suite('Parse args', () => {
+  test('Force version', () => {
+    assert.deepStrictEqual(
+        install.parseArgs(['ts-node', 'install.ts', '--force', '1.2.3']),
+        {
+          upload: false,
+          forceVersion: {
+            major: 1,
+            minor: 2,
+            patch: 3,
+          },
+        },
+    );
+  });
+  test('Upload', () => {
+    assert.deepStrictEqual(
+        install.parseArgs(['--upload']),
+        {
+          upload: true,
+          forceVersion: undefined,
+        },
+    );
+  });
+  test('Throw on invalid input', () => {
+    assert.throws(() => install.parseArgs(['--force']));
+    assert.throws(() => install.parseArgs(['--force', 'invalid']));
+    assert.throws(() => install.parseArgs(['--force', 'v1.2.3']));
+    assert.throws(() => install.parseArgs(['--force', '1.2']));
+    assert.throws(() => install.parseArgs(['--force', '1.2.3.4']));
+    assert.throws(() => install.parseArgs(['--upload', '--force', '1.2.3']));
+    assert.throws(() => install.parseArgs(['--unknownflag']));
   });
 });

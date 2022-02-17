@@ -35,14 +35,27 @@ async function execute(name: string, args: string[], showStdout?: boolean) {
       name, args, log => process.stderr.write(log), {logStdout: showStdout});
 }
 
-async function latestArchive(): Promise<Archive> {
+/**
+ * Find specified archive, or the latest one if version is unspecified.
+ *
+ * @throws Error if specified version is not found.
+ */
+async function findArchive(version?: Version): Promise<Archive> {
   // The result of `gsutil ls` is lexicographically sorted.
   const stdout = await execute('gsutil', ['ls', GS_PREFIX]);
   const archives = stdout.trim().split('\n').map(url => {
     return Archive.parse(url);
   });
   archives.sort(Archive.compareFn);
-  return archives.pop()!;
+  if (!version) {
+    return archives.pop()!;
+  }
+  for (const archive of archives) {
+    if (compareVersion(archive.version, version) === 0) {
+      return archive;
+    }
+  }
+  throw new Error(`Version ${versionToString(version)} not found`);
 }
 
 async function gitIsDirty() {
@@ -70,12 +83,16 @@ async function cleanCommitHash() {
 
 class Archive {
   readonly version: Version;
-  constructor(readonly name: string, readonly hash: string) {
+  constructor(readonly name: string, readonly hash?: string) {
     this.version = versionFromFilename(name);
   }
 
   url() {
-    return `${GS_PREFIX}/${this.name}@${this.hash}`;
+    let res = `${GS_PREFIX}/${this.name}`;
+    if (this.hash !== undefined) {
+      res = `${res}@${this.hash}`;
+    }
+    return res;
   }
 
   static parse(url: string) {
@@ -89,7 +106,7 @@ class Archive {
   }
 }
 
-interface Version {
+export interface Version {
   major: number
   minor: number
   patch: number
@@ -109,15 +126,30 @@ function compareVersion(first: Version, second: Version): number {
 }
 
 // Get version from filename such as "cros-ide-0.0.1.vsix"
-// TODO(oka): check invalid input.
 function versionFromFilename(name: string): Version {
   const suffix = name.split('-').pop()!;
-  const version = suffix.split('.').slice(0, 3).map(Number);
+  const version = suffix.split('.').slice(0, 3).join('.');
+  return versionFromString(version);
+}
+
+/**
+ * Get version from string such as "0.0.1".
+ * @throws Error on invalid input.
+ */
+function versionFromString(s: string): Version {
+  const version = s.trim().split('.').map(Number);
+  if (version.length !== 3 || version.some(isNaN)) {
+    throw new Error(`Invalid version format ${s}`);
+  }
   return {
     major: version[0],
     minor: version[1],
     patch: version[2],
   };
+}
+
+function versionToString(v: Version): string {
+  return `${v.major}.${v.minor}.${v.patch}`;
 }
 
 async function build(tempDir: string, hash: string): Promise<Archive> {
@@ -140,7 +172,7 @@ async function withTempDir(
 }
 
 export async function buildAndUpload() {
-  const latestInGs = await latestArchive();
+  const latestInGs = await findArchive();
   const hash = await cleanCommitHash();
 
   await withTempDir(async td => {
@@ -154,26 +186,74 @@ export async function buildAndUpload() {
   });
 }
 
-export async function install() {
-  const src = await latestArchive();
+export async function install(forceVersion?: Version) {
+  const src = await findArchive(forceVersion);
 
   await withTempDir(async td => {
     const dst = path.join(td, src.name);
 
     await execute('gsutil', ['cp', src.url(), dst]);
-    await execute('code', ['--install-extension', dst], true);
+    const args = ['--install-extension', dst];
+    if (forceVersion) {
+      args.push('--force');
+    }
+    await execute('code', args, true);
   });
 }
 
+interface Config {
+  upload: boolean
+  forceVersion?: Version
+}
+
+/**
+ * Parse args.
+ *
+ * @throws Error on invalid input
+ */
+export function parseArgs(args: string[]): Config {
+  args = args.slice(); // not to modify the given parameter
+  while (args.length > 0 && !args[0].startsWith('--')) {
+    args.shift();
+  }
+
+  let upload = false;
+  let version: Version | undefined;
+  while (args.length > 0) {
+    const flag = args.shift();
+    switch (flag) {
+      case '--upload':
+        upload = true;
+        break;
+      case '--force':
+        const s = args.shift();
+        if (!s) {
+          throw new Error('forced version is not given');
+        }
+        version = versionFromString(s);
+        break;
+      default:
+        throw new Error(`Unknown flag ${flag}`);
+    }
+  }
+  if (upload && version) {
+    throw new Error(`--upload and --force cannot be used together`);
+  }
+  return {
+    upload,
+    forceVersion: version,
+  };
+}
+
 async function main() {
-  const upload = process.argv.includes('--upload');
-  if (upload) {
+  const config = parseArgs(process.argv);
+  if (config.upload) {
     await buildAndUpload();
     return;
   }
   try {
     assertInsideChroot();
-    await install();
+    await install(config.forceVersion);
   } catch (e) {
     const message = (e as Error).message;
     throw new Error(

@@ -38,6 +38,12 @@ Open terminal in the VSCode connected to `cros`, and run
 ~/chromiumos/chromite/ide_tooling/cros-ide/install.sh
 ```
 
+To force-install old version of extension (say 0.0.1), run
+
+```
+~/chromiumos/chromite/ide_tooling/cros-ide/install.sh --force 0.0.1
+```
+
   TODO(oka): Publish the extension to official marketplace to ease installation.
 
 ### 5. That's it!
