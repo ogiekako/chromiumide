@@ -9,6 +9,9 @@ This plugin consolidates commonly used tools for Chromium OS Development.
 
 Go to the [QuickStart Guide](https://chromium.googlesource.com/chromiumos/chromite/+/HEAD/ide_tooling/docs/quickstart.md)
 
+To install the extension you are developping to local VSCode, run
+`~/chromite/ide_tooling/cros-ide/install.sh --dev` in chroot.
+
 ## Publishing the extension
 
 * Inside chroot, run `npm run publish`. It will build the extension and upload it to

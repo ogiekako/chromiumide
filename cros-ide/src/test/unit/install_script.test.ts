@@ -262,9 +262,55 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.2.vsix@253d24b6b54fa72d21f622b8
     },
     );
   });
+
+  test('Dev install', async () => {
+    let tempDir = '';
+    let built = false;
+    let installed = false;
+    const fake = new FakeExec().on('npx',
+        prefixMatch(['vsce@1.103.1', 'package', '-o'], async args => {
+          tempDir = args[0];
+          built = true;
+          // As old as the latest version in GS.
+          await fs.promises.writeFile(
+              `${tempDir}cros-ide-0.0.2.vsix`, '<fake>');
+          return '';
+        }),
+    ).on('code', lazyHandler(() => exactMatch(
+        ['--install-extension', `${tempDir}cros-ide-0.0.2.vsix`], async () => {
+          installed = true;
+          return '';
+        }),
+    ));
+
+    const revert = install.setExecForTesting(fake.exec.bind(fake));
+    try {
+      await install.installDev();
+      assert.strictEqual(built, true);
+      assert.strictEqual(installed, true);
+    } finally {
+      revert();
+    }
+  });
 });
 
 suite('Parse args', () => {
+  test('Dev', () => {
+    assert.deepStrictEqual(
+        install.parseArgs(['--dev']),
+        {
+          dev: true,
+        },
+    );
+  });
+  test('Upload', () => {
+    assert.deepStrictEqual(
+        install.parseArgs(['--upload']),
+        {
+          upload: true,
+        },
+    );
+  });
   test('Force version', () => {
     assert.deepStrictEqual(
         install.parseArgs(['ts-node', 'install.ts', '--force', '1.2.3']),
@@ -274,14 +320,6 @@ suite('Parse args', () => {
             minor: 2,
             patch: 3,
           },
-        },
-    );
-  });
-  test('Upload', () => {
-    assert.deepStrictEqual(
-        install.parseArgs(['--upload']),
-        {
-          upload: true,
         },
     );
   });
@@ -299,6 +337,7 @@ suite('Parse args', () => {
     assert.throws(() => install.parseArgs(['--force', 'v1.2.3']));
     assert.throws(() => install.parseArgs(['--force', '1.2']));
     assert.throws(() => install.parseArgs(['--force', '1.2.3.4']));
+    assert.throws(() => install.parseArgs(['--dev', '--upload']));
     assert.throws(() => install.parseArgs(['--upload', '--force', '1.2.3']));
     assert.throws(() => install.parseArgs(['--unknownflag']));
   });

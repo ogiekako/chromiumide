@@ -152,7 +152,7 @@ function versionToString(v: Version): string {
   return `${v.major}.${v.minor}.${v.patch}`;
 }
 
-async function build(tempDir: string, hash: string): Promise<Archive> {
+async function build(tempDir: string, hash?: string): Promise<Archive> {
   await execute('npx', ['vsce@1.103.1', 'package', '-o', `${tempDir}/`]);
   const localName: string = (await fs.promises.readdir(tempDir))[0];
   return new Archive(localName, hash);
@@ -186,6 +186,14 @@ export async function buildAndUpload() {
   });
 }
 
+export async function installDev() {
+  await withTempDir(async td => {
+    const built = await build(td);
+    const src = path.join(td, built.name);
+    await execute('code', ['--install-extension', src], true);
+  });
+}
+
 export async function install(forceVersion?: Version) {
   const src = await findArchive(forceVersion);
 
@@ -202,8 +210,9 @@ export async function install(forceVersion?: Version) {
 }
 
 interface Config {
-  upload?: boolean
   forceVersion?: Version
+  dev?: boolean
+  upload?: boolean
   help?: boolean
 }
 
@@ -222,6 +231,9 @@ export function parseArgs(args: string[]): Config {
   while (args.length > 0) {
     const flag = args.shift();
     switch (flag) {
+      case '--dev':
+        config.dev = true;
+        break;
       case '--upload':
         config.upload = true;
         break;
@@ -239,8 +251,9 @@ export function parseArgs(args: string[]): Config {
         throw new Error(`Unknown flag ${flag}; see --help`);
     }
   }
-  if (config.upload && config.forceVersion) {
-    throw new Error(`--upload and --force cannot be used together`);
+  if (config.dev && config.upload || config.dev && config.forceVersion ||
+    config.upload && config.forceVersion) {
+    throw new Error(`Invalid flag combination; see --help`);
   }
   return config;
 }
@@ -260,6 +273,9 @@ Basic options:
 
 Developer options:
 
+ --dev
+    Build the extension from the current source code and install it
+
  --upload
     Build and upload the extension
 `;
@@ -272,6 +288,11 @@ async function main() {
   }
   if (config.upload) {
     await buildAndUpload();
+    return;
+  }
+  if (config.dev) {
+    assertInsideChroot();
+    await installDev();
     return;
   }
   try {
