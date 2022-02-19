@@ -58,27 +58,27 @@ async function findArchive(version?: Version): Promise<Archive> {
   throw new Error(`Version ${versionToString(version)} not found`);
 }
 
-async function gitIsDirty() {
-  const stdout = await execute('git', ['diff', '--stat']);
-  return stdout !== '';
-}
-
 // Assert the working directory is clean and get git commit hash.
 async function cleanCommitHash() {
-  if (await gitIsDirty()) {
+  if (await execute('git', ['status', '--short'])) {
     throw new Error('dirty git status; run the command in clean environment');
   }
-  const wantHash = await execute('git', ['rev-parse', 'cros/main']);
-  const hash = await execute('git', ['rev-parse', 'HEAD']);
-
-  if (process.env.IDE_IGNORE_CROS_MAIN_FOR_TESTING) {
-    // Skip check for manual testing of the script.
-  } else {
-    if (hash !== wantHash) {
-      throw new Error('HEAD must be cros/main');
-    }
+  // IDE_CROS_MAIN_FOR_TESTING substitutes cros/main for manual testing.
+  const crosMain = process.env.IDE_CROS_MAIN_FOR_TESTING || 'cros/main';
+  try {
+    // Assert HEAD is an ancestor of cros/main (i.e. the HEAD is an
+    // already-merged commit).
+    await execute('git', ['merge-base', '--is-ancestor', 'HEAD', crosMain]);
+  } catch (_e) {
+    throw new Error('HEAD should be an ancestor of cros/main');
   }
-  return hash;
+  // HEAD commit should update version in package.json .
+  const diff = await execute('git',
+      ['diff', '-p', 'HEAD~', '--', '**package.json']);
+  if (!/^\+\s*"version"\s*:/m.test(diff)) {
+    throw new Error('HEAD commit should update version in package.json');
+  }
+  return await execute('git', ['rev-parse', 'HEAD']);
 }
 
 class Archive {
@@ -245,7 +245,7 @@ export function parseArgs(args: string[]): Config {
   return config;
 }
 
-const USAGE= `
+const USAGE = `
 Usage:
  install.sh [options]
 
