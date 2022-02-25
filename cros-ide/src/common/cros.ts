@@ -2,9 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as childProcess from 'child_process';
 import * as fs from 'fs';
-import * as util from 'util';
+import * as commonUtil from './common_util';
 
 /**
  * @returns Boards that have been set up.
@@ -18,8 +17,7 @@ export async function getSetupBoards(): Promise<string[]> {
  * @returns Packages that are worked on.
  */
 export async function getWorkedOnPackages(board: string): Promise<string[]> {
-  const cmd = `cros_workon --board=${board} list`;
-  const {stdout} = await util.promisify(childProcess.exec)(cmd);
-
-  return stdout.split(/\r?\n/).filter(line => line.trim() !== '');
+  const stdout = await commonUtil.exec(
+      'cros_workon', ['--board', board, 'list']);
+  return stdout.split('\n').filter(x => x.trim() !== '');
 }
