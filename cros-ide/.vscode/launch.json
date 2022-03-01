@@ -10,6 +10,19 @@
       "type": "extensionHost",
       "request": "launch",
       "args": [
+        "--disable-extensions",
+        "--extensionDevelopmentPath=${workspaceFolder}"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "preLaunchTask": "${defaultBuildTask}"
+    },
+    {
+      "name": "Run Extension (keep other extensions running)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
         "--extensionDevelopmentPath=${workspaceFolder}"
       ],
       "outFiles": [
@@ -22,6 +35,7 @@
       "type": "extensionHost",
       "request": "launch",
       "args": [
+        "--disable-extensions",
         "--extensionDevelopmentPath=${workspaceFolder}",
         "--extensionTestsPath=${workspaceFolder}/out/test/integration/index"
       ],

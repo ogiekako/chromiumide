@@ -37,7 +37,8 @@ There are several ways of testing.
     Click the "Run and Debug" icon in the [Activity Bar], select "Run Extension"
     menu, and click the "Start Debugging" button or press F5. It should launch a new window
     where the extension built from the source code is installed. Then you can
-    perform whatever manual tests on it.
+    perform whatever manual tests on it. By default, other extensions are disabled. To keep other
+    extensions running, choose "Run Extension (keep other extensions running)".
   * Similarly, you can select "Extension Tests" instead of "Run Extensions" to run all the tests.
     The output will be shown in the Debug Console in the IDE used to develop the extension
 * Testing from command line
