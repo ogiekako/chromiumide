@@ -4,6 +4,7 @@
 
 import * as assert from 'assert';
 import * as fs from 'fs';
+import * as commonUtil from '../../common/common_util';
 import * as install from '../../tools/install';
 import {exactMatch, FakeExec, lazyHandler, prefixMatch} from '../testing';
 
@@ -33,7 +34,7 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.2.vsix@253d24b6b54fa72d21f622b8
         })),
     );
 
-    const revert = install.setExecForTesting(fake.exec.bind(fake));
+    const revert = commonUtil.setExecForTesting(fake.exec.bind(fake));
     try {
       await install.install();
       assert.deepStrictEqual(installed, true);
@@ -66,7 +67,7 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.2.vsix@253d24b6b54fa72d21f622b8
         })),
     );
 
-    const revert = install.setExecForTesting(fake.exec.bind(fake));
+    const revert = commonUtil.setExecForTesting(fake.exec.bind(fake));
     try {
       await install.install({major: 0, minor: 0, patch: 1});
       assert.deepStrictEqual(installed, true);
@@ -197,7 +198,7 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.2.vsix@253d24b6b54fa72d21f622b8
           },
       )));
 
-      const revert = install.setExecForTesting(fake.exec.bind(fake));
+      const revert = commonUtil.setExecForTesting(fake.exec.bind(fake));
       try {
         const result = install.buildAndUpload();
         if (testCase.wantReject) {
@@ -237,7 +238,7 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.2.vsix@253d24b6b54fa72d21f622b8
         }),
     ));
 
-    const revert = install.setExecForTesting(fake.exec.bind(fake));
+    const revert = commonUtil.setExecForTesting(fake.exec.bind(fake));
     try {
       await install.installDev();
       assert.strictEqual(built, true);

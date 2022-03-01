@@ -16,21 +16,10 @@ function assertInsideChroot() {
   }
 }
 
-let exec = commonUtil.exec;
-
-export function setExecForTesting(
-    fakeExec: (name: string, args: string[]) => Promise<string>): () => void {
-  const original = exec;
-  exec = fakeExec;
-  return () => {
-    exec = original;
-  };
-}
-
 const GS_PREFIX = 'gs://chromeos-velocity/ide/cros-ide';
 
 async function execute(name: string, args: string[], showStdout?: boolean) {
-  return await exec(
+  return await commonUtil.exec(
       name, args, log => process.stderr.write(log), {logStdout: showStdout});
 }
 
