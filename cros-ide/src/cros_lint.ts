@@ -47,11 +47,11 @@ const lintConfigs = new Map<string, LintConfig>([
   }],
   ['python', {
     command: (path: string) => `cros lint ${path}`,
-    parse: parseCrosLintShellPython,
+    parse: parseCrosLintPython,
   }],
   ['shellscript', {
     command: (path: string) => `cros lint --output=parseable ${path}`,
-    parse: parseCrosLintShellPython,
+    parse: parseCrosLintShell,
   }],
 ]);
 
@@ -122,9 +122,27 @@ export function parseCrosLintGn(_stdout: string, stderr: string, document: vscod
 }
 
 // Parse output from cros lint on Python files
-// or cros lint --output=parseable on shell files.
-// TODO(b/214322467): Add unit tests for Python and shell.
-export function parseCrosLintShellPython(
+export function parseCrosLintPython(
+    stdout: string, _stderr: string, document: vscode.TextDocument)
+  : vscode.Diagnostic[] {
+  const lineRE = /^([^ \n\:]+):([0-9]+):([0-9]+): (.*)/gm;
+  const diagnostics: vscode.Diagnostic[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = lineRE.exec(stdout)) !== null) {
+    const file = match[1];
+    const line = Number(match[2]);
+    // Column number from the python linter is 0-based.
+    const startCol = Number(match[3]) + 1;
+    const message = match[4];
+    if (file === document.uri.fsPath) {
+      diagnostics.push(createDiagnostic(message, line, startCol));
+    }
+  }
+  return diagnostics;
+}
+
+// Parse output from cros lint --output=parseable on shell files.
+export function parseCrosLintShell(
     stdout: string, _stderr: string, document: vscode.TextDocument)
   : vscode.Diagnostic[] {
   const lineRE = /^([^ \n\:]+):([0-9]+):([0-9]+): (.*)/gm;
@@ -142,11 +160,13 @@ export function parseCrosLintShellPython(
   return diagnostics;
 }
 
+// Creates Diagnostic message.
+// line and startCol are both 1-based.
 function createDiagnostic(message : string, line: number, startCol?: number)
   : vscode.Diagnostic {
   return new vscode.Diagnostic(
       new vscode.Range(
-          new vscode.Position(line - 1, startCol ? startCol : 0),
+          new vscode.Position(line - 1, startCol ? startCol - 1 : 0),
           new vscode.Position(line - 1, Number.MAX_VALUE),
       ),
       message,

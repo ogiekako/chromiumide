@@ -37,12 +37,17 @@ const pythonFileContents =
 
 class Foo:
     pass
+
+
+def f():
+    abc = 1
 `;
 
 const pythonLintOutput =
 `************ Module aaa
 cros-disks/aaa.py:1:0: C9001: Modules should have docstrings (even a one liner) (module-missing-docstring)
 cros-disks/aaa.py:3:0: C9002: Classes should have docstrings (even a one liner) (class-missing-docstring)
+cros-disks/aaa.py:8:4: W0612: Unused variable 'abc' (unused-variable)
 `;
 
 const shellFileName = 'cros-disks/aaa.sh';
@@ -125,8 +130,8 @@ suite('Cros Lint Test Suite', () => {
     const uri = vscode.Uri.from({scheme: scheme, path: pythonFileName});
     const textDocument = await vscode.workspace.openTextDocument(uri);
     const actual =
-      crosLint.parseCrosLintShellPython(pythonLintOutput, '', textDocument);
-    assert.strictEqual(actual.length, 2);
+      crosLint.parseCrosLintPython(pythonLintOutput, '', textDocument);
+    assert.strictEqual(actual.length, 3);
     const expected = [
       new vscode.Diagnostic(
           new vscode.Range(
@@ -144,6 +149,14 @@ suite('Cros Lint Test Suite', () => {
           `C9002: Classes should have docstrings (even a one liner) (class-missing-docstring)`,
           vscode.DiagnosticSeverity.Warning,
       ),
+      new vscode.Diagnostic(
+          new vscode.Range(
+              new vscode.Position(7, 4),
+              new vscode.Position(7, Number.MAX_VALUE),
+          ),
+          `W0612: Unused variable 'abc' (unused-variable)`,
+          vscode.DiagnosticSeverity.Warning,
+      ),
     ];
     assert.deepStrictEqual(expected, actual);
   });
@@ -152,19 +165,19 @@ suite('Cros Lint Test Suite', () => {
     const uri = vscode.Uri.from({scheme: scheme, path: shellFileName});
     const textDocument = await vscode.workspace.openTextDocument(uri);
     const actual =
-      crosLint.parseCrosLintShellPython(shellLintOutput, '', textDocument);
+      crosLint.parseCrosLintShell(shellLintOutput, '', textDocument);
     assert.strictEqual(actual.length, 1);
     const expected = [
       new vscode.Diagnostic(
           new vscode.Range(
-              new vscode.Position(2, 6),
+              new vscode.Position(2, 5),
               new vscode.Position(2, Number.MAX_VALUE),
           ),
           `note: Double quote to prevent globbing and word splitting. [SC2086]`,
           vscode.DiagnosticSeverity.Warning,
       ),
     ];
-    assert.deepStrictEqual(expected, actual);
+    assert.deepStrictEqual(actual, expected);
   });
 
   test('GN errors', async () => {
@@ -176,7 +189,7 @@ suite('Cros Lint Test Suite', () => {
     const expected = [
       new vscode.Diagnostic(
           new vscode.Range(
-              new vscode.Position(1, 15),
+              new vscode.Position(1, 14),
               new vscode.Position(1, Number.MAX_VALUE),
           ),
           `GnLintLibFlags: Libraries should be specified by "libs", not -l flags in "ldflags": -lm`,
@@ -184,7 +197,7 @@ suite('Cros Lint Test Suite', () => {
       ),
       new vscode.Diagnostic(
           new vscode.Range(
-              new vscode.Position(2, 3),
+              new vscode.Position(2, 2),
               new vscode.Position(2, Number.MAX_VALUE),
           ),
           `GnLintOrderingWithinTarget: wrong parameter order in executable(my_exec): put parameters in the following order: output_name/visibility/testonly, sources, other parameters, public_deps and deps`,
