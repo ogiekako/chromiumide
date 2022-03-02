@@ -6,20 +6,7 @@
  * Keep all general utility functions here, or in common_util.
  */
 import * as vscode from 'vscode';
-import * as childProcess from 'child_process';
 import * as cros from './common/cros';
-
-export function runSSH(host: string, args: string[]): Promise<string> {
-  return new Promise((resolve, reject) => {
-    childProcess.execFile('ssh', [host].concat(args), (error, stdout) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(stdout);
-    });
-  });
-}
 
 export function getConfigRoot(): vscode.WorkspaceConfiguration {
   return vscode.workspace.getConfiguration('cros-ide');

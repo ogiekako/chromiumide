@@ -6,7 +6,6 @@
  * Common libs specific to DUT management.
  */
 import * as commonUtil from '../../common/common_util';
-import * as ideutil from '../../ide_utilities';
 import * as dutManager from '../dut_manager';
 
 const BUILDER_PATH_RE = /CHROMEOS_RELEASE_BUILDER_PATH=(.*)/;
@@ -22,7 +21,7 @@ export async function crosfleetLeases(): Promise<dutManager.Leases> {
 }
 
 export async function queryHostVersion(host: string): Promise<string> {
-  const output = await ideutil.runSSH(host, ['cat', '/etc/lsb-release']);
+  const output = await commonUtil.exec('ssh', [host, 'cat', '/etc/lsb-release']);
   const match = BUILDER_PATH_RE.exec(output);
   if (!match) {
     throw new Error(`Failed to connect to ${host}`);

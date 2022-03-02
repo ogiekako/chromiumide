@@ -1,0 +1,379 @@
+{
+	"Leases": [
+		{
+			"Build": {
+				"id": "8820990512590685681",
+				"createdBy": "user:ttylenda@google.com",
+				"createTime": "2022-02-28T10:42:05.087200850Z",
+				"startTime": "2022-02-28T10:45:00.685351Z",
+				"status": "STARTED",
+				"input": {
+					"properties": {
+						"$chromeos/phosphorus": {
+							"config": {
+								"admin_service": "chromeos-skylab-bot-fleet.appspot.com",
+								"autotest_dir": "/usr/local/autotest",
+								"cros_inventory_service": "cros-lab-inventory.appspot.com",
+								"cros_ufs_service": "ufs.api.cr.dev"
+							},
+							"version": {
+								"cipd_label": "prod"
+							}
+						},
+						"$chromeos/service_version": {
+							"version": {
+								"crosfleetTool": "3"
+							}
+						},
+						"lease_length_minutes": 120,
+						"recipe": "test_platform/dut_leaser"
+					},
+					"experiments": [
+						"luci.buildbucket.use_bbagent"
+					]
+				},
+				"infra": {
+					"buildbucket": {
+						"requestedProperties": {
+							"$chromeos/service_version": {
+								"version": {
+									"crosfleetTool": "3"
+								}
+							},
+							"lease_length_minutes": 120
+						},
+						"requestedDimensions": [
+							{
+								"key": "label-board",
+								"value": "eve"
+							},
+							{
+								"key": "dut_state",
+								"value": "ready"
+							},
+							{
+								"key": "label-pool",
+								"value": "DUT_POOL_QUOTA"
+							}
+						],
+						"hostname": "cr-buildbucket.appspot.com"
+					},
+					"swarming": {
+						"hostname": "chromeos-swarming.appspot.com",
+						"taskId": "5958bdd616b97710",
+						"taskServiceAccount": "chromeos-test-infra-prod@chromeos-bot.iam.gserviceaccount.com",
+						"priority": 15,
+						"taskDimensions": [
+							{
+								"key": "dut_state",
+								"value": "ready"
+							},
+							{
+								"key": "label-board",
+								"value": "eve"
+							},
+							{
+								"key": "label-pool",
+								"value": "DUT_POOL_QUOTA"
+							},
+							{
+								"key": "pool",
+								"value": "ChromeOSSkylab"
+							}
+						],
+						"botDimensions": [
+							{
+								"key": "bot_config",
+								"value": "skylab.py"
+							},
+							{
+								"key": "drone",
+								"value": "skylab-drone-deployment-prod-5cbb8485bc-2mr62"
+							},
+							{
+								"key": "drone_image",
+								"value": "gcr.io/chromeos-drone-images/drone:20220222T153529-chromeos-test"
+							},
+							{
+								"key": "drone_server",
+								"value": "chromeos4-row4-rack1-drone7"
+							},
+							{
+								"key": "dut_id",
+								"value": "C146651"
+							},
+							{
+								"key": "dut_name",
+								"value": "chromeos6-row4-rack17-host9"
+							},
+							{
+								"key": "dut_state",
+								"value": "ready"
+							},
+							{
+								"key": "hwid",
+								"value": "EVE D6B-A4E-D4H-N8P-P8A-A6J"
+							},
+							{
+								"key": "id",
+								"value": "crossk-chromeos6-row4-rack17-host9"
+							},
+							{
+								"key": "label-arc",
+								"value": "True"
+							},
+							{
+								"key": "label-audio_loopback_dongle",
+								"value": "True"
+							},
+							{
+								"key": "label-bluetooth",
+								"value": "True"
+							},
+							{
+								"key": "label-bluetooth_state",
+								"value": "NORMAL"
+							},
+							{
+								"key": "label-board",
+								"value": "eve"
+							},
+							{
+								"key": "label-cr50_phase",
+								"value": "CR50_PHASE_PVT"
+							},
+							{
+								"key": "label-cr50_ro_keyid",
+								"value": "prod"
+							},
+							{
+								"key": "label-cts_abi",
+								"value": "CTS_ABI_X86"
+							},
+							{
+								"key": "label-cts_cpu",
+								"value": "CTS_CPU_X86"
+							},
+							{
+								"key": "label-device-stable",
+								"value": "True"
+							},
+							{
+								"key": "label-ec_type",
+								"value": "EC_TYPE_CHROME_OS"
+							},
+							{
+								"key": "label-hotwording",
+								"value": "True"
+							},
+							{
+								"key": "label-hwid_sku",
+								"value": "eve_IntelR_CoreTM_i7_7Y75_CPU_1_30GHz_16GB"
+							},
+							{
+								"key": "label-internal_display",
+								"value": "True"
+							},
+							{
+								"key": "label-model",
+								"value": "eve"
+							},
+							{
+								"key": "label-os_type",
+								"value": "OS_TYPE_CROS"
+							},
+							{
+								"key": "label-phase",
+								"value": "PHASE_PVT"
+							},
+							{
+								"key": "label-platform",
+								"value": "eve"
+							},
+							{
+								"key": "label-pool",
+								"value": "DUT_POOL_QUOTA"
+							},
+							{
+								"key": "label-power",
+								"value": "battery"
+							},
+							{
+								"key": "label-servo",
+								"value": "True"
+							},
+							{
+								"key": "label-servo_component",
+								"value": "servo_micro"
+							},
+							{
+								"key": "label-servo_component",
+								"value": "servo_v4"
+							},
+							{
+								"key": "label-servo_state",
+								"value": "WORKING"
+							},
+							{
+								"key": "label-servo_usb_state",
+								"value": "NOT_DETECTED"
+							},
+							{
+								"key": "label-storage",
+								"value": "nvme"
+							},
+							{
+								"key": "label-stylus",
+								"value": "True"
+							},
+							{
+								"key": "label-touchscreen",
+								"value": "True"
+							},
+							{
+								"key": "label-variant",
+								"value": "eve"
+							},
+							{
+								"key": "label-video_acceleration",
+								"value": "VIDEO_ACCELERATION_ENC_H264"
+							},
+							{
+								"key": "label-video_acceleration",
+								"value": "VIDEO_ACCELERATION_ENC_MJPG"
+							},
+							{
+								"key": "label-video_acceleration",
+								"value": "VIDEO_ACCELERATION_ENC_VP8"
+							},
+							{
+								"key": "label-video_acceleration",
+								"value": "VIDEO_ACCELERATION_H264"
+							},
+							{
+								"key": "label-video_acceleration",
+								"value": "VIDEO_ACCELERATION_MJPG"
+							},
+							{
+								"key": "label-video_acceleration",
+								"value": "VIDEO_ACCELERATION_VP8"
+							},
+							{
+								"key": "label-video_acceleration",
+								"value": "VIDEO_ACCELERATION_VP9"
+							},
+							{
+								"key": "label-webcam",
+								"value": "True"
+							},
+							{
+								"key": "label-wifi_chip",
+								"value": "INTEL_STP2_AC7265"
+							},
+							{
+								"key": "label-wifi_state",
+								"value": "NORMAL"
+							},
+							{
+								"key": "pool",
+								"value": "ChromeOSSkylab"
+							},
+							{
+								"key": "provisionable-cros-version",
+								"value": "eve-release/R99-14469.33.0"
+							},
+							{
+								"key": "provisionable-lacros-gcs-path",
+								"value": "gs://chrome-test-builds/lacros/8820998966558667841/lacros_all_tast_tests"
+							},
+							{
+								"key": "serial_number",
+								"value": "8C10G06NGH"
+							},
+							{
+								"key": "server_version",
+								"value": "6505-2db72d7"
+							}
+						],
+						"caches": [
+							{
+								"name": "builder",
+								"path": "builder"
+							},
+							{
+								"name": "git",
+								"path": "git"
+							},
+							{
+								"name": "goma_v2",
+								"path": "goma"
+							},
+							{
+								"name": "vpython",
+								"path": "vpython",
+								"envVar": "VPYTHON_VIRTUALENV_ROOT"
+							}
+						]
+					},
+					"logdog": {
+						"hostname": "logs.chromium.org",
+						"project": "chromeos",
+						"prefix": "buildbucket/cr-buildbucket/8820990512590685681"
+					},
+					"recipe": {
+						"cipdPackage": "infra/recipe_bundles/chromium.googlesource.com/chromiumos/infra/recipes",
+						"name": "test_platform/dut_leaser"
+					},
+					"resultdb": {
+						"hostname": "results.api.cr.dev"
+					},
+					"bbagent": {
+						"payloadPath": "kitchen-checkout",
+						"cacheDir": "cache",
+						"knownPublicGerritHosts": [
+							"android.googlesource.com",
+							"aomedia.googlesource.com",
+							"boringssl.googlesource.com",
+							"chromium.googlesource.com",
+							"dart.googlesource.com",
+							"dawn.googlesource.com",
+							"fuchsia.googlesource.com",
+							"gn.googlesource.com",
+							"go.googlesource.com",
+							"llvm.googlesource.com",
+							"pdfium.googlesource.com",
+							"quiche.googlesource.com",
+							"skia.googlesource.com",
+							"swiftshader.googlesource.com",
+							"webrtc.googlesource.com"
+						]
+					}
+				},
+				"tags": [
+					{
+						"key": "crosfleet-tool",
+						"value": "lease"
+					},
+					{
+						"key": "label-board",
+						"value": "eve"
+					},
+					{
+						"key": "lease-reason"
+					},
+					{
+						"key": "qs_account",
+						"value": "leases"
+					},
+					{
+						"key": "user_agent",
+						"value": "crosfleet"
+					}
+				]
+			},
+			"DUT": {
+				"Hostname": "chromeos6-row4-rack17-host9"
+			}
+		}
+	]
+}

@@ -40,19 +40,22 @@ export class FleetDevicesProvider implements vscode.TreeDataProvider<string> {
     this.onDidChangeTreeDataEmitter.fire();
 
     // Update versions in parallel.
+    const updateJobs = [];
     for (const dut of this.leases.values()) {
       if (dut.version !== undefined) {
         continue;
       }
-      (async () => {
+      const p = (async () => {
         let version = '???';
         try {
           version = await dutServices.queryHostVersion(dut.hostname);
         } catch (_) { }
         dut.version = version;
         this.onDidChangeTreeDataEmitter.fire();
-      })().catch((e) => { });
+      })().catch((e) => {});
+      updateJobs.push(p);
     }
+    return Promise.all(updateJobs);
   }
 
   async removeTreeItem(host: string): Promise<boolean> {
