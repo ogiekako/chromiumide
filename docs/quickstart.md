@@ -1,28 +1,58 @@
-# Modern IDE quickstart (go/cros-ide-quickstart)
+# CrOS IDE quickstart (go/cros-ide-quickstart)
+
+CrOS IDE is a VS Code Extension for Chrome OS development. It is a new project,
+and we currently support only internal developers at Google.
 
 ## Prerequisites
 
-Follow the [Chromium OS Developer Guide] and set up development environment.
-Especially [entering the chroot via cros_sdk] must be possible.
+All you need is a Chrome OS chroot, which most developers already have.
+If you don't have it, please follow the [Chromium OS Developer Guide] and set up
+your development environment, so you can [enter the chroot via cros_sdk].
 
-[Chromium OS Developer Guide]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#chromium-os-developer-guide
-[entering the chroot via cros_sdk]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#Enter-the-chroot
+[Chromium OS Developer Guide]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md
+[enter the chroot via cros_sdk]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#Enter-the-chroot
 
-## Installation
+## 1. Install Visual Studio Code
 
-Complete the following process, and you get the modern IDE!
+First, you need to install Visual Studio on your client machine.
 
-### 1. Install VSCode
+### gLinux
+```
+sudo apt install code
+```
+Learn more at [go/vscode/install#glinux]
 
-Follow the internal guide of [installing VSCode](https://g3doc.corp.google.com/devtools/editors/vscode/g3doc/install.md?cl=head).
+[go/vscode/install#glinux]: http://go/vscode/install#glinux
 
-### 2. Install cros-sdk-proxy
+### gMac
+Install [VS Code from the Software Center] or [go/mule]
+(`sudo mule install visual-studio-code`).
 
-Follow [../cros-sdk-proxy/README.md](../cros-sdk-proxy/README.md).
+[VS Code from the Software Center]: https://device-portal.corp.google.com/#/software-center/list//appid%3AMAC_OS-visual-studio-code/MAC_OS
+[go/mule]: http://go/mule
 
-  TODO(oka): Automate installation of the proxy.
+### Chrome OS
 
-### 3. Connect to chroot via VSCode
+CrOS IDE supports only platform-specific VS Code, which is not available for
+Chrome OS. There are two workarounds:
+- Check out [go/cros-ide-on-chromebooks] to learn more about
+  [Code Server], which is a Web IDE accessible in the browser.
+- Use remote desktop.
+
+[go/cros-ide-on-chromebooks]: http://go/cros-ide-on-chromebooks
+[Code Server]: https://github.com/coder/code-server
+
+## 2. Install cros-sdk-proxy
+
+Follow [cros-sdk-proxy documentation](../cros-sdk-proxy/README.md).
+
+Verify the installation by running the following command on your client machine:
+```
+ssh cros
+```
+It should connect to the chroot, just like `cros_sdk` does.
+
+## 3. Connect to chroot via VSCode
 
 Install [Remote development] extension on the VSCode.
 Select SSH target `cros` and open your working directory under
@@ -30,7 +60,7 @@ Select SSH target `cros` and open your working directory under
 
 [Remote development]: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
 
-### 4. Install the extension
+## 4. Install the extension
 
 Open terminal in the VSCode connected to `cros`, and run
 
@@ -44,6 +74,4 @@ To force-install old version of extension (say 0.0.1), run
 ~/chromiumos/chromite/ide_tooling/cros-ide/install.sh --force 0.0.1
 ```
 
-  TODO(oka): Publish the extension to official marketplace to ease installation.
-
-### 5. That's it!
+## 5. That's it!
