@@ -74,4 +74,8 @@ To force-install old version of extension (say 0.0.1), run
 ~/chromiumos/chromite/ide_tooling/cros-ide/install.sh --force 0.0.1
 ```
 
-## 5. That's it!
+## 5. Reload the IDE
+
+You need to reload the VS Code to activate the extension. Either simply restart
+the IDE, or open the command palette (Ctrl+Shift+P) and type "Developer: Reload
+Window".
