@@ -17,14 +17,12 @@ import * as dutManager from './dut_management/dut_manager';
 import * as ideUtilities from './ide_utilities';
 import * as shortLinkProvider from './short_link_provider';
 import * as targetBoard from './target_board';
-import * as workon from './workon';
 
 export function activate(context: vscode.ExtensionContext) {
   crosLint.activate(context);
   boardsPackages.activate();
   shortLinkProvider.activate(context);
   codesearch.activate(context);
-  workon.activate(context);
   cppCodeCompletion.activate(context);
   targetBoard.activate(context);
 

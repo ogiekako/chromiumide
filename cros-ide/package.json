@@ -29,8 +29,6 @@
     "onCommand:cros-ide.addFleetHost",
     "onCommand:cros-ide.codeSearchOpenCurrentFile",
     "onCommand:cros-ide.codeSearchSearchForSelection",
-    "onCommand:cros-ide.crosWorkonStart",
-    "onCommand:cros-ide.crosWorkonStop",
     "onView:static-devices",
     "onView:fleet-devices",
     "onView:boards-packages",
@@ -93,11 +91,13 @@
       },
       {
         "command": "cros-ide.crosWorkonStart",
-        "title": "CrOS: Start Working on a Package"
+        "title": "Start Working on a new Package",
+        "icon": "$(add)"
       },
       {
         "command": "cros-ide.crosWorkonStop",
-        "title": "CrOS: Stop Working on a Package"
+        "title": "Stop Working On",
+        "icon": "$(remove)"
       },
       {
         "command": "cros-ide.selectBoard",
@@ -177,6 +177,16 @@
           "command": "cros-ide.deleteHost",
           "when": "view == static-devices || view == fleet-devices",
           "group": "inline@3"
+        },
+        {
+          "command": "cros-ide.crosWorkonStart",
+          "when": "view == boards-packages && viewItem == board",
+          "group": "inline"
+        },
+        {
+          "command": "cros-ide.crosWorkonStop",
+          "when": "view == boards-packages && viewItem == package",
+          "group": "inline"
         }
       ]
     },
