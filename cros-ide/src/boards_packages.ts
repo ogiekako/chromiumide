@@ -2,11 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from './common/common_util';
 import * as cros from './common/cros';
 
-export function activate() {
+export async function activate() {
   const boardPackageProvider = new BoardPackageProvider();
 
   vscode.commands.registerCommand('cros-ide.crosWorkonStart', crosWorkonStart);
@@ -21,6 +24,20 @@ export function activate() {
       'boards-packages',
       boardPackageProvider,
   );
+
+  await createPackageWatches();
+}
+
+// TODO: Write a unit test for watching packages.
+async function createPackageWatches() {
+  const boards = await cros.getSetupBoards();
+  const crosWorkonDir = path.join(os.homedir(), 'chromiumos/.config/cros_workon/');
+  fs.watch(crosWorkonDir, (eventType, fileName) => {
+    // Multiple files can be changed. This restrictions limits the number of refreshes to one.
+    if (boards.includes(fileName)) {
+      vscode.commands.executeCommand('cros-ide.refreshBoardsPackages');
+    }
+  });
 }
 
 async function crosWorkonStart(board: Board) {
@@ -43,8 +60,6 @@ function crosWorkonStop(pkg: Package) {
 async function crosWorkon(boardName: string, cmd: string, pkgName: string) {
   try {
     await commonUtil.exec('cros_workon', [`--board=${boardName}`, cmd, pkgName]);
-    // TODO: Remove, when the UI is refreshed based on the filesystem.
-    vscode.commands.executeCommand('cros-ide.refreshBoardsPackages');
   } catch (e) {
     // TODO(b/223535757): Show stderr in the message.
     vscode.window.showErrorMessage('cros_workon failed: ' + e);
