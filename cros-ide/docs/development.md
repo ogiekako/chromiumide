@@ -66,6 +66,10 @@ Extensions > CrOS (CrOS IDE must be activated first). After enabling a feature, 
 * Why repo upload is slow?
   * It runs `npm test`. It's a tentative alternative for a CQ which is under
     construction.
+* My repo hook script complains that there is no npx?
+  * Run `sudo apt-get install npm` (outside of chroot).
+* How to fix formatting errors?
+  * Run `npm run lint -- --fix`.
 
 -----------------------------------------------------------------------------------------------------------
 
