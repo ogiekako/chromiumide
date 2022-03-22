@@ -87,8 +87,8 @@ Window".
 
 ## Updating
 
-You can update the extension by running
-`~/chromiumos/chromite/ide_tooling/cros-ide/install.sh` again.
+Run the install script again as written in [Install the extension](#4_install-the-extension).
+You need to [reload the IDE](#5_reload-the-ide) after that.
 
 # Features
 
