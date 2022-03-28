@@ -46,4 +46,10 @@ describe('Boards that are set up', () => {
       ]);
     });
   });
+
+  it('can be listed, even if /build does not exist', async () => {
+    await commonUtil.withTempDir(async td => {
+      assert.deepStrictEqual(await cros.getSetupBoardsAlphabetic(td), []);
+    });
+  });
 });

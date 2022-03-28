@@ -32,6 +32,13 @@ export async function activate() {
 async function createPackageWatches() {
   const boards = await cros.getSetupBoardsAlphabetic();
   const crosWorkonDir = path.join(os.homedir(), 'chromiumos/.config/cros_workon/');
+
+  // Watching for non-existent directory throws errors,
+  // which happens when we run tests outside chroot.
+  if (!fs.existsSync(crosWorkonDir)) {
+    return;
+  }
+
   fs.watch(crosWorkonDir, (eventType, fileName) => {
     // Multiple files can be changed. This restrictions limits the number of refreshes to one.
     if (boards.includes(fileName)) {

@@ -32,6 +32,12 @@ async function getSetupBoardsOrdered<T>(
     keyFn: (dir: string) => Promise<T>,
     compareFn: (a: T, b: T) => number): Promise<string[]> {
   const build = path.join(rootDir, 'build');
+
+  // /build does not exist outside chroot, which causes problems in tests.
+  if (!fs.existsSync(build)) {
+    return [];
+  }
+
   const dirs = await fs.promises.readdir(build);
   const dirStat: Array<[string, T]> = [];
   for (const dir of dirs) {
