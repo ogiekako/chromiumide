@@ -20,6 +20,7 @@ import * as feedback from './metrics/feedback';
 import * as ideUtilities from './ide_utilities';
 import * as metrics from './metrics/metrics';
 import * as shortLinkProvider from './short_link_provider';
+import * as suggestExtension from './suggest_extension';
 import * as targetBoard from './target_board';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -28,6 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
   shortLinkProvider.activate(context);
   codesearch.activate(context);
   cppCodeCompletion.activate(context);
+  suggestExtension.activate(context);
   targetBoard.activate(context);
   bgTaskStatus.activate(context);
   feedback.activate(context);

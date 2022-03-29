@@ -35,6 +35,7 @@
     "onView:boards-packages",
     "onLanguage:cpp",
     "onLanguage:gn",
+    "onLanguage:go",
     "onLanguage:python",
     "onLanguage:shellscript"
   ],
