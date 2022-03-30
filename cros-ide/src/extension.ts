@@ -8,6 +8,7 @@
  * Keep this minimal - breakout GUI and App-Behavior to separate files.
  */
 import * as vscode from 'vscode';
+import * as bgTaskStatus from './bg_task_status';
 import * as boardsPackages from './boards_packages';
 import * as checkUpdates from './check_updates';
 import * as codesearch from './codesearch';
@@ -27,6 +28,7 @@ export function activate(context: vscode.ExtensionContext) {
   codesearch.activate(context);
   cppCodeCompletion.activate(context);
   targetBoard.activate(context);
+  bgTaskStatus.activate(context);
 
   if (ideUtilities.getConfigRoot().get<boolean>('underDevelopment.dutManager')) {
     dutManager.activateDutManager(context);

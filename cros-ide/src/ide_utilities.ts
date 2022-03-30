@@ -31,7 +31,7 @@ export function createTerminalForHost(
   return terminal;
 }
 
-const loggerInstance = vscode.window.createOutputChannel('cros');
+const loggerInstance = vscode.window.createOutputChannel('CrOS IDE');
 export function getLogger(): vscode.OutputChannel {
   return loggerInstance;
 }
