@@ -88,22 +88,33 @@ export interface ExecOptions {
 
   /**
    * If the command exits with non-zero code, exec should return normally.
-   * This changes the default behaviour, which is to throw an error.
+   * This changes the default behaviour, which is to return an error.
    */
   ignoreNonZeroExit?: boolean,
 }
 
+export class ExecutionError extends Error {
+  constructor(exitStatus: number) {
+    super(`Exit status: ${exitStatus}`);
+  }
+}
+
 /**
  * Executes command with optionally logging its output. The promise will be
- * resolved with stdout of the command. It's guaranteed that data passed to log
- * ends with a newline.
+ * resolved with outputs of the command or an Error. It's guaranteed that
+ * data passed to log ends with a newline.
+ *
+ * Errors are **always returned** and **never thrown**. If the underlying call to
+ * childProcess.spawn returns and error, then we return it.
+ * If the command terminates with non-zero exit status then we return `ExecutionError`
+ * unless `ignoreNonZeroExit` was set.
+ *
  * @param log Optional logging function.
- * @param opt Optional parameters. Set opt.logStdout to true to log stdout in
- * addition to stderr.
+ * @param opt Optional parameters. See `ExecOptions` for the description.
  */
 export function exec(name: string, args: string[],
     log?: (line: string) => void,
-    opt?: ExecOptions): Promise<ExecResult> {
+    opt?: ExecOptions): Promise<ExecResult|Error> {
   return execPtr(name, args, log, opt);
 }
 
@@ -119,8 +130,8 @@ export function setExecForTesting(fakeExec: typeof exec): () => void {
 
 function realExec(name: string, args: string[],
     log?: (line: string) => void,
-    opt?: ExecOptions): Promise<ExecResult> {
-  return new Promise((resolve, reject) => {
+    opt?: ExecOptions): Promise<ExecResult|Error> {
+  return new Promise((resolve, _reject) => {
     const command = childProcess.spawn(name, args);
 
     let remainingStdout = '';
@@ -155,14 +166,14 @@ function realExec(name: string, args: string[],
         log(remainingStderr + '\n');
       }
       if (!(opt && opt.ignoreNonZeroExit) && exitStatus !== 0) {
-        reject(new Error(`Exit status: ${exitStatus}`));
+        resolve(new ExecutionError(exitStatus));
       }
 
       resolve({exitStatus, stdout, stderr});
     });
     // 'error' happens when the command is not available
     command.on('error', (err) => {
-      reject(err);
+      resolve(err);
     });
   });
 }

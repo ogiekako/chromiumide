@@ -48,12 +48,11 @@ export class DeviceInfo extends vscode.TreeItem {
 }
 
 export async function activateDutManager(context: vscode.ExtensionContext) {
-  try {
-    // We need 'version', because without args crosfleet exits with error 2.
-    await commonUtil.exec('crosfleet', ['version']);
-  } catch (error) {
+  // We need 'version', because without args crosfleet exits with error 2.
+  const crosfleetVersion = await commonUtil.exec('crosfleet', ['version']);
+  if (crosfleetVersion instanceof Error) {
     vscode.window.showWarningMessage(`DUT manager will not work,` +
-        ` because running 'crosfleet' failed: ${error}`);
+        ` because running 'crosfleet' failed: ${crosfleetVersion}`);
     return;
   }
 
@@ -213,6 +212,9 @@ async function crosfleetDutLease(opts?: LeaseOpts): Promise<Lease> {
   if (opts?.reason !== undefined) {
     args.push('-reason', opts?.reason);
   }
-  const {stdout} = await commonUtil.exec('crosfleet', args);
-  return JSON.parse(stdout) as Lease;
+  const res = await commonUtil.exec('crosfleet', args);
+  if (res instanceof Error) {
+    throw res;
+  }
+  return JSON.parse(res.stdout) as Lease;
 }

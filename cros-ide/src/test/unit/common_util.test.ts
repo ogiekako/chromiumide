@@ -88,11 +88,12 @@ describe('Job manager', () => {
 describe('Logging exec', () => {
   it('returns stdout and logs stderr', async () => {
     let logs = '';
-    const {stdout} = await commonUtil.exec('sh',
+    const res = await commonUtil.exec('sh',
         ['-c', 'echo foo; echo bar 1>&2'], log => {
           logs += log;
         });
-    assert.strictEqual(stdout, 'foo\n');
+    assert(!(res instanceof Error));
+    assert.strictEqual(res.stdout, 'foo\n');
     assert.strictEqual(logs, 'bar\n');
   });
 
@@ -105,32 +106,34 @@ describe('Logging exec', () => {
     assert.strictEqual(logs.length, 'foo\nbar\n'.length);
   });
 
-  it('throws error on non-zero exit status', async () => {
+  it('returns error on non-zero exit status when unrelated flags are set', async () => {
     let logs = '';
-    const p = commonUtil.exec('sh',
+    const res = await commonUtil.exec('sh',
         ['-c', 'echo foo 1>&2; exit 1'], log => {
           logs += log;
         }, {logStdout: true});
-    await assert.rejects(p);
+    assert(res instanceof commonUtil.ExecutionError);
     assert.strictEqual(logs, 'foo\n');
   });
 
-  it('throws error on non-zero exit status when no flags are specified', async () => {
+  it('returns error on non-zero exit status when no flags are specified', async () => {
     let logs = '';
-    const p = commonUtil.exec('sh',
+    const res = await commonUtil.exec('sh',
         ['-c', 'echo foo 1>&2; exit 1'], log => {
           logs += log;
         });
-    await assert.rejects(p);
+    assert(res instanceof commonUtil.ExecutionError);
     assert.strictEqual(logs, 'foo\n');
   });
 
   it('ignores non-zero exit status if ignoreNonZeroExit flag is true', async () => {
     let logs = '';
-    const {exitStatus, stdout, stderr} = await commonUtil.exec('sh',
+    const res = await commonUtil.exec('sh',
         ['-c', 'echo foo 1>&2; echo bar; exit 1'], log => {
           logs += log;
         }, {ignoreNonZeroExit: true});
+    assert(!(res instanceof Error));
+    const {exitStatus, stdout, stderr} = res;
     assert.strictEqual(exitStatus, 1);
     assert.strictEqual(stdout, 'bar\n');
     assert.strictEqual(stderr, 'foo\n');
@@ -139,17 +142,18 @@ describe('Logging exec', () => {
 
   it('appends new lines to log', async () => {
     let logs = '';
-    const {stdout} = await commonUtil.exec('sh',
+    const res = await commonUtil.exec('sh',
         ['-c', 'echo -n foo; echo -n bar 1>&2;'], log => {
           logs += log;
         }, {logStdout: true});
-    assert.strictEqual(stdout, 'foo');
+    assert(!(res instanceof Error));
+    assert.strictEqual(res.stdout, 'foo');
     assert.deepStrictEqual(logs.split('\n').sort(), ['', 'bar', 'foo']);
   });
 
-  it('throws error when the command fails', async () => {
-    const p = commonUtil.exec('does_not_exist', ['--version']);
-    await assert.rejects(p);
+  it('returns error when the command fails', async () => {
+    const res = await commonUtil.exec('does_not_exist', ['--version']);
+    assert(res instanceof Error);
   });
 });
 

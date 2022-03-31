@@ -78,8 +78,11 @@ class CompilationDatabase {
           return;
         }
         if (shouldRun) {
-          await commonUtil.exec('cros_workon', ['--board', board, 'start', pkg],
+          const res = await commonUtil.exec('cros_workon', ['--board', board, 'start', pkg],
               ideUtilities.getLogger().append);
+          if (res instanceof Error) {
+            throw res;
+          }
         }
 
         const {error} = await runEmerge(board, pkg);
@@ -103,9 +106,12 @@ class CompilationDatabase {
         }
 
         // Make the generated compilation database available from clangd.
-        await commonUtil.exec(
+        const res = await commonUtil.exec(
             'ln', ['-sf', filepath, path.join(MNT_HOST_SOURCE, sourceDir, 'compile_commands.json')],
             ideUtilities.getLogger().append);
+        if (res instanceof Error) {
+          throw res;
+        }
       } catch (e) {
         // TODO(oka): show error message for user to manually resolve problem
         // (e.g. compile error).
@@ -117,8 +123,11 @@ class CompilationDatabase {
 }
 
 async function workonList(board: string): Promise<string[]> {
-  const {stdout} = await commonUtil.exec('cros_workon', ['--board', board, 'list']);
-  return stdout.split('\n').filter(x => x !== '');
+  const res = await commonUtil.exec('cros_workon', ['--board', board, 'list']);
+  if (res instanceof Error) {
+    throw res;
+  }
+  return res.stdout.split('\n').filter(x => x !== '');
 }
 
 export type PersistentConsent = 'Never' | 'Always'
@@ -199,15 +208,14 @@ function runEmerge(board: string, pkg: string): Thenable<{error?: string}> {
     cancellable: false,
   }, (progress, token) => {
     async function f() {
-      try {
-        await commonUtil.exec('env',
-            ['USE=compilation_database', `emerge-${board}`, pkg],
-            ideUtilities.getLogger().append, {logStdout: true});
-        return {};
-      } catch (error) {
+      const res = await commonUtil.exec('env',
+          ['USE=compilation_database', `emerge-${board}`, pkg],
+          ideUtilities.getLogger().append, {logStdout: true});
+      if (res instanceof Error) {
         // TODO(b/223534220): Use error after the error message becomes useful.
         return {error: `emerge-${board} ${pkg} failed`};
       }
+      return {};
     };
     return f();
   });

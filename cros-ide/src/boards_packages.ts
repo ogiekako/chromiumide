@@ -65,9 +65,12 @@ function crosWorkonStop(pkg: Package) {
 }
 
 async function crosWorkon(boardName: string, cmd: string, pkgName: string) {
-  const {exitStatus, stderr} =
-      await commonUtil.exec('cros_workon', [`--board=${boardName}`, cmd, pkgName],
-          undefined, {ignoreNonZeroExit: true});
+  const res = await commonUtil.exec('cros_workon', [`--board=${boardName}`, cmd, pkgName],
+      undefined, {ignoreNonZeroExit: true});
+  if (res instanceof Error) {
+    throw res;
+  }
+  const {exitStatus, stderr} = res;
   if (exitStatus !== 0) {
     vscode.window.showErrorMessage(`cros_workon failed: ${stderr}`);
   }
@@ -128,6 +131,9 @@ class Package extends ChrootItem {
  * @returns Packages that are worked on.
  */
 async function getWorkedOnPackages(board: string): Promise<string[]> {
-  const {stdout} = await commonUtil.exec('cros_workon', ['--board', board, 'list']);
-  return stdout.split('\n').filter(x => x.trim() !== '');
+  const res = await commonUtil.exec('cros_workon', ['--board', board, 'list']);
+  if (res instanceof Error) {
+    throw res;
+  }
+  return res.stdout.split('\n').filter(x => x.trim() !== '');
 }
