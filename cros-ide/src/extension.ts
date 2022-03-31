@@ -16,6 +16,7 @@ import * as coverage from './coverage';
 import * as cppCodeCompletion from './cpp_code_completion';
 import * as crosLint from './cros_lint';
 import * as dutManager from './dut_management/dut_manager';
+import * as feedback from './metrics/feedback';
 import * as ideUtilities from './ide_utilities';
 import * as metrics from './metrics/metrics';
 import * as shortLinkProvider from './short_link_provider';
@@ -29,6 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
   cppCodeCompletion.activate(context);
   targetBoard.activate(context);
   bgTaskStatus.activate(context);
+  feedback.activate(context);
 
   if (ideUtilities.getConfigRoot().get<boolean>('underDevelopment.dutManager')) {
     dutManager.activateDutManager(context);
