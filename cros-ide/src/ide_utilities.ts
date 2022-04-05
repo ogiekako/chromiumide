@@ -65,12 +65,25 @@ export function sshFormatArgs(host: string, cmd: string, testingRsaPath: string,
 // Config section name for the target board.
 export const BOARD = 'board';
 
-export async function getOrSelectTargetBoard(): Promise<string | null> {
+/**
+ * Get the target board, or ask the user to select one.
+ *
+ * @returns The targe board name. null if the user ignores popup. NoBoardError if there is no
+ *   available board.
+ */
+export async function getOrSelectTargetBoard(): Promise<string | null | NoBoardError> {
   const board = getConfigRoot().get<string>(BOARD);
   if (board) {
     return board;
   }
   return await selectAndUpdateTargetBoard({suggestMostRecent: true});
+}
+
+export class NoBoardError extends Error {
+  constructor() {
+    super('no board has been setup; run setup_board for the board you want to use, ' +
+      'and revisit the editor');
+  }
 }
 
 /**
@@ -83,7 +96,7 @@ export async function getOrSelectTargetBoard(): Promise<string | null> {
  * TODO(oka): unit test this function (consider stubbing vscode APIs).
  */
 export async function selectAndUpdateTargetBoard(
-    config: {suggestMostRecent: boolean}): Promise<string | null> {
+    config: {suggestMostRecent: boolean}): Promise<string | null | NoBoardError> {
   const boards = await cros.getSetupBoardsRecentFirst();
   const board = await selectBoard(boards, config.suggestMostRecent);
 
@@ -94,11 +107,10 @@ export async function selectAndUpdateTargetBoard(
   return board;
 }
 
-async function selectBoard(boards: string[], suggestMostRecent: boolean): Promise<string | null> {
+async function selectBoard(
+    boards: string[], suggestMostRecent: boolean):Promise<string | null | NoBoardError> {
   if (boards.length === 0) {
-    await vscode.window.showErrorMessage('No board has been setup; run ' +
-        'setup_board for a board you want to work on.');
-    return null;
+    return new NoBoardError();
   }
   if (suggestMostRecent) {
     const mostRecent = boards[0];

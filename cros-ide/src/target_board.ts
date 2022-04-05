@@ -24,9 +24,14 @@ export function activate(context: vscode.ExtensionContext) {
   }));
   updateBoardStatus(boardStatusBarItem);
 
-  vscode.commands.registerCommand('cros-ide.selectBoard', () => {
-    ideUtilities.selectAndUpdateTargetBoard({suggestMostRecent: false})
-        .catch(console.error);
+  vscode.commands.registerCommand('cros-ide.selectBoard', async () => {
+    const board = await ideUtilities.selectAndUpdateTargetBoard({suggestMostRecent: false});
+    if (board instanceof ideUtilities.NoBoardError) {
+      await vscode.window.showErrorMessage(`Selecting board: ${board.message}`);
+      return;
+    }
+    // Type-check that errors are handled.
+    ((_: string | null) => {})(board);
   });
 }
 

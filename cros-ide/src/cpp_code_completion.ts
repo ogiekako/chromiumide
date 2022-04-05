@@ -65,7 +65,10 @@ class CompilationDatabase {
     const {sourceDir, pkg} = packageInfo;
 
     const board = await ideUtilities.getOrSelectTargetBoard();
-    if (!board) {
+    if (board instanceof ideUtilities.NoBoardError) {
+      await vscode.window.showErrorMessage(`Generate compilation database: ${board.message}`);
+      return;
+    } else if (board === null) {
       return;
     }
 
