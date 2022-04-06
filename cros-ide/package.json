@@ -200,7 +200,13 @@
       },
       {
         "view": "boards-packages",
-        "contents": "No boards have been set up yet. Visit [the developer guide](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#Select-a-board) to learn how to select a board and initialize the build."
+        "contents": "This view shows boards set up in the chroot and packages marked active with [cros_workon start](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#run-cros_workon-start). You can start and stop working on new packages from the UI. Selecting a new board and initializizing the build must be done on the command line. Visit [the developer guide](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#Select-a-board) to learn more.\n[Show Boards and Packages](command:cros-ide.dismissBoardsPkgsWelcome)",
+        "when":"config.cros-ide.boardsAndPackages.showWelcomeMessage"
+      },
+      {
+        "view": "boards-packages",
+        "contents": "No boards have been set up yet. Visit [the developer guide](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#Select-a-board) to learn how to select a board and initialize the build.",
+        "when": "!config.cros-ide.boardsAndPackages.showWelcomeMessage"
       }
     ],
     "configuration": {
@@ -209,6 +215,11 @@
         "cros-ide.board": {
           "type": "string",
           "description": "The board to use on commands such as emerge"
+        },
+        "cros-ide.boardsAndPackages.showWelcomeMessage": {
+          "type": "boolean",
+          "description": "Show a description of the view and a button to go to the actual content.",
+          "default": true
         },
         "cros-ide.codeSearch": {
           "type": "string",

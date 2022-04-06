@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from './common/common_util';
 import * as cros from './common/cros';
+import * as ideUtilities from './ide_utilities';
 
 export async function activate() {
   const boardPackageProvider = new BoardPackageProvider();
@@ -20,6 +21,14 @@ export async function activate() {
       () => boardPackageProvider.refresh(),
   );
 
+  vscode.commands.registerCommand(
+      'cros-ide.dismissBoardsPkgsWelcome', async () => {
+        await ideUtilities.getConfigRoot().update(
+            CONFIG_SHOW_WELCOME_MESSAGE, false, vscode.ConfigurationTarget.Global);
+        boardPackageProvider.refresh();
+      },
+  );
+
   vscode.window.registerTreeDataProvider(
       'boards-packages',
       boardPackageProvider,
@@ -27,6 +36,8 @@ export async function activate() {
 
   await createPackageWatches();
 }
+
+const CONFIG_SHOW_WELCOME_MESSAGE = 'boardsAndPackages.showWelcomeMessage';
 
 // TODO: Write a unit test for watching packages.
 async function createPackageWatches() {
@@ -87,6 +98,12 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   async getChildren(element?: ChrootItem): Promise<ChrootItem[]> {
+    // Welcome messages are shown when there are no elements, so return an empty result
+    // even if there are boards in the chroot message is dismissed.
+    if (ideUtilities.getConfigRoot().get(CONFIG_SHOW_WELCOME_MESSAGE)) {
+      return [];
+    }
+
     if (element === undefined) {
       return (await cros.getSetupBoardsAlphabetic()).map(x => new Board(x));
     }
@@ -94,7 +111,7 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
       return (await getWorkedOnPackages(element.name)).map(x =>
         new Package(element, x));
     }
-    return Promise.resolve([]);
+    return [];
   }
 
   getTreeItem(element: ChrootItem): vscode.TreeItem {
