@@ -92,7 +92,7 @@ class CompilationDatabase {
           }
         }
 
-        const error = await runEmerge(board, pkg);
+        const error = await this.runEmerge(board, pkg);
         if (error) {
           vscode.window.showErrorMessage(error.message);
           return;
@@ -120,13 +120,32 @@ class CompilationDatabase {
           throw res;
         }
 
-        this.statusManager.deleteError(STATUS_BAR_TASK_ID);
+        this.statusManager.setTask(STATUS_BAR_TASK_ID, bgTaskStatus.TaskStatus.OK);
       } catch (e) {
         ideUtilities.getLogger().appendLine((e as Error).message);
         console.error(e);
-        this.statusManager.addError(STATUS_BAR_TASK_ID);
+        this.statusManager.setTask(STATUS_BAR_TASK_ID, bgTaskStatus.TaskStatus.ERROR);
       }
     });
+  }
+
+  /** Runs emerge and shows a spinning progress indicator in the status bar. */
+  async runEmerge(board: string, pkg: string): Promise<Error|undefined> {
+    const task = `Building refs for ${pkg}`;
+    this.statusManager.setTask(task, bgTaskStatus.TaskStatus.RUNNING);
+
+    // TODO(b/228411680): Handle additional status bar items in StatusManager,
+    // so we don't have to do it here.
+    const progress = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+    progress.text = `$(sync~spin)Building refs for ${pkg}`;
+    progress.command = 'cros-ide.showIdeLog';
+    progress.show();
+    const res = await commonUtil.exec('env',
+        ['USE=compilation_database', `emerge-${board}`, pkg],
+        ideUtilities.getLogger().append, {logStdout: true});
+    progress.dispose();
+    this.statusManager.deleteTask(task);
+    return (res instanceof Error) ? res : undefined;
   }
 }
 
@@ -206,19 +225,6 @@ async function shouldRunCrosWorkon(board: string, pkg: string): Promise<{
     shouldRun: true,
     userConsent: ok,
   };
-}
-
-/** Runs emerge and shows a spinning progress indicator in the status bar. */
-async function runEmerge(board: string, pkg: string): Promise<Error|undefined> {
-  const progress = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-  progress.text = `$(sync~spin)Building refs for ${pkg}`;
-  progress.command = 'cros-ide.showIdeLog';
-  progress.show();
-  const res = await commonUtil.exec('env',
-      ['USE=compilation_database', `emerge-${board}`, pkg],
-      ideUtilities.getLogger().append, {logStdout: true});
-  progress.dispose();
-  return (res instanceof Error) ? res : undefined;
 }
 
 // Known source code location to package name mapping which supports

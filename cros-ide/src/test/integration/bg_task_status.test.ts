@@ -34,22 +34,42 @@ describe('Status Manager', () => {
     statusBarItem.dispose();
   });
 
-  it('changes status bar item when errors are added and removed', () => {
+  it('changes status bar item when tasks are added and removed', () => {
     assertShowsOk(statusBarItem);
 
-    statusManager.addError('error-A');
-    statusManager.addError('error-B');
+    statusManager.setTask('error-A', bgTaskStatus.TaskStatus.ERROR);
+    statusManager.setTask('error-B', bgTaskStatus.TaskStatus.ERROR);
     assertShowsError(statusBarItem);
 
-    statusManager.deleteError('error-A');
+    statusManager.deleteTask('error-A');
     assertShowsError(statusBarItem);
 
-    statusManager.deleteError('error-B');
+    statusManager.deleteTask('error-B');
     assertShowsOk(statusBarItem);
   });
 
-  it('allows deleting errors without adding them first', () => {
-    statusManager.deleteError('delete-before-adding');
+  it('allows deleting tasks without adding them first', () => {
+    statusManager.deleteTask('delete-before-adding');
     assertShowsOk(statusBarItem);
+  });
+
+  it('shows abbreviated status of tasks (running -> errors -> warnings -> ok)', () => {
+    statusManager.setTask('running', bgTaskStatus.TaskStatus.RUNNING);
+    statusManager.setTask('ok', bgTaskStatus.TaskStatus.OK);
+    statusManager.setTask('error', bgTaskStatus.TaskStatus.ERROR);
+    assert.deepStrictEqual(statusBarItem.text, '$(sync~spin) CrOS IDE');
+    assert.deepStrictEqual(statusBarItem.backgroundColor, errorBgColor);
+
+    statusManager.deleteTask('running');
+    assert.deepStrictEqual(statusBarItem.text, '$(error) CrOS IDE');
+    assert.deepStrictEqual(statusBarItem.backgroundColor, errorBgColor);
+
+    statusManager.deleteTask('error');
+    assert.deepStrictEqual(statusBarItem.text, '$(check) CrOS IDE');
+    assert.deepStrictEqual(statusBarItem.backgroundColor, undefined);
+
+    statusManager.deleteTask('ok');
+    assert.deepStrictEqual(statusBarItem.text, '$(check) CrOS IDE');
+    assert.deepStrictEqual(statusBarItem.backgroundColor, undefined);
   });
 });
