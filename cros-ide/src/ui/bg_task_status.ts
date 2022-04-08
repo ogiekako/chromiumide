@@ -6,7 +6,8 @@ import * as vscode from 'vscode';
 import * as ideUtilities from '../ide_utilities';
 
 /**
- *  Manages UI showing task status.
+ * Manages two UI elements showing task status: `StatusBarItem`, which is created here,
+ * and `cros-ide-status` view, which is defined in `package.json`.
  *
  * @returns `StatusManager` which allows other packages to create tasks with a status.
  */
@@ -20,10 +21,14 @@ export function activate(context: vscode.ExtensionContext): StatusManager {
   statusBarItem.command = 'cros-ide.showIdeLog';
   statusBarItem.show();
 
-  const statusBarHandler = new StatusBarHandler(statusBarItem);
-
   const statusManager = new StatusManagerImpl();
+
+  const statusBarHandler = new StatusBarHandler(statusBarItem);
   statusManager.onChange(statusBarHandler.refresh.bind(statusBarHandler));
+
+  const statusTreeData = new StatusTreeData();
+  statusManager.onChange(statusTreeData.refresh.bind(statusTreeData));
+  vscode.window.registerTreeDataProvider('cros-ide-status', statusTreeData);
 
   return statusManager;
 }
@@ -78,6 +83,16 @@ class StatusManagerImpl implements StatusManager {
   deleteTask(taskId: TaskId) {
     this.tasks.delete(taskId);
     this.handleChange();
+  }
+
+  getTasks(): TaskId[] {
+    return Array.from(this.tasks.keys());
+  }
+
+  getTaskData(taskId: TaskId): {status?: TaskStatus} {
+    return {
+      status: this.tasks.get(taskId),
+    };
   }
 
   private has(status: TaskStatus): boolean {
@@ -146,7 +161,36 @@ class StatusBarHandler {
   }
 }
 
+class StatusTreeData implements vscode.TreeDataProvider<TaskId> {
+  private statusManagerImpl?: StatusManagerImpl;
+
+  private onDidChangeTreeDataEmitter = new vscode.EventEmitter<TaskId | undefined | null | void>();
+  readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
+
+  getTreeItem(element: TaskId): vscode.TreeItem | Thenable<vscode.TreeItem> {
+    const taskData = this.statusManagerImpl!.getTaskData(element);
+    return new TaskTreeItem(element, taskData.status!);
+  }
+
+  getChildren(_element?: TaskId): vscode.ProviderResult<TaskId[]> {
+    return this.statusManagerImpl!.getTasks();
+  }
+
+  refresh(statusManagerImpl: StatusManagerImpl): void {
+    this.statusManagerImpl = statusManagerImpl;
+    this.onDidChangeTreeDataEmitter.fire();
+  }
+}
+
+class TaskTreeItem extends vscode.TreeItem {
+  constructor(readonly title: string, status: TaskStatus) {
+    super(title, vscode.TreeItemCollapsibleState.None);
+    this.iconPath = new vscode.ThemeIcon(getIcon(status));
+  }
+}
+
 export const TEST_ONLY = {
   StatusManagerImpl,
   StatusBarHandler,
+  StatusTreeData,
 };

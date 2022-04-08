@@ -135,6 +135,10 @@
         {
           "id": "boards-packages",
           "name": "Boards and Packages"
+        },
+        {
+          "id": "cros-ide-status",
+          "name": "IDE Status"
         }
       ]
     },

@@ -4,9 +4,10 @@
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import {TEST_ONLY, StatusManager, TaskStatus} from '../../ui/bg_task_status';
+import {TEST_ONLY, StatusManager, TaskId, TaskStatus}
+  from '../../ui/bg_task_status';
 
-const {StatusManagerImpl, StatusBarHandler} = TEST_ONLY;
+const {StatusManagerImpl, StatusBarHandler, StatusTreeData} = TEST_ONLY;
 
 describe('Background Task Status', () => {
   const errorBgColor = new vscode.ThemeColor('statusBarItem.errorBackground');
@@ -25,6 +26,7 @@ describe('Background Task Status', () => {
 
   let statusBarItem: vscode.StatusBarItem;
   let statusManager: StatusManager;
+  let statusTreeData: vscode.TreeDataProvider<TaskId>;
 
   beforeEach(() => {
     statusBarItem = vscode.window.createStatusBarItem();
@@ -33,7 +35,10 @@ describe('Background Task Status', () => {
     // We need an extra const , because there's no onChange in StatusManager.
     const sm = new StatusManagerImpl();
     sm.onChange(statusBarHandler.refresh.bind(statusBarHandler));
+    const std = new StatusTreeData();
+    sm.onChange(std.refresh.bind(std));
     statusManager = sm;
+    statusTreeData = std;
   });
 
   afterEach(() => {
@@ -77,5 +82,34 @@ describe('Background Task Status', () => {
     statusManager.deleteTask('ok');
     assert.deepStrictEqual(statusBarItem.text, '$(check) CrOS IDE');
     assert.deepStrictEqual(statusBarItem.backgroundColor, undefined);
+  });
+
+  it('implements TreeDataProvider.getChildren()', () => {
+    statusManager.setTask('task-1', TaskStatus.OK);
+    statusManager.setTask('task-2', TaskStatus.OK);
+
+    const children = statusTreeData.getChildren(undefined) as TaskId[];
+    assert.deepStrictEqual(children.sort(), ['task-1', 'task-2']);
+  });
+
+  it('provides TreeItems with status icons', () => {
+    statusManager.setTask('task-ok', TaskStatus.OK);
+    statusManager.setTask('task-error', TaskStatus.ERROR);
+    statusManager.setTask('task-running', TaskStatus.RUNNING);
+
+    const testCases: {
+      taskName: string,
+      iconId: string
+    }[] = [
+      {taskName: 'task-ok', iconId: 'check'},
+      {taskName: 'task-error', iconId: 'error'},
+      {taskName: 'task-running', iconId: 'sync~spin'},
+    ];
+    for (const tc of testCases) {
+      const treeItem = statusTreeData.getTreeItem(tc.taskName) as vscode.TreeItem;
+      assert.deepStrictEqual(treeItem.label, tc.taskName);
+      const icon = treeItem.iconPath! as vscode.ThemeIcon;
+      assert.deepStrictEqual(icon.id, tc.iconId);
+    }
   });
 });
