@@ -4,9 +4,11 @@
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as bgTaskStatus from '../../ui/bg_task_status';
+import {TEST_ONLY, StatusManager, TaskStatus} from '../../ui/bg_task_status';
 
-describe('Status Manager', () => {
+const {StatusManagerImpl, StatusBarHandler} = TEST_ONLY;
+
+describe('Background Task Status', () => {
   const errorBgColor = new vscode.ThemeColor('statusBarItem.errorBackground');
 
   function assertShowsError(statusBarItem: vscode.StatusBarItem) {
@@ -22,12 +24,16 @@ describe('Status Manager', () => {
   }
 
   let statusBarItem: vscode.StatusBarItem;
-  let statusManager: bgTaskStatus.StatusManager;
+  let statusManager: StatusManager;
 
   beforeEach(() => {
     statusBarItem = vscode.window.createStatusBarItem();
     statusBarItem.show();
-    statusManager = new bgTaskStatus.StatusManager(statusBarItem);
+    const statusBarHandler = new StatusBarHandler(statusBarItem);
+    // We need an extra const , because there's no onChange in StatusManager.
+    const sm = new StatusManagerImpl();
+    sm.onChange(statusBarHandler.refresh.bind(statusBarHandler));
+    statusManager = sm;
   });
 
   afterEach(() => {
@@ -37,8 +43,8 @@ describe('Status Manager', () => {
   it('changes status bar item when tasks are added and removed', () => {
     assertShowsOk(statusBarItem);
 
-    statusManager.setTask('error-A', bgTaskStatus.TaskStatus.ERROR);
-    statusManager.setTask('error-B', bgTaskStatus.TaskStatus.ERROR);
+    statusManager.setTask('error-A', TaskStatus.ERROR);
+    statusManager.setTask('error-B', TaskStatus.ERROR);
     assertShowsError(statusBarItem);
 
     statusManager.deleteTask('error-A');
@@ -54,9 +60,9 @@ describe('Status Manager', () => {
   });
 
   it('shows abbreviated status of tasks (running -> errors -> warnings -> ok)', () => {
-    statusManager.setTask('running', bgTaskStatus.TaskStatus.RUNNING);
-    statusManager.setTask('ok', bgTaskStatus.TaskStatus.OK);
-    statusManager.setTask('error', bgTaskStatus.TaskStatus.ERROR);
+    statusManager.setTask('running', TaskStatus.RUNNING);
+    statusManager.setTask('ok', TaskStatus.OK);
+    statusManager.setTask('error', TaskStatus.ERROR);
     assert.deepStrictEqual(statusBarItem.text, '$(sync~spin) CrOS IDE');
     assert.deepStrictEqual(statusBarItem.backgroundColor, errorBgColor);
 

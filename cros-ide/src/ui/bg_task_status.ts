@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import * as ideUtilities from '../ide_utilities';
 
 /**
- * Manages UI showing task status.
+ *  Manages UI showing task status.
  *
  * @returns `StatusManager` which allows other packages to create tasks with a status.
  */
@@ -20,7 +20,12 @@ export function activate(context: vscode.ExtensionContext): StatusManager {
   statusBarItem.command = 'cros-ide.showIdeLog';
   statusBarItem.show();
 
-  return new StatusManager(statusBarItem);
+  const statusBarHandler = new StatusBarHandler(statusBarItem);
+
+  const statusManager = new StatusManagerImpl();
+  statusManager.onChange(statusBarHandler.refresh.bind(statusBarHandler));
+
+  return statusManager;
 }
 
 export enum TaskStatus {
@@ -33,7 +38,18 @@ export enum TaskStatus {
   RUNNING
 }
 
-type TaskId = string
+function getIcon(ts: TaskStatus): string {
+  switch (ts) {
+    case TaskStatus.OK:
+      return 'check';
+    case TaskStatus.ERROR:
+      return 'error';
+    case TaskStatus.RUNNING:
+      return 'sync~spin';
+  }
+}
+
+export type TaskId = string
 
 /**
  * Reports the status of background tasks indicating if the IDE works well or not.
@@ -41,24 +57,60 @@ type TaskId = string
  *
  * The status is shown in an abbreviated for in the status bar.
  */
-// TODO(228411680): Clicking on the status bar item takes the user to a longer view,
+// TODO(b:228411680): Clicking on the status bar item takes the user to a longer view,
 // with a detailed view of all available tasks.
-export class StatusManager {
-  private tasks = new Map<TaskId, TaskStatus>();
+export interface StatusManager {
+  setTask(taskId: TaskId, status: TaskStatus): void;
+  deleteTask(taskId: TaskId): void;
+}
 
-  constructor(private readonly statusBarItem: vscode.StatusBarItem) {
-    this.refresh();
-  }
+type ChangeHandler = (arg: StatusManagerImpl) => void;
+
+class StatusManagerImpl implements StatusManager {
+  private tasks = new Map<TaskId, TaskStatus>();
+  private handlers: ChangeHandler[] = [];
 
   setTask(taskId: TaskId, status: TaskStatus) {
     this.tasks.set(taskId, status);
-    this.refresh();
+    this.handleChange();
   }
 
   deleteTask(taskId: TaskId) {
     this.tasks.delete(taskId);
-    this.refresh();
+    this.handleChange();
   }
+
+  private has(status: TaskStatus): boolean {
+    for (const s of this.tasks.values()) {
+      if (s === status) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  hasError(): boolean {
+    return this.has(TaskStatus.ERROR);
+  }
+
+  hasRunning(): boolean {
+    return this.has(TaskStatus.RUNNING);
+  }
+
+  onChange(handler: ChangeHandler) {
+    this.handlers.push(handler);
+    handler(this);
+  }
+
+  handleChange() {
+    for (const handler of this.handlers) {
+      handler(this);
+    }
+  }
+}
+
+class StatusBarHandler {
+  constructor(private readonly statusBarItem: vscode.StatusBarItem) {}
 
   /**
    * Adjusts appearance of the status bar based on status of tasks.
@@ -69,29 +121,32 @@ export class StatusManager {
    * The icon is a spinning circle if some tasks are running. If nothing is running at the moment,
    * then the icon is chosen based on the presence or lack of errors.
    */
-  private refresh() {
+  refresh(statusManagerImpl: StatusManagerImpl) {
     let icon: string;
     let background: vscode.ThemeColor|undefined;
     let tooltip: string|undefined;
 
-    const statusSet = new Set(this.tasks.values());
-
-    if (statusSet.has(TaskStatus.ERROR)) {
-      icon = '$(error)';
+    if (statusManagerImpl.hasError()) {
+      icon = `$(${getIcon(TaskStatus.ERROR)})`;
       background = new vscode.ThemeColor('statusBarItem.errorBackground');
       tooltip = 'Background Tasks (Errors)';
     } else {
-      icon = '$(check)';
+      icon = `$(${getIcon(TaskStatus.OK)})`;
       background = undefined;
       tooltip = 'Background Tasks (No Problems)';
     }
     this.statusBarItem.backgroundColor = background;
 
-    if (statusSet.has(TaskStatus.RUNNING)) {
-      icon = '$(sync~spin)';
+    if (statusManagerImpl.hasRunning()) {
+      icon = `$(${getIcon(TaskStatus.RUNNING)})`;
       tooltip = 'Background Tasks (Running)';
     }
     this.statusBarItem.text = `${icon} CrOS IDE`;
     this.statusBarItem.tooltip = tooltip;
   }
 }
+
+export const TEST_ONLY = {
+  StatusManagerImpl,
+  StatusBarHandler,
+};
