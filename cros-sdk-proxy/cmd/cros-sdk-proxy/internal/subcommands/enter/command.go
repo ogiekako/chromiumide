@@ -126,7 +126,27 @@ var Command = &cli.Command{
 							break
 						}
 
-						answers, err := challenge("", "", []string{"sudo password to enter chroot: "}, []bool{false})
+						// HACK: "sudo's password: " here is a workaround for VSCode bug.
+						// https://github.com/microsoft/vscode-remote-release/issues/6594
+						//
+						// VSCode uses the askpass mechanism to properly support SSH
+						// keyboard interactive authentication *only if* the setting
+						// remote.SSH.useLocalServer is enabled. If the setting is
+						// disabled, VSCode scrapes SSH command output to look for
+						// "<username>'s password: " to show the password prompt.
+						//
+						// By passing "sudo's password: " here as an instruction text,
+						// SSH client prints the following to the output:
+						//
+						//  sudo's password:
+						//  (user@host) Running sudo to enter CrOS SDK:
+						//
+						// This output is recognized by the scraper and VSCode shows
+						// the password prompt titled "Enter password for sudo".
+						//
+						// TODO(b/227606493): Remove this hack after the upstream bug
+						// is fixed.
+						answers, err := challenge("", "sudo's password: ", []string{"sudo password to enter chroot: "}, []bool{false})
 						if err == nil && len(answers) == 1 {
 							io.WriteString(conn, answers[0])
 						}
