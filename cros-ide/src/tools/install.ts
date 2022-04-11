@@ -173,6 +173,14 @@ export async function installDev(exe: string) {
   });
 }
 
+/**
+ * Install CrOS IDE extension.
+ *
+ * @param exe Path to the VSCode executable
+ * @param forceVersion Optional parameter specifying the version to install
+ *
+ * @throws Error if install fails
+ */
 export async function install(exe: string, forceVersion?: Version) {
   const src = await findArchive(forceVersion);
 
