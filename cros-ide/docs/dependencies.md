@@ -39,6 +39,11 @@ URL: https://github.com/mochajs/mocha\
 Remarks:\
 License: MIT
 
+Name: SinonJS\
+URL: https://github.com/sinonjs/sinon\
+Remarks:\
+License: BSD-3-Clause
+
 Name: ts-loader\
 URL: https://github.com/TypeStrong/ts-loader\
 Remarks:\

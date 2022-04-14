@@ -209,7 +209,7 @@
       {
         "view": "boards-packages",
         "contents": "This view shows boards set up in the chroot and packages marked active with [cros_workon start](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#run-cros_workon-start). You can start and stop working on new packages from the UI. Selecting a new board and initializizing the build must be done on the command line. Visit [the developer guide](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#Select-a-board) to learn more.\n[Show Boards and Packages](command:cros-ide.dismissBoardsPkgsWelcome)",
-        "when":"config.cros-ide.boardsAndPackages.showWelcomeMessage"
+        "when": "config.cros-ide.boardsAndPackages.showWelcomeMessage"
       },
       {
         "view": "boards-packages",
@@ -313,6 +313,7 @@
     "@types/glob": "^7.1.4",
     "@types/mocha": "^9.0.0",
     "@types/node": "^14.17.6",
+    "@types/sinon": "^10.0.11",
     "@types/uuid": "^8.3.4",
     "@types/vscode": "^1.60.0",
     "@typescript-eslint/eslint-plugin": "^5.1.0",
@@ -322,6 +323,7 @@
     "eslint-config-google": "^0.14.0",
     "glob": "^7.1.7",
     "mocha": "^9.1.3",
+    "sinon": "^13.0.2",
     "ts-loader": "^9.2.6",
     "typescript": "^4.5.5",
     "webpack": "^5.71.0",
