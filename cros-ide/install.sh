@@ -19,5 +19,5 @@ if [[ $(node --version) != ${min_node_ver}* ]]; then
   ${min_node_ver} or higher to avoid unexpected issues."
 fi
 
-npm list typescript || npm ci
+npm ci || exit $?
 npx ts-node ./src/tools/install.ts "$@"
