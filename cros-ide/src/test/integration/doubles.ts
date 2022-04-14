@@ -32,6 +32,7 @@ function newVscodeSpy() {
     window: jasmine.createSpyObj<SpiableVscodeWindow>('vscode.window', [
       'showErrorMessage',
       'showInformationMessage',
+      'showInputBox',
     ]),
     workspace: jasmine.createSpyObj<typeof vscode.workspace>(
       'vscode.workspace',

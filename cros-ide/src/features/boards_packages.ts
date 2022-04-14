@@ -76,11 +76,11 @@ async function crosWorkonStart(board: Board) {
     return;
   }
 
-  crosWorkon(board.name, 'start', pkgName);
+  await crosWorkon(board.name, 'start', pkgName);
 }
 
-function crosWorkonStop(pkg: Package) {
-  crosWorkon(pkg.board.name, 'stop', pkg.name);
+async function crosWorkonStop(pkg: Package) {
+  await crosWorkon(pkg.board.name, 'stop', pkg.name);
 }
 
 async function crosWorkon(boardName: string, cmd: string, pkgName: string) {
@@ -91,7 +91,8 @@ async function crosWorkon(boardName: string, cmd: string, pkgName: string) {
     {logStdout: true, ignoreNonZeroExit: true}
   );
   if (res instanceof Error) {
-    throw res;
+    vscode.window.showErrorMessage(res.message);
+    return;
   }
   const {exitStatus, stderr} = res;
   if (exitStatus !== 0) {
@@ -172,3 +173,10 @@ async function getWorkedOnPackages(board: string): Promise<string[]> {
   }
   return res.stdout.split('\n').filter(x => x.trim() !== '');
 }
+
+export const TEST_ONLY = {
+  Board,
+  Package,
+  crosWorkonStart,
+  crosWorkonStop,
+};
