@@ -22,8 +22,10 @@ async function main(commitHash: string | undefined) {
   }
 
   if (commonUtil.isInsideChroot()) {
-    throw new Error('Cannot test cros-ide inside chroot; please run repo ' +
-      'upload outside chroot');
+    throw new Error(
+      'Cannot test cros-ide inside chroot; please run repo ' +
+        'upload outside chroot'
+    );
   }
 
   const gitStatus = await commonUtil.exec('git', ['status', '--short']);
@@ -31,8 +33,9 @@ async function main(commitHash: string | undefined) {
     throw gitStatus;
   }
   if (gitStatus.stdout) {
-    throw new Error('Tests cannot run on dirty git status ' +
-      '(consider running git stash)');
+    throw new Error(
+      'Tests cannot run on dirty git status ' + '(consider running git stash)'
+    );
   }
 
   const nodeVersion = await commonUtil.exec('node', ['--version']);
@@ -40,11 +43,17 @@ async function main(commitHash: string | undefined) {
     throw nodeVersion;
   }
   if (!nodeVersion.stdout.startsWith('v14.')) {
-    throw new Error('Node version should be v14. (Hint: use nvm to install the version locally)');
+    throw new Error(
+      'Node version should be v14. (Hint: use nvm to install the version locally)'
+    );
   }
 
-  const npmRunTest = await commonUtil.exec('npm', ['run', 'test'], console.error,
-      {logStdout: true});
+  const npmRunTest = await commonUtil.exec(
+    'npm',
+    ['run', 'test'],
+    console.error,
+    {logStdout: true}
+  );
   if (npmRunTest instanceof Error) {
     throw npmRunTest;
   }

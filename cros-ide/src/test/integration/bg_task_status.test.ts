@@ -4,8 +4,12 @@
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import {TEST_ONLY, StatusManager, TaskId, TaskStatus}
-  from '../../ui/bg_task_status';
+import {
+  TEST_ONLY,
+  StatusManager,
+  TaskId,
+  TaskStatus,
+} from '../../ui/bg_task_status';
 
 const {StatusManagerImpl, StatusBarHandler, StatusTreeData} = TEST_ONLY;
 
@@ -20,7 +24,10 @@ describe('Background Task Status', () => {
 
   function assertShowsOk(statusBarItem: vscode.StatusBarItem) {
     assert.deepStrictEqual(statusBarItem.text, '$(check) CrOS IDE');
-    assert.deepStrictEqual(statusBarItem.tooltip, 'Background Tasks (No Problems)');
+    assert.deepStrictEqual(
+      statusBarItem.tooltip,
+      'Background Tasks (No Problems)'
+    );
     assert.deepStrictEqual(statusBarItem.backgroundColor, undefined);
   }
 
@@ -98,15 +105,17 @@ describe('Background Task Status', () => {
     statusManager.setTask('task-running', {status: TaskStatus.RUNNING});
 
     const testCases: {
-      taskName: string,
-      iconId: string
+      taskName: string;
+      iconId: string;
     }[] = [
       {taskName: 'task-ok', iconId: 'check'},
       {taskName: 'task-error', iconId: 'error'},
       {taskName: 'task-running', iconId: 'sync~spin'},
     ];
     for (const tc of testCases) {
-      const treeItem = statusTreeData.getTreeItem(tc.taskName) as vscode.TreeItem;
+      const treeItem = statusTreeData.getTreeItem(
+        tc.taskName
+      ) as vscode.TreeItem;
       assert.deepStrictEqual(treeItem.label, tc.taskName);
       const icon = treeItem.iconPath! as vscode.ThemeIcon;
       assert.deepStrictEqual(icon.id, tc.iconId);

@@ -17,7 +17,10 @@ export async function run(_context: vscode.ExtensionContext) {
   const latest = (await install.findArchive()).version;
 
   if (install.compareVersion(installed, latest) < 0) {
-    showInstallPrompt(install.versionToString(installed), install.versionToString(latest));
+    showInstallPrompt(
+      install.versionToString(installed),
+      install.versionToString(latest)
+    );
   }
 }
 
@@ -25,8 +28,10 @@ const INSTALL = 'Install';
 
 export async function showInstallPrompt(installed: string, available: string) {
   const selection = await vscode.window.showInformationMessage(
-      `New version of CrOS IDE is available (installed: ${installed}, available: ${available}).`,
-      INSTALL, 'Dismiss');
+    `New version of CrOS IDE is available (installed: ${installed}, available: ${available}).`,
+    INSTALL,
+    'Dismiss'
+  );
   if (selection !== INSTALL) {
     return;
   }
@@ -58,7 +63,8 @@ export async function showInstallPrompt(installed: string, available: string) {
     }
   }
   await vscode.window.showInformationMessage(
-      'Please reload the window to finish updating CrOS IDE');
+    'Please reload the window to finish updating CrOS IDE'
+  );
 }
 
 const UPDATE_MANUALLY = 'Update manually';
@@ -66,8 +72,12 @@ const UPDATE_MANUALLY = 'Update manually';
 async function handleFailure(e: Error) {
   // TODO(oka): add an option to open issue tracker using cros-ide.fileIdeBug command.
   const selection = await vscode.window.showErrorMessage(
-      `Failed to install; please file a bug: ${e.message}`, UPDATE_MANUALLY);
+    `Failed to install; please file a bug: ${e.message}`,
+    UPDATE_MANUALLY
+  );
   if (selection === UPDATE_MANUALLY) {
-    vscode.env.openExternal(vscode.Uri.parse('http://go/cros-ide-quickstart#updating'));
+    vscode.env.openExternal(
+      vscode.Uri.parse('http://go/cros-ide-quickstart#updating')
+    );
   }
 }

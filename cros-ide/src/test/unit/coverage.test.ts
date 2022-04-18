@@ -9,10 +9,10 @@ import * as coverage from '../../features/coverage';
 import * as testing from '../testing';
 
 const coverageJsonContents =
-`{"data": [{ "files": [{
+  `{"data": [{ "files": [{
   "filename": "/build/amd64-generic/var/cache/portage/chromeos-base/chaps/out/Default/` +
-      `../../../../../../../tmp/portage/chromeos-base/chaps-0.0.1-r3594/work/chaps-0.0.1/chaps/` +
-      `slot_manager_impl.cc",
+  '../../../../../../../tmp/portage/chromeos-base/chaps-0.0.1-r3594/work/chaps-0.0.1/chaps/' +
+  `slot_manager_impl.cc",
   "segments": [
     [142, 50, 515, true, true, false],
     [147, 2, 0, false, false, false],
@@ -23,13 +23,14 @@ const coverageJsonContents =
 const coverageJsonPath =
   '/build/amd64-generic/build/coverage_data/chromeos-base/chaps-0/0.0.1-r3594/coverage.json';
 
-
 describe('Test coverage', () => {
-  let testRoot: string = '';
+  let testRoot = '';
 
   beforeAll(async () => {
     testRoot = await fs.promises.mkdtemp(os.tmpdir() + '/');
-    await testing.putFiles(testRoot, {[coverageJsonPath]: coverageJsonContents});
+    await testing.putFiles(testRoot, {
+      [coverageJsonPath]: coverageJsonContents,
+    });
   });
 
   afterAll(async () => {
@@ -38,9 +39,12 @@ describe('Test coverage', () => {
 
   it('ignores files not in platform2', async () => {
     assert.deepStrictEqual(
-        await coverage.readDocumentCoverage(
-            '/mnt/host/source/chromite/ide_tooling/cros-ide/package.cc', testRoot),
-        {});
+      await coverage.readDocumentCoverage(
+        '/mnt/host/source/chromite/ide_tooling/cros-ide/package.cc',
+        testRoot
+      ),
+      {}
+    );
   });
 
   // TODO(ttylenda): coverage.json not found
@@ -49,8 +53,10 @@ describe('Test coverage', () => {
 
   it('reads coverage data if it exists', async () => {
     const {covered: cov, uncovered: uncov} =
-        await coverage.readDocumentCoverage(
-            '/mnt/host/source/src/platform2/chaps/slot_manager_impl.cc', testRoot);
+      await coverage.readDocumentCoverage(
+        '/mnt/host/source/src/platform2/chaps/slot_manager_impl.cc',
+        testRoot
+      );
     assert.ok(cov);
     assert.ok(uncov);
   });

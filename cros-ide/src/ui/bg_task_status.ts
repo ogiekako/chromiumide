@@ -16,7 +16,9 @@ export function activate(_context: vscode.ExtensionContext): StatusManager {
     ideUtilities.getUiLogger().show();
   });
 
-  const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
+  const statusBarItem = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right
+  );
   statusBarItem.command = 'cros-ide-status.focus';
   statusBarItem.show();
 
@@ -35,7 +37,7 @@ export function activate(_context: vscode.ExtensionContext): StatusManager {
 export enum TaskStatus {
   OK,
   ERROR,
-  RUNNING
+  RUNNING,
 }
 
 function getIcon(ts: TaskStatus): string {
@@ -49,16 +51,16 @@ function getIcon(ts: TaskStatus): string {
   }
 }
 
-export type TaskId = string
+export type TaskId = string;
 
 export interface TaskData {
-  status: TaskStatus,
+  status: TaskStatus;
 
   /**
    * Command to be executed when the task is clicked in the UI. It can, for instance,
    * open a UI panel with logs.
    */
-  command?: vscode.Command
+  command?: vscode.Command;
 }
 
 /**
@@ -93,7 +95,7 @@ class StatusManagerImpl implements StatusManager {
     return Array.from(this.tasks.keys());
   }
 
-  getTaskData(taskId: TaskId): TaskData|undefined {
+  getTaskData(taskId: TaskId): TaskData | undefined {
     return this.tasks.get(taskId);
   }
 
@@ -140,8 +142,8 @@ class StatusBarHandler {
    */
   refresh(statusManagerImpl: StatusManagerImpl) {
     let icon: string;
-    let background: vscode.ThemeColor|undefined;
-    let tooltip: string|undefined;
+    let background: vscode.ThemeColor | undefined;
+    let tooltip: string | undefined;
 
     if (statusManagerImpl.hasError()) {
       icon = `$(${getIcon(TaskStatus.ERROR)})`;
@@ -166,7 +168,9 @@ class StatusBarHandler {
 class StatusTreeData implements vscode.TreeDataProvider<TaskId> {
   private statusManagerImpl?: StatusManagerImpl;
 
-  private onDidChangeTreeDataEmitter = new vscode.EventEmitter<TaskId | undefined | null | void>();
+  private onDidChangeTreeDataEmitter = new vscode.EventEmitter<
+    TaskId | undefined | null | void
+  >();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   getTreeItem(element: TaskId): vscode.TreeItem | Thenable<vscode.TreeItem> {
@@ -186,7 +190,11 @@ class StatusTreeData implements vscode.TreeDataProvider<TaskId> {
 }
 
 class TaskTreeItem extends vscode.TreeItem {
-  constructor(readonly title: string, status: TaskStatus, command?: vscode.Command) {
+  constructor(
+    readonly title: string,
+    status: TaskStatus,
+    command?: vscode.Command
+  ) {
     super(title, vscode.TreeItemCollapsibleState.None);
     this.iconPath = new vscode.ThemeIcon(getIcon(status));
     this.command = command;

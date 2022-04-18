@@ -13,24 +13,34 @@ import {ExecResult} from '../common/common_util';
  * `ExecResult`, can emulate return with stderr and non-zero exit status.
  * `Error` can be used to simulate that the command was not found.
  */
-type Handler = (args: string[]) => Promise<string|ExecResult|Error|undefined>;
+type Handler = (
+  args: string[]
+) => Promise<string | ExecResult | Error | undefined>;
 
-export function exactMatch(wantArgs: string[],
-    handle: () => Promise<string|ExecResult|Error>): Handler {
+export function exactMatch(
+  wantArgs: string[],
+  handle: () => Promise<string | ExecResult | Error>
+): Handler {
   return async args => {
-    if (wantArgs.length === args.length &&
-      wantArgs.every((x, i) => x === args[i])) {
+    if (
+      wantArgs.length === args.length &&
+      wantArgs.every((x, i) => x === args[i])
+    ) {
       return await handle();
     }
     return undefined;
   };
 }
 
-export function prefixMatch(wantPrefix: string[],
-    handle: (restArgs: string[]) => Promise<string>): Handler {
+export function prefixMatch(
+  wantPrefix: string[],
+  handle: (restArgs: string[]) => Promise<string>
+): Handler {
   return async args => {
-    if (wantPrefix.length <= args.length &&
-      wantPrefix.every((x, i) => x === args[i])) {
+    if (
+      wantPrefix.length <= args.length &&
+      wantPrefix.every((x, i) => x === args[i])
+    ) {
       return await handle(args.slice(wantPrefix.length));
     }
     return undefined;
@@ -52,15 +62,18 @@ export class FakeExec {
     this.handlers.get(name)!.push(handle);
     return this;
   }
-  async exec(name: string, args: string[],
-      _log?: (line: string) => void,
-      _opt?: { logStdout?: boolean }): Promise<ExecResult|Error> {
-    for (const handler of (this.handlers.get(name) || [])) {
+  async exec(
+    name: string,
+    args: string[],
+    _log?: (line: string) => void,
+    _opt?: {logStdout?: boolean}
+  ): Promise<ExecResult | Error> {
+    for (const handler of this.handlers.get(name) || []) {
       const result = await handler(args);
       if (result === undefined) {
         continue;
       }
-      if (typeof(result) === 'string') {
+      if (typeof result === 'string') {
         return {exitStatus: 0, stdout: result, stderr: ''};
       }
       return result;

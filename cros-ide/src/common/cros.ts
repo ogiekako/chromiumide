@@ -9,27 +9,34 @@ import * as path from 'path';
  * @returns Boards that have been set up, ordered by access time (newest to
  * oldest).
  */
-export async function getSetupBoardsRecentFirst(rootDir: string = '/'): Promise<string[]> {
+export async function getSetupBoardsRecentFirst(
+  rootDir = '/'
+): Promise<string[]> {
   return getSetupBoardsOrdered(
-      rootDir,
-      async (dir) => fs.promises.stat(dir),
-      (a, b) => b.atimeMs - a.atimeMs);
+    rootDir,
+    async dir => fs.promises.stat(dir),
+    (a, b) => b.atimeMs - a.atimeMs
+  );
 }
 
 /**
  * @returns Boards that have been set up in alphabetic order.
  */
-export async function getSetupBoardsAlphabetic(rootDir: string = '/'): Promise<string[]> {
+export async function getSetupBoardsAlphabetic(
+  rootDir = '/'
+): Promise<string[]> {
   return getSetupBoardsOrdered(
-      rootDir,
-      async (dir) => dir,
-      (a, b) => a.localeCompare(b));
+    rootDir,
+    async dir => dir,
+    (a, b) => a.localeCompare(b)
+  );
 }
 
 async function getSetupBoardsOrdered<T>(
-    rootDir: string = '/',
-    keyFn: (dir: string) => Promise<T>,
-    compareFn: (a: T, b: T) => number): Promise<string[]> {
+  rootDir = '/',
+  keyFn: (dir: string) => Promise<T>,
+  compareFn: (a: T, b: T) => number
+): Promise<string[]> {
   const build = path.join(rootDir, 'build');
 
   // /build does not exist outside chroot, which causes problems in tests.

@@ -18,12 +18,14 @@ module.exports = {
     // Thus disable the line width check in eslint.
     'max-len': 'off',
 
-    // Allow unused function arguments prefixed by an underscore.
-    '@typescript-eslint/no-unused-vars': ['error', {
-      'vars': 'all',
-      'args': 'after-used',
-      'ignoreRestSiblings': false,
-      'argsIgnorePattern': "^_"
-    }],
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        vars: 'all',
+        args: 'after-used',
+        ignoreRestSiblings: false,
+        argsIgnorePattern: '^_',
+      },
+    ],
   },
 };

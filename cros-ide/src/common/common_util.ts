@@ -17,10 +17,11 @@ export function isInsideChroot(): boolean {
 }
 
 class Task<T> {
-  constructor(readonly job: () => Promise<T>,
+  constructor(
+    readonly job: () => Promise<T>,
     readonly resolve: (x: T | null) => void,
-    readonly reject: (reason?: unknown) => void) {
-  }
+    readonly reject: (reason?: unknown) => void
+  ) {}
   cancel() {
     this.resolve(null);
   }
@@ -44,7 +45,7 @@ export class JobManager<T> {
   // True iff the a task is running.
   private running = false;
 
-  constructor() { }
+  constructor() {}
 
   /**
    * Pushes a job and returns a promise that is fulfilled after the job is
@@ -78,20 +79,20 @@ export class JobManager<T> {
 }
 
 export interface ExecResult {
-  exitStatus: number|null,
-  stdout: string,
-  stderr: string
+  exitStatus: number | null;
+  stdout: string;
+  stderr: string;
 }
 
 export interface ExecOptions {
   /** If true, stdout should be logged in addition to stderr, which is always logged. */
-  logStdout?: boolean,
+  logStdout?: boolean;
 
   /**
    * If the command exits with non-zero code, exec should return normally.
    * This changes the default behaviour, which is to return an error.
    */
-  ignoreNonZeroExit?: boolean,
+  ignoreNonZeroExit?: boolean;
 }
 
 /**
@@ -99,8 +100,13 @@ export interface ExecOptions {
  * and `exec` option was to return an error.
  */
 export class AbnormalExitError extends Error {
-  constructor(cmd: string, args: string[], exitStatus: number|null) {
-    super(`"${shutil.escapeArray([cmd, ...args])}" failed, exit status: ${exitStatus}`);
+  constructor(cmd: string, args: string[], exitStatus: number | null) {
+    super(
+      `"${shutil.escapeArray([
+        cmd,
+        ...args,
+      ])}" failed, exit status: ${exitStatus}`
+    );
   }
 }
 
@@ -127,9 +133,12 @@ export class ProcessError extends Error {
  * @param log Optional logging function.
  * @param opt Optional parameters. See `ExecOptions` for the description.
  */
-export function exec(name: string, args: string[],
-    log?: (line: string) => void,
-    opt?: ExecOptions): Promise<ExecResult|Error> {
+export function exec(
+  name: string,
+  args: string[],
+  log?: (line: string) => void,
+  opt?: ExecOptions
+): Promise<ExecResult | Error> {
   return execPtr(name, args, log, opt);
 }
 
@@ -143,9 +152,12 @@ export function setExecForTesting(fakeExec: typeof exec): () => void {
   };
 }
 
-function realExec(name: string, args: string[],
-    log?: (line: string) => void,
-    opt?: ExecOptions): Promise<ExecResult|Error> {
+function realExec(
+  name: string,
+  args: string[],
+  log?: (line: string) => void,
+  opt?: ExecOptions
+): Promise<ExecResult | Error> {
   return new Promise((resolve, _reject) => {
     if (log) {
       log(shutil.escapeArray([name, ...args]) + '\n');
@@ -177,7 +189,7 @@ function realExec(name: string, args: string[],
       stderr += data;
     });
 
-    command.on('close', (exitStatus) => {
+    command.on('close', exitStatus => {
       if (log && opt && opt.logStdout && remainingStdout) {
         log(remainingStdout + '\n');
       }
@@ -191,14 +203,15 @@ function realExec(name: string, args: string[],
       resolve({exitStatus, stdout, stderr});
     });
     // 'error' happens when the command is not available
-    command.on('error', (err) => {
+    command.on('error', err => {
       resolve(new ProcessError(name, args, err));
     });
   });
 }
 
 export async function withTempDir(
-    f: (tempDir: string) => Promise<void>): Promise<void> {
+  f: (tempDir: string) => Promise<void>
+): Promise<void> {
   let td: string | undefined;
   try {
     td = await fs.promises.mkdtemp(os.tmpdir() + '/');
@@ -214,11 +227,14 @@ export async function withTempDir(
  * Takes possibly blocking Thenable f and timeout millis, and returns a Thenable that is fulfilled
  * with f's value or undefined in case f doesn't return before the timeout.
  */
-export function withTimeout<T>(f: Thenable<T>, millis: number): Thenable<T | undefined> {
-  return Promise.race(
-      [
-        f,
-        new Promise<undefined>(resolve => setTimeout(() => resolve(undefined), millis)),
-      ],
-  );
+export function withTimeout<T>(
+  f: Thenable<T>,
+  millis: number
+): Thenable<T | undefined> {
+  return Promise.race([
+    f,
+    new Promise<undefined>(resolve =>
+      setTimeout(() => resolve(undefined), millis)
+    ),
+  ]);
 }

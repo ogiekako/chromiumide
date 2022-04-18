@@ -12,18 +12,23 @@ import * as vscode from 'vscode';
 // Rotate user ID every 180 days or less.
 const expirationInMs = 180 * 24 * 60 * 60 * 1000;
 
-const configPath = path.join(os.homedir(), '.config/chromite/cros-ide.google-analytics-uid');
-export function getConfigPath() : string {
+const configPath = path.join(
+  os.homedir(),
+  '.config/chromite/cros-ide.google-analytics-uid'
+);
+export function getConfigPath(): string {
   return configPath;
 }
 
 function isGoogler(): Promise<boolean> {
   return new Promise((resolve, _reject) => {
-    https.get('https://cit-cli-metrics.appspot.com/should-upload', res => {
-      resolve(res.statusCode === 200);
-    }).on('error', _error => {
-      resolve(false);
-    });
+    https
+      .get('https://cit-cli-metrics.appspot.com/should-upload', res => {
+        resolve(res.statusCode === 200);
+      })
+      .on('error', _error => {
+        resolve(false);
+      });
   });
 }
 
@@ -51,17 +56,22 @@ async function writeUserId(configPathFull: string, uid: string, date: Date) {
 
 // Read and return a valid user ID from config file. Return null if any error occurs, including file
 // does not exist, invalid config file format, or expired user ID.
-async function readUserId(configPathFull: string): Promise<string|null> {
+async function readUserId(configPathFull: string): Promise<string | null> {
   try {
-    const data = await fs.promises.readFile(configPathFull, {encoding: 'utf8', flag: 'r'});
+    const data = await fs.promises.readFile(configPathFull, {
+      encoding: 'utf8',
+      flag: 'r',
+    });
     const json = JSON.parse(data);
     console.log(json);
     if (!json) {
-      console.info(`Invalid user ID config file: not a JSON.`);
+      console.info('Invalid user ID config file: not a JSON.');
       return null;
     }
     if (!json.userid || !json.date) {
-      console.info(`Invalid user ID config file: does not contain userid or date.`);
+      console.info(
+        'Invalid user ID config file: does not contain userid or date.'
+      );
       return null;
     }
     const createDate = Date.parse(json.date);
@@ -77,8 +87,10 @@ async function readUserId(configPathFull: string): Promise<string|null> {
 
 // Return an active user ID, possibly by creating a new one if old one has expired or is not found.
 // Parameters are for testing purpose only.
-export async function readOrCreateUserId(rootDir: string = '/',
-    userId: () => Promise<string> = getUserId): Promise<string> {
+export async function readOrCreateUserId(
+  rootDir = '/',
+  userId: () => Promise<string> = getUserId
+): Promise<string> {
   const configPathFull = path.join(rootDir, configPath);
   let uid = await readUserId(configPathFull);
   if (!uid) {
@@ -89,9 +101,11 @@ export async function readOrCreateUserId(rootDir: string = '/',
 
 // Reset (or create new) user ID and return the new one.
 // Parameters are for testing purpose only.
-export async function resetUserId(rootDir: string = '/',
-    userId: () => Promise<string> = getUserId,
-    createTime: Date = new Date): Promise<string> {
+export async function resetUserId(
+  rootDir = '/',
+  userId: () => Promise<string> = getUserId,
+  createTime: Date = new Date()
+): Promise<string> {
   const configPathFull = path.join(rootDir, configPath);
   const uid = await userId();
   await writeUserId(configPathFull, uid, createTime);

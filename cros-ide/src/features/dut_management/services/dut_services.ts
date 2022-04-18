@@ -26,11 +26,15 @@ export async function crosfleetLeases(): Promise<dutManager.Leases> {
   return leases;
 }
 
-export async function queryHostVersion(host: string, testingRsaPath: string)
-: Promise<string> {
+export async function queryHostVersion(
+  host: string,
+  testingRsaPath: string
+): Promise<string> {
   ideutil.getUiLogger().appendLine('Querying host version');
-  const res = await commonUtil.exec('ssh',
-      ideutil.sshFormatArgs(host, 'cat /etc/lsb-release', testingRsaPath));
+  const res = await commonUtil.exec(
+    'ssh',
+    ideutil.sshFormatArgs(host, 'cat /etc/lsb-release', testingRsaPath)
+  );
 
   if (res instanceof Error) {
     throw new Error(`Failed to connect to ${host}`);

@@ -19,8 +19,9 @@ export class FleetDevicesProvider implements vscode.TreeDataProvider<string> {
   private leases: Map<string, CrosfleetDutInfo>;
   private readonly testingRsaPath: string;
 
-  private onDidChangeTreeDataEmitter =
-    new vscode.EventEmitter<string | undefined | null | void>();
+  private onDidChangeTreeDataEmitter = new vscode.EventEmitter<
+    string | undefined | null | void
+  >();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   constructor(testingRsaPath: string) {
@@ -33,12 +34,14 @@ export class FleetDevicesProvider implements vscode.TreeDataProvider<string> {
     // TODO: animations while we are loading?
     // Query duts.
     const leases = await dutServices.crosfleetLeases();
-    this.leases = new Map(leases.Leases.map(l => [
-      l.DUT.Hostname + '.cros',
-      {
-        hostname: l.DUT.Hostname + '.cros',
-      },
-    ]));
+    this.leases = new Map(
+      leases.Leases.map(l => [
+        l.DUT.Hostname + '.cros',
+        {
+          hostname: l.DUT.Hostname + '.cros',
+        },
+      ])
+    );
     this.onDidChangeTreeDataEmitter.fire();
 
     // Update versions in parallel.
@@ -50,13 +53,16 @@ export class FleetDevicesProvider implements vscode.TreeDataProvider<string> {
       const p = (async () => {
         let version;
         try {
-          version = await dutServices.queryHostVersion(dut.hostname, this.testingRsaPath);
+          version = await dutServices.queryHostVersion(
+            dut.hostname,
+            this.testingRsaPath
+          );
         } catch (_) {
           version = '???';
         }
         dut.version = version;
         this.onDidChangeTreeDataEmitter.fire();
-      })().catch((_) => { });
+      })().catch(_ => {});
       updateJobs.push(p);
     }
     return Promise.all(updateJobs);
@@ -74,7 +80,9 @@ export class FleetDevicesProvider implements vscode.TreeDataProvider<string> {
 
   getTreeItem(host: string): dutManager.DeviceInfo {
     return new dutManager.DeviceInfo(
-        host, this.leases.get(host)?.version || '');
+      host,
+      this.leases.get(host)?.version || ''
+    );
   }
 
   getChildren(parent?: string): string[] {

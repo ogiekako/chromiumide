@@ -15,40 +15,49 @@ describe('C++ code completion', () => {
         '/mnt/host/source/src/platform2/cros-disks/foo.cc': 'x',
         '/mnt/host/source/src/platform2/unknown_dir/foo.cc': 'x',
       });
-      assert.deepStrictEqual(await cppCodeCompletion.getPackage(
+      assert.deepStrictEqual(
+        await cppCodeCompletion.getPackage(
           path.join(td, '/mnt/host/source/src/platform2/cros-disks/foo.cc'),
-          path.join(td, '/mnt/host/source'),
-      ), {
-        sourceDir: 'src/platform2/cros-disks',
-        pkg: 'chromeos-base/cros-disks',
-      }, 'success');
+          path.join(td, '/mnt/host/source')
+        ),
+        {
+          sourceDir: 'src/platform2/cros-disks',
+          pkg: 'chromeos-base/cros-disks',
+        },
+        'success'
+      );
 
-      assert.deepStrictEqual(await cppCodeCompletion.getPackage(
+      assert.deepStrictEqual(
+        await cppCodeCompletion.getPackage(
           path.join(td, '/mnt/host/source/src/platform2/unknown_dir/foo.cc'),
-          path.join(td, '/mnt/host/source'),
-      ), null, 'unknown');
+          path.join(td, '/mnt/host/source')
+        ),
+        null,
+        'unknown'
+      );
 
-      assert.deepStrictEqual(await cppCodeCompletion.getPackage(
+      assert.deepStrictEqual(
+        await cppCodeCompletion.getPackage(
           path.join(td, '/mnt/host/source/not_exist'),
-          path.join(td, '/mnt/host/source'),
-      ), null, 'not exist');
+          path.join(td, '/mnt/host/source')
+        ),
+        null,
+        'not exist'
+      );
     });
   });
 
   it('obtains user consent to run commands', async () => {
-    const {
-      ALWAYS, NEVER, YES,
-      getUserConsent,
-    } = cppCodeCompletion.TEST_ONLY;
+    const {ALWAYS, NEVER, YES, getUserConsent} = cppCodeCompletion.TEST_ONLY;
     type TestCase = {
-      name: string,
-      current: cppCodeCompletion.UserConsent
-      ask: () => Promise<cppCodeCompletion.UserChoice | undefined>,
+      name: string;
+      current: cppCodeCompletion.UserConsent;
+      ask: () => Promise<cppCodeCompletion.UserChoice | undefined>;
       want: {
-        ok: boolean,
-        remember?: cppCodeCompletion.PersistentConsent,
-      },
-    }
+        ok: boolean;
+        remember?: cppCodeCompletion.PersistentConsent;
+      };
+    };
     const testCases: TestCase[] = [
       {
         name: 'Once and always',
@@ -106,7 +115,11 @@ describe('C++ code completion', () => {
       },
     ];
     for (const tc of testCases) {
-      assert.deepStrictEqual(await getUserConsent(tc.current, tc.ask), tc.want, tc.name);
+      assert.deepStrictEqual(
+        await getUserConsent(tc.current, tc.ask),
+        tc.want,
+        tc.name
+      );
     }
   });
 });

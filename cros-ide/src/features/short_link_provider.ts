@@ -6,9 +6,8 @@ import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
-      vscode.languages.registerDocumentLinkProvider(
-          '*',
-          new ShortLinkProvider()));
+    vscode.languages.registerDocumentLinkProvider('*', new ShortLinkProvider())
+  );
 }
 
 /**
@@ -19,20 +18,21 @@ export function activate(context: vscode.ExtensionContext) {
  */
 export class ShortLinkProvider implements vscode.DocumentLinkProvider {
   public provideDocumentLinks(
-      document: vscode.TextDocument, _token: vscode.CancellationToken)
-    : vscode.ProviderResult<vscode.DocumentLink[]> {
+    document: vscode.TextDocument,
+    _token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.DocumentLink[]> {
     // TODO(b/216429126): add caching
-    return this.extractLinks(document, shortLinkPattern, shortLinkUri)
-        .concat(
-            this.extractLinks(document, trackerBugPattern, trackerBugUri),
-            this.extractLinks(document, todoLdapPattern, todoLdapUri));
+    return this.extractLinks(document, shortLinkPattern, shortLinkUri).concat(
+      this.extractLinks(document, trackerBugPattern, trackerBugUri),
+      this.extractLinks(document, todoLdapPattern, todoLdapUri)
+    );
   }
 
   private extractLinks(
-      document: vscode.TextDocument,
-      pattern : RegExp,
-      generateUri: (match: RegExpMatchArray) => vscode.Uri,
-  ) : vscode.DocumentLink[] {
+    document: vscode.TextDocument,
+    pattern: RegExp,
+    generateUri: (match: RegExpMatchArray) => vscode.Uri
+  ): vscode.DocumentLink[] {
     const links: vscode.DocumentLink[] = [];
     const text = document.getText();
     let match: RegExpMatchArray | null;
@@ -40,10 +40,13 @@ export class ShortLinkProvider implements vscode.DocumentLinkProvider {
       // TODO(b/216429126): check when match.index can be undefined
       if (match.index) {
         const linkStart = document.positionAt(match.index);
-        const linkEnd = document.positionAt((match.index) + match[0].length);
-        links.push(new vscode.DocumentLink(
+        const linkEnd = document.positionAt(match.index + match[0].length);
+        links.push(
+          new vscode.DocumentLink(
             new vscode.Range(linkStart, linkEnd),
-            generateUri(match)));
+            generateUri(match)
+          )
+        );
       }
     }
     return links;
@@ -88,7 +91,8 @@ function todoLdapUri(match: RegExpMatchArray): vscode.Uri {
 //  - start of line
 //  - whitespace
 //  - match to '(', because links are often used in "TODO(link)"
-const shortLinkPattern = /(?<=^|\s|\()\b([a-z]{1,5}(?:\.com)?)\/([^)\s.,;'"]+)/g;
+const shortLinkPattern =
+  /(?<=^|\s|\()\b([a-z]{1,5}(?:\.com)?)\/([^)\s.,;'"]+)/g;
 
 // Extract the uri from matches to shortLinkPattern.
 function shortLinkUri(match: RegExpMatchArray): vscode.Uri {

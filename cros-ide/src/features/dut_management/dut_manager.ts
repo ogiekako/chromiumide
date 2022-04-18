@@ -61,130 +61,148 @@ export async function activateDutManager(context: vscode.ExtensionContext) {
 
   rsaKeyFixPermission(context);
   const testRsaPath = ideutil.getTestingRsaPath(context);
-  const localDevicesProvider = new localProvider.LocalDevicesProvider(testRsaPath);
-  const fleetDevicesProvider = new fleetProvider.FleetDevicesProvider(testRsaPath);
+  const localDevicesProvider = new localProvider.LocalDevicesProvider(
+    testRsaPath
+  );
+  const fleetDevicesProvider = new fleetProvider.FleetDevicesProvider(
+    testRsaPath
+  );
   const sessions = new Map<string, vnc.VncSession>();
 
   context.subscriptions.push(
-      vscode.commands.registerCommand('cros-ide.connectToHostForScreen',
-          async (host?: string) => {
-            // If the command is selected directly from the command palette,
-            // prompt the user for the host to connect to.
-            if (!host) {
-              host = await promptHost('Connect to Host');
-              if (!host) {
-                return;
-              }
-            }
-
-            // If there's an existing session, just reveal its panel.
-            const existingSession = sessions.get(host);
-            if (existingSession) {
-              existingSession.revealPanel();
-              return;
-            }
-
-            // Create a new session and store it to sessions.
-            const newSession = new vnc.VncSession(host, context);
-            sessions.set(host, newSession);
-            newSession.onDidDispose(() => {
-              sessions.delete(host!);
-            });
-
-            metrics.send({
-              category: 'dut',
-              action: 'connect to host',
-              label: 'screen',
-            });
-          }),
-      vscode.commands.registerCommand('cros-ide.connectToHostForShell',
-          async (host?: string) => {
-            // If the command is selected directly from the command palette,
-            // prompt the user for the host to connect to.
-            if (!host) {
-              host = await promptHost('Connect to Host');
-              if (!host) {
-                return;
-              }
-            }
-
-            // Create a new terminal.
-            const terminal = ideutil.createTerminalForHost(
-                host, 'CrOS: Shell', context);
-            terminal.show();
-
-            metrics.send({
-              category: 'dut',
-              action: 'connect to host',
-              label: 'shell',
-            });
-          }),
-      vscode.commands.registerCommand('cros-ide.addHost',
-          async () => {
-            const host = await promptHost('Add New Host');
-            if (!host) {
-              return;
-            }
-
-            const configRoot = ideutil.getConfigRoot();
-            const hosts = configRoot.get<string[]>('hosts') || [];
-            hosts.push(host);
-            configRoot.update(
-                'hosts', hosts, vscode.ConfigurationTarget.Global);
-
-            metrics.send({category: 'dut', action: 'add host'});
-          }),
-      vscode.commands.registerCommand('cros-ide.deleteHost',
-          async (host?: string) => {
-            // If the command is selected directly from the command palette,
-            // prompt the user for the host to connect to.
-            if (!host) {
-              host = await promptHost('Delete Host');
-              if (!host) {
-                return;
-              }
-            }
-
-            // Try deleting crossfleet first. If not found, then try deleting
-            // from "my devices"
-            if (!await fleetDevicesProvider.removeTreeItem(host)) {
-              const configRoot = ideutil.getConfigRoot();
-              const oldHosts = configRoot.get<string[]>('hosts') || [];
-              const newHosts = oldHosts.filter((h) => (h !== host));
-              configRoot.update(
-                  'hosts', newHosts, vscode.ConfigurationTarget.Global);
-            }
-            metrics.send({category: 'dut', action: 'delete'});
-          }),
-      vscode.commands.registerCommand('cros-ide.refreshCrosfleet',
-          () => {
-            fleetDevicesProvider.updateCache();
-          }),
-      vscode.commands.registerCommand('cros-ide.addFleetHost',
-          async () => {
-            const board = await promptBoard('Model');
-            await crosfleetDutLease({board});
-            fleetDevicesProvider.updateCache();
-          }),
-      vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('cros-ide')) {
-          localDevicesProvider.onConfigChanged();
+    vscode.commands.registerCommand(
+      'cros-ide.connectToHostForScreen',
+      async (host?: string) => {
+        // If the command is selected directly from the command palette,
+        // prompt the user for the host to connect to.
+        if (!host) {
+          host = await promptHost('Connect to Host');
+          if (!host) {
+            return;
+          }
         }
-      }),
-      vscode.window.registerTreeDataProvider(
-          'static-devices', localDevicesProvider),
-      vscode.window.registerTreeDataProvider(
-          'fleet-devices', fleetDevicesProvider),
+
+        // If there's an existing session, just reveal its panel.
+        const existingSession = sessions.get(host);
+        if (existingSession) {
+          existingSession.revealPanel();
+          return;
+        }
+
+        // Create a new session and store it to sessions.
+        const newSession = new vnc.VncSession(host, context);
+        sessions.set(host, newSession);
+        newSession.onDidDispose(() => {
+          sessions.delete(host!);
+        });
+
+        metrics.send({
+          category: 'dut',
+          action: 'connect to host',
+          label: 'screen',
+        });
+      }
+    ),
+    vscode.commands.registerCommand(
+      'cros-ide.connectToHostForShell',
+      async (host?: string) => {
+        // If the command is selected directly from the command palette,
+        // prompt the user for the host to connect to.
+        if (!host) {
+          host = await promptHost('Connect to Host');
+          if (!host) {
+            return;
+          }
+        }
+
+        // Create a new terminal.
+        const terminal = ideutil.createTerminalForHost(
+          host,
+          'CrOS: Shell',
+          context
+        );
+        terminal.show();
+
+        metrics.send({
+          category: 'dut',
+          action: 'connect to host',
+          label: 'shell',
+        });
+      }
+    ),
+    vscode.commands.registerCommand('cros-ide.addHost', async () => {
+      const host = await promptHost('Add New Host');
+      if (!host) {
+        return;
+      }
+
+      const configRoot = ideutil.getConfigRoot();
+      const hosts = configRoot.get<string[]>('hosts') || [];
+      hosts.push(host);
+      configRoot.update('hosts', hosts, vscode.ConfigurationTarget.Global);
+
+      metrics.send({category: 'dut', action: 'add host'});
+    }),
+    vscode.commands.registerCommand(
+      'cros-ide.deleteHost',
+      async (host?: string) => {
+        // If the command is selected directly from the command palette,
+        // prompt the user for the host to connect to.
+        if (!host) {
+          host = await promptHost('Delete Host');
+          if (!host) {
+            return;
+          }
+        }
+
+        // Try deleting crossfleet first. If not found, then try deleting
+        // from "my devices"
+        if (!(await fleetDevicesProvider.removeTreeItem(host))) {
+          const configRoot = ideutil.getConfigRoot();
+          const oldHosts = configRoot.get<string[]>('hosts') || [];
+          const newHosts = oldHosts.filter(h => h !== host);
+          configRoot.update(
+            'hosts',
+            newHosts,
+            vscode.ConfigurationTarget.Global
+          );
+        }
+        metrics.send({category: 'dut', action: 'delete'});
+      }
+    ),
+    vscode.commands.registerCommand('cros-ide.refreshCrosfleet', () => {
+      fleetDevicesProvider.updateCache();
+    }),
+    vscode.commands.registerCommand('cros-ide.addFleetHost', async () => {
+      const board = await promptBoard('Model');
+      await crosfleetDutLease({board});
+      fleetDevicesProvider.updateCache();
+    }),
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('cros-ide')) {
+        localDevicesProvider.onConfigChanged();
+      }
+    }),
+    vscode.window.registerTreeDataProvider(
+      'static-devices',
+      localDevicesProvider
+    ),
+    vscode.window.registerTreeDataProvider(
+      'fleet-devices',
+      fleetDevicesProvider
+    )
   );
 }
 
 /**
-  * Ensures that test_rsa key perms are 0600, otherwise cannot be used for ssh
-  */
+ * Ensures that test_rsa key perms are 0600, otherwise cannot be used for ssh
+ */
 async function rsaKeyFixPermission(context: vscode.ExtensionContext) {
   const rsaKeyPath = ideutil.getTestingRsaPath(context);
-  await fs.promises.chmod(rsaKeyPath, '0600').catch((_err) => {
-    vscode.window.showErrorMessage('Fatal: unable to update testing_rsa permission: ' + rsaKeyPath);
+  await fs.promises.chmod(rsaKeyPath, '0600').catch(_err => {
+    vscode.window.showErrorMessage(
+      'Fatal: unable to update testing_rsa permission: ' + rsaKeyPath
+    );
   });
 }
 
@@ -237,7 +255,11 @@ async function crosfleetDutLease(opts?: LeaseOpts): Promise<Lease> {
   }
   const res = await commonUtil.exec('crosfleet', args);
   if (res instanceof Error) {
-    metrics.send({category: 'crosfleet', action: 'lease dut', label: `Failed: {res.stderr}`});
+    metrics.send({
+      category: 'crosfleet',
+      action: 'lease dut',
+      label: 'Failed: {res.stderr}',
+    });
     throw res;
   }
   metrics.send({category: 'crosfleet', action: 'lease dut'});

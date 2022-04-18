@@ -7,63 +7,87 @@ import * as commonUtil from '../common/common_util';
 import * as bgTaskStatus from '../ui/bg_task_status';
 import * as metrics from '../features/metrics/metrics';
 
-export function activate(context: vscode.ExtensionContext,
-    statusManager: bgTaskStatus.StatusManager) {
+export function activate(
+  context: vscode.ExtensionContext,
+  statusManager: bgTaskStatus.StatusManager
+) {
   const log = vscode.window.createOutputChannel('CrOS IDE: Liner');
   vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => log.show());
 
   const collection = vscode.languages.createDiagnosticCollection('cros-lint');
   if (vscode.window.activeTextEditor) {
     updateCrosLintDiagnostics(
-        vscode.window.activeTextEditor.document, collection, statusManager, log);
+      vscode.window.activeTextEditor.document,
+      collection,
+      statusManager,
+      log
+    );
   }
   // TODO(ttylenda): Add integration test to verify that we run linters on events.
-  context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(
-      document => {
-        updateCrosLintDiagnostics(document, collection, statusManager, log);
-      }));
-  context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(
-      document => {
-        updateCrosLintDiagnostics(document, collection, statusManager, log);
-      }));
-  context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(
-      document => {
-        collection.delete(document.uri);
-      }));
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenTextDocument(document => {
+      updateCrosLintDiagnostics(document, collection, statusManager, log);
+    })
+  );
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument(document => {
+      updateCrosLintDiagnostics(document, collection, statusManager, log);
+    })
+  );
+  context.subscriptions.push(
+    vscode.workspace.onDidCloseTextDocument(document => {
+      collection.delete(document.uri);
+    })
+  );
 }
 
 /** Describes how to run a linter and parse its output. */
 interface LintConfig {
   executable: string;
-  arguments(path: string) : string[];
-  parse(stdout: string, stderr: string, document: vscode.TextDocument)
-      : vscode.Diagnostic[];
+  arguments(path: string): string[];
+  parse(
+    stdout: string,
+    stderr: string,
+    document: vscode.TextDocument
+  ): vscode.Diagnostic[];
 }
 
 const GNLINT_PATH = '~/chromiumos/src/platform2/common-mk/gnlint.py';
 
 // Don't forget to update package.json when adding more languages.
 const lintConfigs = new Map<string, LintConfig>([
-  ['cpp', {
-    executable: 'cros',
-    arguments: (path: string) => ['lint', path],
-    parse: parseCrosLintCpp,
-  }],
-  ['gn', {
-    executable: GNLINT_PATH,
-    arguments: (path: string) => [path],
-    parse: parseCrosLintGn,
-  }],
-  ['python', {
-    executable: 'cros',
-    arguments: (path: string) => ['lint', path],
-    parse: parseCrosLintPython,
-  }],
-  ['shellscript', {
-    executable: 'cros',
-    arguments: (path: string) => ['lint', '--output=parseable', path],
-    parse: parseCrosLintShell,
-  }],
+  [
+    'cpp',
+    {
+      executable: 'cros',
+      arguments: (path: string) => ['lint', path],
+      parse: parseCrosLintCpp,
+    },
+  ],
+  [
+    'gn',
+    {
+      executable: GNLINT_PATH,
+      arguments: (path: string) => [path],
+      parse: parseCrosLintGn,
+    },
+  ],
+  [
+    'python',
+    {
+      executable: 'cros',
+      arguments: (path: string) => ['lint', path],
+      parse: parseCrosLintPython,
+    },
+  ],
+  [
+    'shellscript',
+    {
+      executable: 'cros',
+      arguments: (path: string) => ['lint', '--output=parseable', path],
+      parse: parseCrosLintShell,
+    },
+  ],
 ]);
 
 const LINTER_TASK_ID = 'Linter';
@@ -75,28 +99,35 @@ const SHOW_LOG_COMMAND: vscode.Command = {
 
 // TODO(ttylenda): Consider making it a class and move statusManager and log to the constructor.
 async function updateCrosLintDiagnostics(
-    document: vscode.TextDocument,
-    collection: vscode.DiagnosticCollection,
-    statusManager: bgTaskStatus.StatusManager,
-    log: vscode.OutputChannel): Promise<void> {
+  document: vscode.TextDocument,
+  collection: vscode.DiagnosticCollection,
+  statusManager: bgTaskStatus.StatusManager,
+  log: vscode.OutputChannel
+): Promise<void> {
   if (document && document.uri.scheme === 'file') {
     const lintConfig = lintConfigs.get(document.languageId);
     if (lintConfig) {
       const res = await commonUtil.exec(
-          lintConfig.executable, lintConfig.arguments(document.uri.fsPath),
-          log.append,
-          {ignoreNonZeroExit: true, logStdout: true});
+        lintConfig.executable,
+        lintConfig.arguments(document.uri.fsPath),
+        log.append,
+        {ignoreNonZeroExit: true, logStdout: true}
+      );
       if (res instanceof Error) {
         log.append(res.message);
-        statusManager.setTask(LINTER_TASK_ID,
-            {status: bgTaskStatus.TaskStatus.ERROR, command: SHOW_LOG_COMMAND});
+        statusManager.setTask(LINTER_TASK_ID, {
+          status: bgTaskStatus.TaskStatus.ERROR,
+          command: SHOW_LOG_COMMAND,
+        });
         return;
       }
       const {stdout, stderr} = res;
       const diagnostics = lintConfig.parse(stdout, stderr, document);
       collection.set(document.uri, diagnostics);
-      statusManager.setTask(LINTER_TASK_ID,
-          {status: bgTaskStatus.TaskStatus.OK, command: SHOW_LOG_COMMAND});
+      statusManager.setTask(LINTER_TASK_ID, {
+        status: bgTaskStatus.TaskStatus.OK,
+        command: SHOW_LOG_COMMAND,
+      });
       metrics.send({
         category: 'cros lint',
         action: 'update diagnostics',
@@ -110,9 +141,11 @@ async function updateCrosLintDiagnostics(
 }
 
 export function parseCrosLintCpp(
-    stdout: string, stderr: string, document: vscode.TextDocument)
-  :vscode.Diagnostic[] {
-  const lineRE = /^([^ \n]+):([0-9]+):  (.*)  \[([^ ]+)\] \[([1-5])\]/gm;
+  stdout: string,
+  stderr: string,
+  document: vscode.TextDocument
+): vscode.Diagnostic[] {
+  const lineRE = /^([^ \n]+):([0-9]+): {2}(.*) {2}\[([^ ]+)\] \[([1-5])\]/gm;
   const diagnostics: vscode.Diagnostic[] = [];
   let match: RegExpExecArray | null;
   // stdout and stderr are merged, because we saw that warnings can go to
@@ -136,8 +169,11 @@ export function parseCrosLintCpp(
 }
 
 // Parse output from platform2/common-mk/gnlint.py on a GN file.
-export function parseCrosLintGn(_stdout: string, stderr: string, document: vscode.TextDocument)
-: vscode.Diagnostic[] {
+export function parseCrosLintGn(
+  _stdout: string,
+  stderr: string,
+  document: vscode.TextDocument
+): vscode.Diagnostic[] {
   // Only the errors that have location in the file are captured.
   // There are two categories of errors without line/column number:
   // - file not formatted by gn-format: should do auto-format upon save
@@ -160,8 +196,10 @@ export function parseCrosLintGn(_stdout: string, stderr: string, document: vscod
 
 // Parse output from cros lint on Python files
 export function parseCrosLintPython(
-    stdout: string, _stderr: string, document: vscode.TextDocument)
-  : vscode.Diagnostic[] {
+  stdout: string,
+  _stderr: string,
+  document: vscode.TextDocument
+): vscode.Diagnostic[] {
   const lineRE = /^([^ \n:]+):([0-9]+):([0-9]+): (.*)/gm;
   const diagnostics: vscode.Diagnostic[] = [];
   let match: RegExpExecArray | null;
@@ -180,8 +218,10 @@ export function parseCrosLintPython(
 
 // Parse output from cros lint --output=parseable on shell files.
 export function parseCrosLintShell(
-    stdout: string, _stderr: string, document: vscode.TextDocument)
-  : vscode.Diagnostic[] {
+  stdout: string,
+  _stderr: string,
+  document: vscode.TextDocument
+): vscode.Diagnostic[] {
   const lineRE = /^([^ \n:]+):([0-9]+):([0-9]+): (.*)/gm;
   const diagnostics: vscode.Diagnostic[] = [];
   let match: RegExpExecArray | null;
@@ -199,16 +239,19 @@ export function parseCrosLintShell(
 
 // Creates Diagnostic message.
 // line and startCol are both 1-based.
-function createDiagnostic(message : string, line: number, startCol?: number)
-  : vscode.Diagnostic {
+function createDiagnostic(
+  message: string,
+  line: number,
+  startCol?: number
+): vscode.Diagnostic {
   return new vscode.Diagnostic(
-      new vscode.Range(
-          new vscode.Position(line - 1, startCol ? startCol - 1 : 0),
-          new vscode.Position(line - 1, Number.MAX_VALUE),
-      ),
-      message,
-      // TODO(b/214322467): Should these actually be errors when they block
-      // repo upload?
-      vscode.DiagnosticSeverity.Warning,
+    new vscode.Range(
+      new vscode.Position(line - 1, startCol ? startCol - 1 : 0),
+      new vscode.Position(line - 1, Number.MAX_VALUE)
+    ),
+    message,
+    // TODO(b/214322467): Should these actually be errors when they block
+    // repo upload?
+    vscode.DiagnosticSeverity.Warning
   );
 }

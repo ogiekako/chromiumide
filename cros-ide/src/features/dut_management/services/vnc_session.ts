@@ -19,15 +19,16 @@ export class VncSession {
   private onDidDisposeEmitter = new vscode.EventEmitter<void>();
   readonly onDidDispose = this.onDidDisposeEmitter.event;
 
-  constructor(private readonly host: string,
-    readonly context: vscode.ExtensionContext) {
+  constructor(
+    private readonly host: string,
+    readonly context: vscode.ExtensionContext
+  ) {
     // Here we do the following:
     // 1. Choose a local port
     // 2. Start an SSH session for SSH tunnel and to start kmsvnc and novnc
     // 3. Create tab to display VNC contents
     this.localPort = VncSession.nextAvailablePort++;
-    this.terminal =
-      VncSession.startVncServer(host, this.localPort, context);
+    this.terminal = VncSession.startVncServer(host, this.localPort, context);
     this.panel = VncSession.createWebview(host, this.localPort);
 
     // Dispose the session when the panel is closed.
@@ -51,10 +52,17 @@ export class VncSession {
     this.panel.reveal();
   }
 
-  private static startVncServer(host: string, localPort: number,
-      context: vscode.ExtensionContext): vscode.Terminal {
-    const terminal = ideutil.createTerminalForHost(host,
-        'CrOS: VNC forwarding', context, `-L ${localPort}:localhost:6080`);
+  private static startVncServer(
+    host: string,
+    localPort: number,
+    context: vscode.ExtensionContext
+  ): vscode.Terminal {
+    const terminal = ideutil.createTerminalForHost(
+      host,
+      'CrOS: VNC forwarding',
+      context,
+      `-L ${localPort}:localhost:6080`
+    );
     terminal.sendText('fuser -k 5900/tcp 6080/tcp');
     terminal.sendText('kmsvnc &');
     terminal.sendText('novnc &');
@@ -62,16 +70,18 @@ export class VncSession {
   }
 
   private static createWebview(
-      host: string, localPort: number): vscode.WebviewPanel {
+    host: string,
+    localPort: number
+  ): vscode.WebviewPanel {
     const panel = vscode.window.createWebviewPanel(
-        'vncclient',
-        `CrOS VNC Client: ${host}`,
-        vscode.ViewColumn.One,
-        {
-          enableScripts: true,
-          // https://code.visualstudio.com/api/extension-guides/webview#retaincontextwhenhidden
-          retainContextWhenHidden: true,
-        },
+      'vncclient',
+      `CrOS VNC Client: ${host}`,
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        // https://code.visualstudio.com/api/extension-guides/webview#retaincontextwhenhidden
+        retainContextWhenHidden: true,
+      }
     );
     panel.webview.html = VncSession.getWebviewContent(localPort);
     return panel;

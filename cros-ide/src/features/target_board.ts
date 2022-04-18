@@ -13,19 +13,25 @@ const BOARD_CONFIG = 'cros-ide.board';
 
 export function activate(context: vscode.ExtensionContext) {
   const boardStatusBarItem = vscode.window.createStatusBarItem(
-      vscode.StatusBarAlignment.Left);
+    vscode.StatusBarAlignment.Left
+  );
   boardStatusBarItem.command = 'cros-ide.selectBoard';
 
-  context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((
-      e: vscode.ConfigurationChangeEvent) => {
-    if (e.affectsConfiguration(BOARD_CONFIG)) {
-      updateBoardStatus(boardStatusBarItem);
-    }
-  }));
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(
+      (e: vscode.ConfigurationChangeEvent) => {
+        if (e.affectsConfiguration(BOARD_CONFIG)) {
+          updateBoardStatus(boardStatusBarItem);
+        }
+      }
+    )
+  );
   updateBoardStatus(boardStatusBarItem);
 
   vscode.commands.registerCommand('cros-ide.selectBoard', async () => {
-    const board = await ideUtilities.selectAndUpdateTargetBoard({suggestMostRecent: false});
+    const board = await ideUtilities.selectAndUpdateTargetBoard({
+      suggestMostRecent: false,
+    });
     if (board instanceof ideUtilities.NoBoardError) {
       await vscode.window.showErrorMessage(`Selecting board: ${board.message}`);
       return;
@@ -36,8 +42,8 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function updateBoardStatus(boardStatusBarItem: vscode.StatusBarItem) {
-  const board = ideUtilities.getConfigRoot().get<string>(
-      ideUtilities.BOARD) || '';
+  const board =
+    ideUtilities.getConfigRoot().get<string>(ideUtilities.BOARD) || '';
   boardStatusBarItem.text = board;
   if (board) {
     boardStatusBarItem.show();

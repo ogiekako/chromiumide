@@ -26,21 +26,25 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export interface Recommendation {
-  languageId: string,
-  languageName: string,
-  extensionId: string,
-  extensionName: string,
+  languageId: string;
+  languageName: string;
+  extensionId: string;
+  extensionName: string;
 }
 
 // TODO(oka): Test this function.
-async function activateSingle(context: vscode.ExtensionContext, recommended: Recommendation) {
+async function activateSingle(
+  context: vscode.ExtensionContext,
+  recommended: Recommendation
+) {
   // Don't install handler if the extension is already installed.
   if (vscode.extensions.getExtension(recommended.extensionId)) {
     return;
   }
 
   const subscription: vscode.Disposable[] = [];
-  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(
       async editor => {
         if (!editor) {
           return;
@@ -50,8 +54,11 @@ async function activateSingle(context: vscode.ExtensionContext, recommended: Rec
             subscription[0].dispose();
           }
         }
-      }, undefined, subscription,
-  ));
+      },
+      undefined,
+      subscription
+    )
+  );
 }
 
 const YES = 'Yes';
@@ -62,13 +69,23 @@ async function suggest(recommended: Recommendation): Promise<boolean> {
   if (vscode.extensions.getExtension(recommended.extensionId)) {
     return true;
   }
-  const message = `It is recommended to install ${recommended.extensionName} extension for ` +
+  const message =
+    `It is recommended to install ${recommended.extensionName} extension for ` +
     `${recommended.languageName}. Proceed?`;
-  const choice = await vscode.window.showInformationMessage(message, YES, LATER);
+  const choice = await vscode.window.showInformationMessage(
+    message,
+    YES,
+    LATER
+  );
   if (choice === YES) {
-    await vscode.commands.executeCommand('extension.open', recommended.extensionId);
-    await vscode.commands.executeCommand('workbench.extensions.installExtension',
-        recommended.extensionId);
+    await vscode.commands.executeCommand(
+      'extension.open',
+      recommended.extensionId
+    );
+    await vscode.commands.executeCommand(
+      'workbench.extensions.installExtension',
+      recommended.extensionId
+    );
   } else if (choice === LATER) {
     return true;
   }

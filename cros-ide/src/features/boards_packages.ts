@@ -16,22 +16,27 @@ export async function activate() {
   vscode.commands.registerCommand('cros-ide.crosWorkonStart', crosWorkonStart);
   vscode.commands.registerCommand('cros-ide.crosWorkonStop', crosWorkonStop);
 
-  vscode.commands.registerCommand(
-      'cros-ide.refreshBoardsPackages',
-      () => boardPackageProvider.refresh(),
+  vscode.commands.registerCommand('cros-ide.refreshBoardsPackages', () =>
+    boardPackageProvider.refresh()
   );
 
   vscode.commands.registerCommand(
-      'cros-ide.dismissBoardsPkgsWelcome', async () => {
-        await ideUtilities.getConfigRoot().update(
-            CONFIG_SHOW_WELCOME_MESSAGE, false, vscode.ConfigurationTarget.Global);
-        boardPackageProvider.refresh();
-      },
+    'cros-ide.dismissBoardsPkgsWelcome',
+    async () => {
+      await ideUtilities
+        .getConfigRoot()
+        .update(
+          CONFIG_SHOW_WELCOME_MESSAGE,
+          false,
+          vscode.ConfigurationTarget.Global
+        );
+      boardPackageProvider.refresh();
+    }
   );
 
   vscode.window.registerTreeDataProvider(
-      'boards-packages',
-      boardPackageProvider,
+    'boards-packages',
+    boardPackageProvider
   );
 
   await createPackageWatches();
@@ -42,7 +47,10 @@ const CONFIG_SHOW_WELCOME_MESSAGE = 'boardsAndPackages.showWelcomeMessage';
 // TODO: Write a unit test for watching packages.
 async function createPackageWatches() {
   const boards = await cros.getSetupBoardsAlphabetic();
-  const crosWorkonDir = path.join(os.homedir(), 'chromiumos/.config/cros_workon/');
+  const crosWorkonDir = path.join(
+    os.homedir(),
+    'chromiumos/.config/cros_workon/'
+  );
 
   // Watching for non-existent directory throws errors,
   // which happens when we run tests outside chroot.
@@ -76,8 +84,12 @@ function crosWorkonStop(pkg: Package) {
 }
 
 async function crosWorkon(boardName: string, cmd: string, pkgName: string) {
-  const res = await commonUtil.exec('cros_workon', [`--board=${boardName}`, cmd, pkgName],
-      ideUtilities.getUiLogger().append, {logStdout: true, ignoreNonZeroExit: true});
+  const res = await commonUtil.exec(
+    'cros_workon',
+    [`--board=${boardName}`, cmd, pkgName],
+    ideUtilities.getUiLogger().append,
+    {logStdout: true, ignoreNonZeroExit: true}
+  );
   if (res instanceof Error) {
     throw res;
   }
@@ -93,8 +105,9 @@ async function crosWorkon(boardName: string, cmd: string, pkgName: string) {
  * that are `cros_work start`-ed.
  */
 class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
-  private onDidChangeTreeDataEmitter =
-    new vscode.EventEmitter<ChrootItem | undefined | null | void>();
+  private onDidChangeTreeDataEmitter = new vscode.EventEmitter<
+    ChrootItem | undefined | null | void
+  >();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   async getChildren(element?: ChrootItem): Promise<ChrootItem[]> {
@@ -108,8 +121,9 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
       return (await cros.getSetupBoardsAlphabetic()).map(x => new Board(x));
     }
     if (element && element instanceof Board) {
-      return (await getWorkedOnPackages(element.name)).map(x =>
-        new Package(element, x));
+      return (await getWorkedOnPackages(element.name)).map(
+        x => new Package(element, x)
+      );
     }
     return [];
   }
@@ -123,8 +137,7 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
   }
 }
 
-class ChrootItem extends vscode.TreeItem {
-}
+class ChrootItem extends vscode.TreeItem {}
 
 class Board extends ChrootItem {
   constructor(readonly name: string) {
@@ -148,8 +161,12 @@ class Package extends ChrootItem {
  * @returns Packages that are worked on.
  */
 async function getWorkedOnPackages(board: string): Promise<string[]> {
-  const res = await commonUtil.exec('cros_workon', ['--board', board, 'list'],
-      ideUtilities.getUiLogger().append, {logStdout: true});
+  const res = await commonUtil.exec(
+    'cros_workon',
+    ['--board', board, 'list'],
+    ideUtilities.getUiLogger().append,
+    {logStdout: true}
+  );
   if (res instanceof Error) {
     throw res;
   }

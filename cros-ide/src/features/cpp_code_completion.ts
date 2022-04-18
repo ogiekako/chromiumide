@@ -10,29 +10,31 @@ import * as bgTaskStatus from '../ui/bg_task_status';
 import * as commonUtil from '../common/common_util';
 import * as ideUtilities from '../ide_utilities';
 
-export function activate(context: vscode.ExtensionContext,
-    statusManager: bgTaskStatus.StatusManager) {
+export function activate(
+  context: vscode.ExtensionContext,
+  statusManager: bgTaskStatus.StatusManager
+) {
   const log = vscode.window.createOutputChannel('CrOS IDE: C++ Support');
   vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => log.show());
 
   const compildationDatabase = new CompilationDatabase(statusManager, log);
 
-  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(
-      editor => {
-        if (editor?.document.languageId === 'cpp') {
-          compildationDatabase.generate(editor.document);
-        }
-      },
-  ));
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(editor => {
+      if (editor?.document.languageId === 'cpp') {
+        compildationDatabase.generate(editor.document);
+      }
+    })
+  );
 
   // Update compilation database when a GN file is updated.
-  context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(
-      document => {
-        if (document.fileName.match(/\.gni?$/)) {
-          compildationDatabase.generate(document);
-        }
-      },
-  ));
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument(document => {
+      if (document.fileName.match(/\.gni?$/)) {
+        compildationDatabase.generate(document);
+      }
+    })
+  );
 
   const document = vscode.window.activeTextEditor?.document;
   if (document) {
@@ -41,15 +43,18 @@ export function activate(context: vscode.ExtensionContext,
 }
 
 export interface PackageInfo {
-  sourceDir: string, // directory containing source code relative to chromiumos/
-  pkg: string, // package name
+  sourceDir: string; // directory containing source code relative to chromiumos/
+  pkg: string; // package name
 }
 
 const MNT_HOST_SOURCE = '/mnt/host/source'; // realpath of ~/chromiumos
 
 const STATUS_BAR_TASK_ID = 'C++ Support';
 
-const SHOW_LOG_COMMAND: vscode.Command = {command: 'cros-ide.showCppLog', title: ''};
+const SHOW_LOG_COMMAND: vscode.Command = {
+  command: 'cros-ide.showCppLog',
+  title: '',
+};
 
 class CompilationDatabase {
   private enabled = true;
@@ -57,7 +62,7 @@ class CompilationDatabase {
 
   constructor(
     private readonly statusManager: bgTaskStatus.StatusManager,
-    private readonly log: vscode.OutputChannel,
+    private readonly log: vscode.OutputChannel
   ) {}
 
   // Generate compilation database for clangd.
@@ -74,7 +79,9 @@ class CompilationDatabase {
 
     const board = await ideUtilities.getOrSelectTargetBoard();
     if (board instanceof ideUtilities.NoBoardError) {
-      await vscode.window.showErrorMessage(`Generate compilation database: ${board.message}`);
+      await vscode.window.showErrorMessage(
+        `Generate compilation database: ${board.message}`
+      );
       return;
     } else if (board === null) {
       return;
@@ -93,8 +100,11 @@ class CompilationDatabase {
           return;
         }
         if (shouldRun) {
-          const res = await commonUtil.exec('cros_workon', ['--board', board, 'start', pkg],
-              this.log.append);
+          const res = await commonUtil.exec(
+            'cros_workon',
+            ['--board', board, 'start', pkg],
+            this.log.append
+          );
           if (res instanceof Error) {
             throw res;
           }
@@ -106,13 +116,15 @@ class CompilationDatabase {
           return;
         }
 
-        const filepath =
-          `/build/${board}/build/compilation_database/${pkg}/compile_commands_chroot.json`;
+        const filepath = `/build/${board}/build/compilation_database/${pkg}/compile_commands_chroot.json`;
         if (!fs.existsSync(filepath)) {
           const dismiss = 'Dismiss';
-          const dialog = vscode.window.showErrorMessage('Compilation database not found. ' +
-            `Update the ebuild file for ${pkg} to generate it. ` +
-            `Example: https://crrev.com/c/2909734`, dismiss);
+          const dialog = vscode.window.showErrorMessage(
+            'Compilation database not found. ' +
+              `Update the ebuild file for ${pkg} to generate it. ` +
+              'Example: https://crrev.com/c/2909734',
+            dismiss
+          );
           const answer = await commonUtil.withTimeout(dialog, 30 * 1000);
           if (answer === dismiss) {
             this.enabled = false;
@@ -122,41 +134,58 @@ class CompilationDatabase {
 
         // Make the generated compilation database available from clangd.
         const res = await commonUtil.exec(
-            'ln', ['-sf', filepath, path.join(MNT_HOST_SOURCE, sourceDir, 'compile_commands.json')],
-            this.log.append);
+          'ln',
+          [
+            '-sf',
+            filepath,
+            path.join(MNT_HOST_SOURCE, sourceDir, 'compile_commands.json'),
+          ],
+          this.log.append
+        );
         if (res instanceof Error) {
           throw res;
         }
 
-        this.statusManager.setTask(STATUS_BAR_TASK_ID,
-            {status: bgTaskStatus.TaskStatus.OK, command: SHOW_LOG_COMMAND});
+        this.statusManager.setTask(STATUS_BAR_TASK_ID, {
+          status: bgTaskStatus.TaskStatus.OK,
+          command: SHOW_LOG_COMMAND,
+        });
       } catch (e) {
         this.log.appendLine((e as Error).message);
         console.error(e);
-        this.statusManager.setTask(STATUS_BAR_TASK_ID,
-            {status: bgTaskStatus.TaskStatus.ERROR, command: SHOW_LOG_COMMAND});
+        this.statusManager.setTask(STATUS_BAR_TASK_ID, {
+          status: bgTaskStatus.TaskStatus.ERROR,
+          command: SHOW_LOG_COMMAND,
+        });
       }
     });
   }
 
   /** Runs emerge and shows a spinning progress indicator in the status bar. */
-  async runEmerge(board: string, pkg: string): Promise<Error|undefined> {
+  async runEmerge(board: string, pkg: string): Promise<Error | undefined> {
     const task = `Building refs for ${pkg}`;
-    this.statusManager.setTask(task,
-        {status: bgTaskStatus.TaskStatus.RUNNING, command: SHOW_LOG_COMMAND});
+    this.statusManager.setTask(task, {
+      status: bgTaskStatus.TaskStatus.RUNNING,
+      command: SHOW_LOG_COMMAND,
+    });
 
     // TODO(b/228411680): Handle additional status bar items in StatusManager,
     // so we don't have to do it here.
-    const progress = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+    const progress = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Left
+    );
     progress.text = `$(sync~spin)Building refs for ${pkg}`;
     progress.command = SHOW_LOG_COMMAND;
     progress.show();
-    const res = await commonUtil.exec('env',
-        ['USE=compilation_database', `emerge-${board}`, pkg],
-        this.log.append, {logStdout: true});
+    const res = await commonUtil.exec(
+      'env',
+      ['USE=compilation_database', `emerge-${board}`, pkg],
+      this.log.append,
+      {logStdout: true}
+    );
     progress.dispose();
     this.statusManager.deleteTask(task);
-    return (res instanceof Error) ? res : undefined;
+    return res instanceof Error ? res : undefined;
   }
 }
 
@@ -168,16 +197,18 @@ async function workonList(board: string): Promise<string[]> {
   return res.stdout.split('\n').filter(x => x !== '');
 }
 
-export type PersistentConsent = 'Never' | 'Always'
+export type PersistentConsent = 'Never' | 'Always';
 export type UserConsent = PersistentConsent | 'Once';
-export type UserChoice = PersistentConsent | 'Yes'
+export type UserChoice = PersistentConsent | 'Yes';
 
 const NEVER: PersistentConsent = 'Never';
 const ALWAYS: PersistentConsent = 'Always';
 const YES: UserChoice = 'Yes';
 
-async function getUserConsent(current: UserConsent, ask: () => Thenable<UserChoice | undefined>):
-    Promise<{ok: boolean, remember?: PersistentConsent}> {
+async function getUserConsent(
+  current: UserConsent,
+  ask: () => Thenable<UserChoice | undefined>
+): Promise<{ok: boolean; remember?: PersistentConsent}> {
   switch (current) {
     case NEVER:
       return {ok: false};
@@ -204,9 +235,12 @@ const AUTO_CROS_WORKON_CONFIG = 'clangdSupport.crosWorkonPrompt';
  * worked on, it returns shouldRun = false. Otherwise, in addition to shouldRun = true, it tries
  * getting user consent to run the command and fills userConsent.
  */
-async function shouldRunCrosWorkon(board: string, pkg: string): Promise<{
-  shouldRun: boolean,
-  userConsent?: boolean,
+async function shouldRunCrosWorkon(
+  board: string,
+  pkg: string
+): Promise<{
+  shouldRun: boolean;
+  userConsent?: boolean;
 }> {
   if ((await workonList(board)).includes(pkg)) {
     return {
@@ -214,23 +248,35 @@ async function shouldRunCrosWorkon(board: string, pkg: string): Promise<{
     };
   }
 
-  const currentChoice = ideUtilities.getConfigRoot().get<UserConsent>(
-      AUTO_CROS_WORKON_CONFIG) || 'Once';
+  const currentChoice =
+    ideUtilities.getConfigRoot().get<UserConsent>(AUTO_CROS_WORKON_CONFIG) ||
+    'Once';
 
   const showPrompt = async () => {
     // withTimeout makes sure showPrompt returns. showInformationMessage doesn't resolve nor reject
     // if the prompt is dismissed due to timeout (about 15 seconds).
     const choice = await commonUtil.withTimeout(
-        vscode.window.showInformationMessage(`Generating cross references requires 'cros_workon ` +
-        `--board=${board} start ${pkg}'. Proceed?`, {}, YES, ALWAYS, NEVER),
-        30 * 1000,
+      vscode.window.showInformationMessage(
+        "Generating cross references requires 'cros_workon " +
+          `--board=${board} start ${pkg}'. Proceed?`,
+        {},
+        YES,
+        ALWAYS,
+        NEVER
+      ),
+      30 * 1000
     );
     return choice as UserChoice | undefined;
   };
   const {ok, remember} = await getUserConsent(currentChoice, showPrompt);
   if (remember) {
-    ideUtilities.getConfigRoot().update(AUTO_CROS_WORKON_CONFIG, remember,
-        vscode.ConfigurationTarget.Global);
+    ideUtilities
+      .getConfigRoot()
+      .update(
+        AUTO_CROS_WORKON_CONFIG,
+        remember,
+        vscode.ConfigurationTarget.Global
+      );
   }
   return {
     shouldRun: true,
@@ -243,7 +289,10 @@ async function shouldRunCrosWorkon(board: string, pkg: string): Promise<{
 // TODO(oka): automatically generate this list when the extension is activated.
 const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/aosp/frameworks/ml', 'chromeos-base/aosp-frameworks-ml-nn'],
-  ['src/aosp/frameworks/ml/chromeos/tests', 'chromeos-base/aosp-frameworks-ml-nn-vts'],
+  [
+    'src/aosp/frameworks/ml/chromeos/tests',
+    'chromeos-base/aosp-frameworks-ml-nn-vts',
+  ],
   ['src/platform2/arc/adbd', 'chromeos-base/arc-adbd'],
   ['src/platform2/arc/apk-cache', 'chromeos-base/arc-apk-cache'],
   ['src/platform2/arc/container/appfuse', 'chromeos-base/arc-appfuse'],
@@ -253,7 +302,10 @@ const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/platform2/arc/keymaster', 'chromeos-base/arc-keymaster'],
   ['src/platform2/arc/mount-passthrough', 'chromeos-base/mount-passthrough'],
   ['src/platform2/arc/setup', 'chromeos-base/arc-setup'],
-  ['src/platform2/arc/vm/boot_notification_server', 'chromeos-base/arcvm-boot-notification-server'],
+  [
+    'src/platform2/arc/vm/boot_notification_server',
+    'chromeos-base/arcvm-boot-notification-server',
+  ],
   ['src/platform2/arc/vm/forward-pstore', 'chromeos-base/arcvm-forward-pstore'],
   ['src/platform2/arc/vm/host_clock', 'chromeos-base/arc-host-clock-service'],
   ['src/platform2/arc/vm/libvda', 'chromeos-base/libvda'],
@@ -270,27 +322,61 @@ const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/platform2/camera/android', 'chromeos-base/cros-camera-android-deps'],
   ['src/platform2/camera/camera3_test', 'media-libs/cros-camera-test'],
   ['src/platform2/camera/common', 'chromeos-base/cros-camera-libs'],
-  ['src/platform2/camera/common/jpeg/libjda_test', 'media-libs/cros-camera-libjda_test'],
-  ['src/platform2/camera/common/jpeg/libjea_test', 'media-libs/cros-camera-libjea_test'],
-  ['src/platform2/camera/common/libcab_test', 'media-libs/cros-camera-libcab-test'],
-  ['src/platform2/camera/common/libcamera_connector_test',
-    'media-libs/cros-camera-libcamera_connector_test'],
-  ['src/platform2/camera/features/document_scanning',
-    'media-libs/cros-camera-document-scanning-test'],
-  ['src/platform2/camera/features/hdrnet/tests', 'media-libs/cros-camera-hdrnet-tests'],
+  [
+    'src/platform2/camera/common/jpeg/libjda_test',
+    'media-libs/cros-camera-libjda_test',
+  ],
+  [
+    'src/platform2/camera/common/jpeg/libjea_test',
+    'media-libs/cros-camera-libjea_test',
+  ],
+  [
+    'src/platform2/camera/common/libcab_test',
+    'media-libs/cros-camera-libcab-test',
+  ],
+  [
+    'src/platform2/camera/common/libcamera_connector_test',
+    'media-libs/cros-camera-libcamera_connector_test',
+  ],
+  [
+    'src/platform2/camera/features/document_scanning',
+    'media-libs/cros-camera-document-scanning-test',
+  ],
+  [
+    'src/platform2/camera/features/hdrnet/tests',
+    'media-libs/cros-camera-hdrnet-tests',
+  ],
   ['src/platform2/camera/gpu/tests', 'media-libs/cros-camera-gpu-test'],
   ['src/platform2/camera/hal_adapter', 'chromeos-base/cros-camera'],
   ['src/platform2/camera/hal/ip', 'media-libs/cros-camera-hal-ip'],
   ['src/platform2/camera/hal/usb', 'media-libs/cros-camera-hal-usb'],
   ['src/platform2/camera/hal/usb/tests', 'media-libs/cros-camera-usb-tests'],
-  ['src/platform2/camera/hal/usb/v4l2_test', 'media-libs/cros-camera-v4l2_test'],
-  ['src/platform2/camera/tools/connector_client', 'media-libs/cros-camera-connector-client'],
-  ['src/platform2/camera/tools/cros_camera_tool', 'chromeos-base/cros-camera-tool'],
-  ['src/platform2/camera/tools/generate_camera_profile', 'media-libs/arc-camera-profile'],
+  [
+    'src/platform2/camera/hal/usb/v4l2_test',
+    'media-libs/cros-camera-v4l2_test',
+  ],
+  [
+    'src/platform2/camera/tools/connector_client',
+    'media-libs/cros-camera-connector-client',
+  ],
+  [
+    'src/platform2/camera/tools/cros_camera_tool',
+    'chromeos-base/cros-camera-tool',
+  ],
+  [
+    'src/platform2/camera/tools/generate_camera_profile',
+    'media-libs/arc-camera-profile',
+  ],
   ['src/platform2/cfm-dfu-notification', 'chromeos-base/cfm-dfu-notification'],
   ['src/platform2/chaps', 'chromeos-base/chaps'],
-  ['src/platform2/chromeos-common-script', 'chromeos-base/chromeos-common-script'],
-  ['src/platform2/chromeos-dbus-bindings', 'chromeos-base/chromeos-dbus-bindings'],
+  [
+    'src/platform2/chromeos-common-script',
+    'chromeos-base/chromeos-common-script',
+  ],
+  [
+    'src/platform2/chromeos-dbus-bindings',
+    'chromeos-base/chromeos-dbus-bindings',
+  ],
   ['src/platform2/chromiumos-wide-profiling', 'chromeos-base/quipper'],
   ['src/platform2/client_id', 'chromeos-base/client_id'],
   ['src/platform2/codelab', 'chromeos-base/codelab'],
@@ -299,7 +385,10 @@ const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/platform2/crosdns', 'chromeos-base/crosdns'],
   ['src/platform2/croslog', 'chromeos-base/croslog'],
   ['src/platform2/cryptohome', 'chromeos-base/cryptohome'],
-  ['src/platform2/cryptohome/bootlockbox-client', 'chromeos-base/bootlockbox-client'],
+  [
+    'src/platform2/cryptohome/bootlockbox-client',
+    'chromeos-base/bootlockbox-client',
+  ],
   ['src/platform2/cryptohome/client', 'chromeos-base/cryptohome-client'],
   ['src/platform2/cryptohome/dev-utils', 'chromeos-base/cryptohome-dev-utils'],
   ['src/platform2/cups_proxy', 'net-print/cups_proxy'],
@@ -325,14 +414,23 @@ const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/platform2/goldfishd', 'chromeos-base/goldfishd'],
   ['src/platform2/hammerd', 'chromeos-base/hammerd'],
   ['src/platform2/hardware_verifier', 'chromeos-base/hardware_verifier'],
-  ['src/platform2/hardware_verifier/proto', 'chromeos-base/hardware_verifier_proto'],
+  [
+    'src/platform2/hardware_verifier/proto',
+    'chromeos-base/hardware_verifier_proto',
+  ],
   ['src/platform2/hermes', 'chromeos-base/hermes'],
   ['src/platform2/hps', 'chromeos-base/hpsd'],
   ['src/platform2/hps/util', 'chromeos-base/hps-tool'],
   ['src/platform2/hwsec-test-utils', 'chromeos-base/hwsec-test-utils'],
   ['src/platform2/iioservice/daemon', 'chromeos-base/iioservice'],
-  ['src/platform2/iioservice/iioservice_simpleclient', 'chromeos-base/iioservice_simpleclient'],
-  ['src/platform2/iioservice/libiioservice_ipc', 'chromeos-base/libiioservice_ipc'],
+  [
+    'src/platform2/iioservice/iioservice_simpleclient',
+    'chromeos-base/iioservice_simpleclient',
+  ],
+  [
+    'src/platform2/iioservice/libiioservice_ipc',
+    'chromeos-base/libiioservice_ipc',
+  ],
   ['src/platform2/image-burner', 'chromeos-base/chromeos-imageburner'],
   ['src/platform2/imageloader', 'chromeos-base/imageloader'],
   ['src/platform2/imageloader/client', 'chromeos-base/imageloader-client'],
@@ -350,7 +448,10 @@ const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/platform2/libpasswordprovider', 'chromeos-base/libpasswordprovider'],
   ['src/platform2/libtpmcrypto', 'chromeos-base/libtpmcrypto'],
   ['src/platform2/login_manager', 'chromeos-base/chromeos-login'],
-  ['src/platform2/login_manager/session_manager-client', 'chromeos-base/session_manager-client'],
+  [
+    'src/platform2/login_manager/session_manager-client',
+    'chromeos-base/session_manager-client',
+  ],
   ['src/platform2/lorgnette', 'chromeos-base/lorgnette'],
   ['src/platform2/marisa-trie', 'dev-libs/marisa-aosp'],
   ['src/platform2/media_perception', 'chromeos-base/mri_package'],
@@ -373,9 +474,15 @@ const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/platform2/patchpanel/mcastd', 'chromeos-base/mcastd'],
   ['src/platform2/patchpanel/ndproxyd', 'chromeos-base/ndproxyd'],
   ['src/platform2/pciguard', 'chromeos-base/pciguard'],
-  ['src/platform2/perfetto_simple_producer', 'chromeos-base/perfetto_simple_producer'],
+  [
+    'src/platform2/perfetto_simple_producer',
+    'chromeos-base/perfetto_simple_producer',
+  ],
   ['src/platform2/permission_broker', 'chromeos-base/permission_broker'],
-  ['src/platform2/permission_broker/client', 'chromeos-base/permission_broker-client'],
+  [
+    'src/platform2/permission_broker/client',
+    'chromeos-base/permission_broker-client',
+  ],
   ['src/platform2/policy_proto', 'chromeos-base/policy-go-proto'],
   ['src/platform2/policy_utils', 'chromeos-base/policy_utils'],
   ['src/platform2/power_manager', 'chromeos-base/power_manager'],
@@ -407,7 +514,10 @@ const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/platform2/system-proxy', 'chromeos-base/system-proxy'],
   ['src/platform2/thd', 'chromeos-base/thd'],
   ['src/platform2/timberslide', 'chromeos-base/timberslide'],
-  ['src/platform2/touch_firmware_calibration', 'chromeos-base/touch_firmware_calibration'],
+  [
+    'src/platform2/touch_firmware_calibration',
+    'chromeos-base/touch_firmware_calibration',
+  ],
   ['src/platform2/touch_keyboard', 'chromeos-base/touch_keyboard'],
   ['src/platform2/tpm_manager', 'chromeos-base/tpm_manager'],
   ['src/platform2/tpm_manager/client', 'chromeos-base/tpm_manager-client'],
@@ -421,7 +531,10 @@ const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/platform2/usb_bouncer', 'chromeos-base/usb_bouncer'],
   ['src/platform2/userspace_touchpad', 'chromeos-base/userspace_touchpad'],
   ['src/platform2/verity', 'chromeos-base/verity'],
-  ['src/platform2/virtual_file_provider', 'chromeos-base/virtual-file-provider'],
+  [
+    'src/platform2/virtual_file_provider',
+    'chromeos-base/virtual-file-provider',
+  ],
   ['src/platform2/vm_tools', 'chromeos-base/vm_host_tools'],
   ['src/platform2/vm_tools/proto', 'chromeos-base/vm_protos'],
   ['src/platform2/vm_tools/sommelier', 'chromeos-base/sommelier'],
@@ -437,8 +550,10 @@ Object.freeze(KNOWN_PACKAGES);
 
 // Get information of the package that would compile the file and generates
 // compilation database, or null if no such package is known.
-export async function getPackage(filepath: string,
-    mntHostSource: string = MNT_HOST_SOURCE): Promise<PackageInfo | null> {
+export async function getPackage(
+  filepath: string,
+  mntHostSource: string = MNT_HOST_SOURCE
+): Promise<PackageInfo | null> {
   let realpath = '';
   try {
     realpath = await fs.promises.realpath(filepath);
@@ -451,8 +566,10 @@ export async function getPackage(filepath: string,
   }
   let res = null;
   for (const pkg of KNOWN_PACKAGES) {
-    if (relPath.startsWith(pkg.sourceDir + '/') &&
-      (res === null || res.sourceDir.length < pkg.sourceDir.length)) {
+    if (
+      relPath.startsWith(pkg.sourceDir + '/') &&
+      (res === null || res.sourceDir.length < pkg.sourceDir.length)
+    ) {
       res = pkg;
     }
   }
@@ -460,6 +577,8 @@ export async function getPackage(filepath: string,
 }
 
 export const TEST_ONLY = {
-  ALWAYS, NEVER, YES,
+  ALWAYS,
+  NEVER,
+  YES,
   getUserConsent,
 };

@@ -11,29 +11,23 @@ import * as vscode from 'vscode';
  */
 export interface VscodeSpy {
   env: {
-    openExternal: jasmine.Spy<typeof vscode.env.openExternal>,
-  }
+    openExternal: jasmine.Spy<typeof vscode.env.openExternal>;
+  };
   window: {
     // any instead of `typeof vscode.window.showInformationMessage` to workaround
     // https://github.com/DefinitelyTyped/DefinitelyTyped/issues/42455
-    showInformationMessage: jasmine.Spy<any>,
-  },
+    showInformationMessage: jasmine.Spy<any>;
+  };
 }
 
 function newVscodeSpy(): VscodeSpy {
   return {
-    env: jasmine.createSpyObj<typeof vscode.env>(
-        'vscode.env',
-        [
-          'openExternal',
-        ],
-    ),
-    window: jasmine.createSpyObj<typeof vscode.window>(
-        'vscode.window',
-        [
-          'showInformationMessage',
-        ],
-    ),
+    env: jasmine.createSpyObj<typeof vscode.env>('vscode.env', [
+      'openExternal',
+    ]),
+    window: jasmine.createSpyObj<typeof vscode.window>('vscode.window', [
+      'showInformationMessage',
+    ]),
   };
 }
 
@@ -63,10 +57,12 @@ export function installVscodeDouble(): {vscodeSpy: VscodeSpy} {
   };
 }
 
-type StateInitializer<T> = (() => Promise<T>)|(() => T);
+type StateInitializer<T> = (() => Promise<T>) | (() => T);
 
 // See go/cleanstate.
-function cleanState<NewState extends {}>(init: StateInitializer<NewState>): NewState {
+function cleanState<NewState extends {}>(
+  init: StateInitializer<NewState>
+): NewState {
   const state = {} as NewState;
   beforeEach(async () => {
     // Clear state before every test case.

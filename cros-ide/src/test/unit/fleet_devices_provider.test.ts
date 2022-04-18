@@ -9,11 +9,14 @@ import {exactMatch, FakeExec} from '../testing';
 describe('Fleet Devices Provider retrieves', () => {
   it('no leases', async () => {
     const fakeExec = new FakeExec().on(
-        'crosfleet',
-        exactMatch(['dut', 'leases', '-json'], async () => {
-          return '{}\n';
-        }));
-    const cleanUpExec = commonUtil.setExecForTesting(fakeExec.exec.bind(fakeExec));
+      'crosfleet',
+      exactMatch(['dut', 'leases', '-json'], async () => {
+        return '{}\n';
+      })
+    );
+    const cleanUpExec = commonUtil.setExecForTesting(
+      fakeExec.exec.bind(fakeExec)
+    );
     try {
       const provider = new fleetProvider.FleetDevicesProvider('');
       await provider.updateCache();

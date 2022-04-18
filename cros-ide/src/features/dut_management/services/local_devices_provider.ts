@@ -14,8 +14,9 @@ export class LocalDevicesProvider implements vscode.TreeDataProvider<string> {
   private readonly cachedVersions = new Map<string, string>();
   private readonly testingRsaPath: string;
 
-  private onDidChangeTreeDataEmitter =
-    new vscode.EventEmitter<string | undefined | null | void>();
+  private onDidChangeTreeDataEmitter = new vscode.EventEmitter<
+    string | undefined | null | void
+  >();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   constructor(testingRsaPath: string) {
@@ -49,13 +50,16 @@ export class LocalDevicesProvider implements vscode.TreeDataProvider<string> {
       (async () => {
         let version;
         try {
-          version = await dutServices.queryHostVersion(host, this.testingRsaPath);
+          version = await dutServices.queryHostVersion(
+            host,
+            this.testingRsaPath
+          );
         } catch (_) {
           version = '???';
         }
         this.cachedVersions.set(host, version);
         this.onDidChangeTreeDataEmitter.fire();
-      })().catch((_) => { });
+      })().catch(_ => {});
     }
   }
 

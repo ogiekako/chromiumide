@@ -18,9 +18,17 @@ function assertInsideChroot() {
 
 const GS_PREFIX = 'gs://chromeos-velocity/ide/cros-ide';
 
-async function execute(name: string, args: string[], showStdout?: boolean): Promise<string> {
+async function execute(
+  name: string,
+  args: string[],
+  showStdout?: boolean
+): Promise<string> {
   const res = await commonUtil.exec(
-      name, args, log => process.stderr.write(log), {logStdout: showStdout});
+    name,
+    args,
+    log => process.stderr.write(log),
+    {logStdout: showStdout}
+  );
   if (res instanceof Error) {
     throw res;
   }
@@ -35,9 +43,12 @@ async function execute(name: string, args: string[], showStdout?: boolean): Prom
 export async function findArchive(version?: Version): Promise<Archive> {
   // The result of `gsutil ls` is lexicographically sorted.
   const stdout = await execute('gsutil', ['ls', GS_PREFIX]);
-  const archives = stdout.trim().split('\n').map(url => {
-    return Archive.parse(url);
-  });
+  const archives = stdout
+    .trim()
+    .split('\n')
+    .map(url => {
+      return Archive.parse(url);
+    });
   archives.sort(Archive.compareFn);
   if (!version) {
     return archives.pop()!;
@@ -65,8 +76,13 @@ async function cleanCommitHash() {
     throw new Error('HEAD should be an ancestor of cros/main');
   }
   // HEAD commit should update version in package.json .
-  const diff = await execute('git',
-      ['diff', '-p', 'HEAD~', '--', '**package.json']);
+  const diff = await execute('git', [
+    'diff',
+    '-p',
+    'HEAD~',
+    '--',
+    '**package.json',
+  ]);
   if (!/^\+\s*"version"\s*:/m.test(diff)) {
     throw new Error('HEAD commit should update version in package.json');
   }
@@ -99,9 +115,9 @@ class Archive {
 }
 
 export interface Version {
-  major: number
-  minor: number
-  patch: number
+  major: number;
+  minor: number;
+  patch: number;
 }
 
 export function compareVersion(first: Version, second: Version): number {
@@ -158,8 +174,9 @@ export async function buildAndUpload() {
     const built = await build(td, hash);
     if (compareVersion(latestInGs.version, built.version) >= 0) {
       throw new Error(
-          `${built.name} is older than the latest published version ` +
-        `${latestInGs.name}. Update the version and rerun the program.`);
+        `${built.name} is older than the latest published version ` +
+          `${latestInGs.name}. Update the version and rerun the program.`
+      );
     }
     await execute('gsutil', ['cp', path.join(td, built.name), built.url()]);
   });
@@ -198,11 +215,11 @@ export async function install(exe: string, forceVersion?: Version) {
 }
 
 interface Config {
-  forceVersion?: Version
-  dev?: boolean
-  upload?: boolean
-  exe: string
-  help?: boolean
+  forceVersion?: Version;
+  dev?: boolean;
+  upload?: boolean;
+  exe: string;
+  help?: boolean;
 }
 
 /**
@@ -251,9 +268,12 @@ export function parseArgs(args: string[]): Config {
         throw new Error(`Unknown flag ${flag}; see --help`);
     }
   }
-  if (config.dev && config.upload || config.dev && config.forceVersion ||
-    config.upload && config.forceVersion) {
-    throw new Error(`Invalid flag combination; see --help`);
+  if (
+    (config.dev && config.upload) ||
+    (config.dev && config.forceVersion) ||
+    (config.upload && config.forceVersion)
+  ) {
+    throw new Error('Invalid flag combination; see --help');
   }
   return config;
 }
@@ -305,8 +325,9 @@ async function main() {
   } catch (e) {
     const message = (e as Error).message;
     throw new Error(
-        `${message}\n` +
-      'Read quickstart.md and run the script in proper environment');
+      `${message}\n` +
+        'Read quickstart.md and run the script in proper environment'
+    );
   }
 }
 

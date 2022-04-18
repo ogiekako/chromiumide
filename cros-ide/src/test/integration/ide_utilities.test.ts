@@ -11,10 +11,10 @@ import * as testing from '../testing';
 describe('IDE utilities', () => {
   it('returns VSCode executable path', async () => {
     interface TestCase {
-        name: string,
-        exe: string, // executable location relative to home
-        appRoot: string, // vscode.env.appRoot value relative to home
-        appName: string, // vscode.env.appName value
+      name: string;
+      exe: string; // executable location relative to home
+      appRoot: string; // vscode.env.appRoot value relative to home
+      appName: string; // vscode.env.appName value
     }
     const testCases: TestCase[] = [
       {
@@ -32,7 +32,8 @@ describe('IDE utilities', () => {
       {
         name: 'VSCode Insiders',
         exe: '.vscode-server-insiders/bin/b84feecf9231d404a766e251f8a37c730089511b/bin/remote-cli/code-insiders',
-        appRoot: '.vscode-server-insiders/bin/b84feecf9231d404a766e251f8a37c730089511b',
+        appRoot:
+          '.vscode-server-insiders/bin/b84feecf9231d404a766e251f8a37c730089511b',
         appName: 'Visual Studio Code - Insiders',
       },
     ];
@@ -44,7 +45,11 @@ describe('IDE utilities', () => {
         const appRoot = path.join(home, tc.appRoot);
         const appName = tc.appName;
         const expected = path.join(home, tc.exe);
-        assert.strictEqual(ideUtilities.vscodeExecutablePath(appRoot, appName), expected, tc.name);
+        assert.strictEqual(
+          ideUtilities.vscodeExecutablePath(appRoot, appName),
+          expected,
+          tc.name
+        );
       });
     }
   });
@@ -56,13 +61,28 @@ describe('IDE utilities', () => {
       });
 
       // Assert test is properly set up
-      assert.strictEqual(ideUtilities.vscodeExecutablePath(
-          path.join(home, 'foo'), 'code-server'), path.join(home, 'foo/bin/code-server'));
+      assert.strictEqual(
+        ideUtilities.vscodeExecutablePath(
+          path.join(home, 'foo'),
+          'code-server'
+        ),
+        path.join(home, 'foo/bin/code-server')
+      );
 
-      assert(ideUtilities.vscodeExecutablePath(
-          path.join(home, 'bar'), 'code-server') instanceof Error, 'not found');
-      assert(ideUtilities.vscodeExecutablePath(
-          path.join(home, 'foo'), 'unknown app') instanceof Error, 'unknown app');
+      assert(
+        ideUtilities.vscodeExecutablePath(
+          path.join(home, 'bar'),
+          'code-server'
+        ) instanceof Error,
+        'not found'
+      );
+      assert(
+        ideUtilities.vscodeExecutablePath(
+          path.join(home, 'foo'),
+          'unknown app'
+        ) instanceof Error,
+        'unknown app'
+      );
     });
   });
 });

@@ -17,7 +17,11 @@ async function prepareBoardsDir(td: string) {
     '/build/coral/x': 'x',
   });
 
-  await fs.promises.utimes(path.join(td, '/build/amd64-generic'), 2 /* timestamp */, 2);
+  await fs.promises.utimes(
+    path.join(td, '/build/amd64-generic'),
+    2 /* timestamp */,
+    2
+  );
   await fs.promises.utimes(path.join(td, '/build/betty-pi-arc'), 1, 1);
   await fs.promises.utimes(path.join(td, '/build/coral'), 3, 3);
 }

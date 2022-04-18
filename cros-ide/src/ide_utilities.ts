@@ -17,19 +17,31 @@ export function getConfigRoot(): vscode.WorkspaceConfiguration {
 }
 
 export function createTerminalForHost(
-    host: string, namePrefix: string, context: vscode.ExtensionContext,
-    extraOptions?: string): vscode.Terminal {
+  host: string,
+  namePrefix: string,
+  context: vscode.ExtensionContext,
+  extraOptions?: string
+): vscode.Terminal {
   const terminal = vscode.window.createTerminal(`${namePrefix} ${host}`);
 
   terminal.sendText(
-      // eslint-disable-next-line max-len
-      'ssh '.concat(sshFormatArgs(host, `; exit $?`, getTestingRsaPath(context), extraOptions).join(' ')),
+    // eslint-disable-next-line max-len
+    'ssh '.concat(
+      sshFormatArgs(
+        host,
+        '; exit $?',
+        getTestingRsaPath(context),
+        extraOptions
+      ).join(' ')
+    )
   );
   metrics.send({category: 'ideutil', action: 'create terminal for host'});
   return terminal;
 }
 
-const loggerInstance = vscode.window.createOutputChannel('CrOS IDE: UI Actions');
+const loggerInstance = vscode.window.createOutputChannel(
+  'CrOS IDE: UI Actions'
+);
 
 /**
  * Return the logger that should be used by actions done in UI. For example,
@@ -49,8 +61,8 @@ export const SHOW_UI_LOG: vscode.Command = {
 };
 
 export function getTestingRsaPath(context: vscode.ExtensionContext): string {
-  return vscode.Uri.
-      joinPath(context.extensionUri, 'resources', 'testing_rsa').fsPath;
+  return vscode.Uri.joinPath(context.extensionUri, 'resources', 'testing_rsa')
+    .fsPath;
 }
 
 /**
@@ -61,8 +73,12 @@ export function getTestingRsaPath(context: vscode.ExtensionContext): string {
  * @param extraOptions additional CLI options for your command
  * @returns formatted SSH command
  */
-export function sshFormatArgs(host: string, cmd: string, testingRsaPath: string,
-    extraOptions ?: string): string[] {
+export function sshFormatArgs(
+  host: string,
+  cmd: string,
+  testingRsaPath: string,
+  extraOptions?: string
+): string[] {
   let port = '22';
   const [hostname, portname] = host.split(':');
   if (portname !== undefined) {
@@ -72,7 +88,14 @@ export function sshFormatArgs(host: string, cmd: string, testingRsaPath: string,
 
   let args = ['-i', testingRsaPath];
   // eslint-disable-next-line max-len
-  const trailingArgs = ['-o StrictHostKeyChecking=no', '-o UserKnownHostsFile=/dev/null', '-p', port, `root@${host}`, cmd];
+  const trailingArgs = [
+    '-o StrictHostKeyChecking=no',
+    '-o UserKnownHostsFile=/dev/null',
+    '-p',
+    port,
+    `root@${host}`,
+    cmd,
+  ];
   if (extraOptions !== undefined) {
     args.push(extraOptions);
   }
@@ -89,7 +112,9 @@ export const BOARD = 'board';
  * @returns The targe board name. null if the user ignores popup. NoBoardError if there is no
  *   available board.
  */
-export async function getOrSelectTargetBoard(): Promise<string | null | NoBoardError> {
+export async function getOrSelectTargetBoard(): Promise<
+  string | null | NoBoardError
+> {
   const board = getConfigRoot().get<string>(BOARD);
   if (board) {
     return board;
@@ -99,8 +124,10 @@ export async function getOrSelectTargetBoard(): Promise<string | null | NoBoardE
 
 export class NoBoardError extends Error {
   constructor() {
-    super('no board has been setup; run setup_board for the board you want to use, ' +
-      'and revisit the editor');
+    super(
+      'no board has been setup; run setup_board for the board you want to use, ' +
+        'and revisit the editor'
+    );
   }
 }
 
@@ -113,31 +140,44 @@ export class NoBoardError extends Error {
  *
  * TODO(oka): unit test this function (consider stubbing vscode APIs).
  */
-export async function selectAndUpdateTargetBoard(
-    config: {suggestMostRecent: boolean}): Promise<string | null | NoBoardError> {
+export async function selectAndUpdateTargetBoard(config: {
+  suggestMostRecent: boolean;
+}): Promise<string | null | NoBoardError> {
   const boards = await cros.getSetupBoardsRecentFirst();
   const board = await selectBoard(boards, config.suggestMostRecent);
 
   if (board) {
     // TODO(oka): This should be per chroot (i.e. Remote) setting, instead of global (i.e. User).
-    await getConfigRoot().update(BOARD, board, vscode.ConfigurationTarget.Global);
+    await getConfigRoot().update(
+      BOARD,
+      board,
+      vscode.ConfigurationTarget.Global
+    );
   }
   return board;
 }
 
 async function selectBoard(
-    boards: string[], suggestMostRecent: boolean):Promise<string | null | NoBoardError> {
+  boards: string[],
+  suggestMostRecent: boolean
+): Promise<string | null | NoBoardError> {
   if (boards.length === 0) {
     return new NoBoardError();
   }
   if (suggestMostRecent) {
     const mostRecent = boards[0];
-    const selection = await commonUtil.withTimeout(vscode.window.showWarningMessage(
-        `Target board is not set. Do you use ${mostRecent}?`, {
+    const selection = await commonUtil.withTimeout(
+      vscode.window.showWarningMessage(
+        `Target board is not set. Do you use ${mostRecent}?`,
+        {
           title: 'Yes',
-        }, {
+        },
+        {
           title: 'Customize',
-        }), 30 * 1000);
+        }
+      ),
+      30 * 1000
+    );
     if (!selection) {
       return null;
     }
@@ -150,9 +190,11 @@ async function selectBoard(
         return null;
     }
   }
-  return await vscode.window.showQuickPick(boards, {
-    title: 'Target board',
-  }) || null;
+  return (
+    (await vscode.window.showQuickPick(boards, {
+      title: 'Target board',
+    })) || null
+  );
 }
 
 /**
@@ -175,7 +217,9 @@ function findExecutable(appRoot: string, name: string): string | Error {
  * Returns VSCode executable path, or error in case it's not found.
  */
 export function vscodeExecutablePath(
-    appRoot = vscode.env.appRoot, appName = vscode.env.appName): string | Error {
+  appRoot = vscode.env.appRoot,
+  appName = vscode.env.appName
+): string | Error {
   if (appName === 'code-server') {
     return findExecutable(appRoot, 'code-server');
   } else if (appName === 'Visual Studio Code') {

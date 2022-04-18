@@ -9,7 +9,7 @@ class BlockingPromise<T> {
   readonly promise: Promise<T | undefined>;
   unblock: () => void;
   private constructor(created: (p: BlockingPromise<T>) => void, value?: T) {
-    this.unblock = () => { }; // placeholder to satisfy type system.
+    this.unblock = () => {}; // placeholder to satisfy type system.
     this.promise = new Promise(resolve => {
       this.unblock = () => resolve(value);
       created(this);
@@ -88,88 +88,123 @@ describe('Job manager', () => {
 describe('Logging exec', () => {
   it('returns stdout and logs stderr', async () => {
     let logs = '';
-    const res = await commonUtil.exec('sh',
-        ['-c', 'echo foo; echo bar 1>&2'], log => {
-          logs += log;
-        });
+    const res = await commonUtil.exec(
+      'sh',
+      ['-c', 'echo foo; echo bar 1>&2'],
+      log => {
+        logs += log;
+      }
+    );
     assert(!(res instanceof Error));
     assert.strictEqual(res.stdout, 'foo\n');
-    assert.strictEqual(logs, `sh -c 'echo foo; echo bar 1>&2'\nbar\n`);
+    assert.strictEqual(logs, "sh -c 'echo foo; echo bar 1>&2'\nbar\n");
   });
 
   it('mixes stdout and stderr if logStdout flag is true', async () => {
     let logs = '';
-    await commonUtil.exec('sh',
-        ['-c', 'echo foo; echo bar 1>&2'], log => {
-          logs += log;
-        }, {logStdout: true});
-    assert.strictEqual(logs.length, `sh -c 'echo foo; echo bar 1>&2'\nfoo\nbar\n`.length);
+    await commonUtil.exec(
+      'sh',
+      ['-c', 'echo foo; echo bar 1>&2'],
+      log => {
+        logs += log;
+      },
+      {logStdout: true}
+    );
+    assert.strictEqual(
+      logs.length,
+      "sh -c 'echo foo; echo bar 1>&2'\nfoo\nbar\n".length
+    );
   });
 
   it('returns error on non-zero exit status when unrelated flags are set', async () => {
     let logs = '';
-    const res = await commonUtil.exec('sh',
-        ['-c', 'echo foo 1>&2; exit 1'], log => {
-          logs += log;
-        }, {logStdout: true});
+    const res = await commonUtil.exec(
+      'sh',
+      ['-c', 'echo foo 1>&2; exit 1'],
+      log => {
+        logs += log;
+      },
+      {logStdout: true}
+    );
     assert(res instanceof commonUtil.AbnormalExitError);
     assert(
-        res.message.includes(`sh -c 'echo foo 1>&2; exit 1'`),
-        'actual message: ' + res.message);
-    assert.strictEqual(logs, `sh -c 'echo foo 1>&2; exit 1'\nfoo\n`);
+      res.message.includes("sh -c 'echo foo 1>&2; exit 1'"),
+      'actual message: ' + res.message
+    );
+    assert.strictEqual(logs, "sh -c 'echo foo 1>&2; exit 1'\nfoo\n");
   });
 
   it('returns error on non-zero exit status when no flags are specified', async () => {
     let logs = '';
-    const res = await commonUtil.exec('sh',
-        ['-c', 'echo foo 1>&2; exit 1'], log => {
-          logs += log;
-        });
+    const res = await commonUtil.exec(
+      'sh',
+      ['-c', 'echo foo 1>&2; exit 1'],
+      log => {
+        logs += log;
+      }
+    );
     assert(res instanceof commonUtil.AbnormalExitError);
     assert(
-        res.message.includes(`sh -c 'echo foo 1>&2; exit 1'`),
-        'actual message: ' + res.message);
-    assert.strictEqual(logs, `sh -c 'echo foo 1>&2; exit 1'\nfoo\n`);
+      res.message.includes("sh -c 'echo foo 1>&2; exit 1'"),
+      'actual message: ' + res.message
+    );
+    assert.strictEqual(logs, "sh -c 'echo foo 1>&2; exit 1'\nfoo\n");
   });
 
   it('ignores non-zero exit status if ignoreNonZeroExit flag is true', async () => {
     let logs = '';
-    const res = await commonUtil.exec('sh',
-        ['-c', 'echo foo 1>&2; echo bar; exit 1'], log => {
-          logs += log;
-        }, {ignoreNonZeroExit: true});
+    const res = await commonUtil.exec(
+      'sh',
+      ['-c', 'echo foo 1>&2; echo bar; exit 1'],
+      log => {
+        logs += log;
+      },
+      {ignoreNonZeroExit: true}
+    );
     assert(!(res instanceof Error));
     const {exitStatus, stdout, stderr} = res;
     assert.strictEqual(exitStatus, 1);
     assert.strictEqual(stdout, 'bar\n');
     assert.strictEqual(stderr, 'foo\n');
-    assert.strictEqual(logs, `sh -c 'echo foo 1>&2; echo bar; exit 1'\nfoo\n`);
+    assert.strictEqual(logs, "sh -c 'echo foo 1>&2; echo bar; exit 1'\nfoo\n");
   });
 
   it('appends new lines to log', async () => {
     let logs = '';
-    const res = await commonUtil.exec('sh',
-        ['-c', 'echo -n foo; echo -n bar 1>&2;'], log => {
-          logs += log;
-        }, {logStdout: true});
+    const res = await commonUtil.exec(
+      'sh',
+      ['-c', 'echo -n foo; echo -n bar 1>&2;'],
+      log => {
+        logs += log;
+      },
+      {logStdout: true}
+    );
     assert(!(res instanceof Error));
     assert.strictEqual(res.stdout, 'foo');
-    assert.deepStrictEqual(logs.split('\n').sort(),
-        ['', 'bar', 'foo', `sh -c 'echo -n foo; echo -n bar 1>&2;'`]);
+    assert.deepStrictEqual(logs.split('\n').sort(), [
+      '',
+      'bar',
+      'foo',
+      "sh -c 'echo -n foo; echo -n bar 1>&2;'",
+    ]);
   });
 
   it('returns error when the command fails', async () => {
     const res = await commonUtil.exec('does_not_exist', ['--version']);
     assert(res instanceof commonUtil.ProcessError);
     assert(
-        res.message.includes('does_not_exist --version'),
-        'actual message: ' + res.message);
+      res.message.includes('does_not_exist --version'),
+      'actual message: ' + res.message
+    );
   });
 });
 
 describe('withTimeout utility', () => {
   it('returns before timeout', async () => {
-    assert.strictEqual(await commonUtil.withTimeout(Promise.resolve(true), 1 /* millis*/), true);
+    assert.strictEqual(
+      await commonUtil.withTimeout(Promise.resolve(true), 1 /* millis*/),
+      true
+    );
   });
 
   it('returns undefined after timeout', async () => {

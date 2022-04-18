@@ -29,7 +29,7 @@ export function activate(_context: vscode.ExtensionContext) {
     }
 
     const {covered: coveredRanges, uncovered: uncoveredRanges} =
-        await readDocumentCoverage(activeEditor.document.fileName);
+      await readDocumentCoverage(activeEditor.document.fileName);
 
     if (coveredRanges) {
       activeEditor.setDecorations(coveredDecoration, coveredRanges);
@@ -58,7 +58,9 @@ export interface Coverage {
  * not available, or ranges that should be shown.
  */
 export async function readDocumentCoverage(
-    documentFileName : string, rootForTesting: string = '/'): Promise<Coverage> {
+  documentFileName: string,
+  rootForTesting = '/'
+): Promise<Coverage> {
   const {pkg, relativePath} = parseFileName(documentFileName);
   if (!pkg || !relativePath) {
     return {};
@@ -76,8 +78,8 @@ export async function readDocumentCoverage(
 
   // TODO(ttylenda): process segments to display correct output
 
-  const coveredRanges : vscode.Range[] = [];
-  const uncoveredRanges : vscode.Range[] = [];
+  const coveredRanges: vscode.Range[] = [];
+  const uncoveredRanges: vscode.Range[] = [];
 
   for (const s of segments) {
     const line = s[LINE_NUMBER];
@@ -106,20 +108,23 @@ const COUNT = 2;
 
 /** Actual coverage data that we need. */
 interface FileCoverage {
-  filename: string,
-  segments: Segment[],
+  filename: string;
+  segments: Segment[];
 }
 
 /** Top-level element in coverage.json */
 interface CoverageJson {
   // Only data[0] appears to be used.
-  data : {files: FileCoverage[]}[],
+  data: {files: FileCoverage[]}[];
 }
 
 const platform2 = 'platform2/';
 
 /** Get package name and relative path from a path to platform2 file. */
-function parseFileName(documentFileName: string): {pkg?: string, relativePath?: string} {
+function parseFileName(documentFileName: string): {
+  pkg?: string;
+  relativePath?: string;
+} {
   const p2idx = documentFileName.lastIndexOf(platform2);
   if (p2idx === -1) {
     return {};
@@ -134,9 +139,14 @@ function parseFileName(documentFileName: string): {pkg?: string, relativePath?: 
 const coverageDir = 'build/amd64-generic/build/coverage_data/';
 
 /** Read coverage.json of a package. */
-async function readPkgCoverage(pkg: string, rootForTesting: string = '/')
-    : Promise<CoverageJson|undefined> {
-  const globPattern = `${path.join(rootForTesting, coverageDir)}*/${pkg}*/*/coverage.json`;
+async function readPkgCoverage(
+  pkg: string,
+  rootForTesting = '/'
+): Promise<CoverageJson | undefined> {
+  const globPattern = `${path.join(
+    rootForTesting,
+    coverageDir
+  )}*/${pkg}*/*/coverage.json`;
   let matches: string[];
   try {
     matches = await util.promisify(glob)(globPattern);
@@ -159,8 +169,10 @@ async function readPkgCoverage(pkg: string, rootForTesting: string = '/')
 }
 
 /** Get segments data from a coverage JSON object. */
-async function getSegments(coverage: CoverageJson, relativePath: string)
-    : Promise<Segment[]|undefined> {
+async function getSegments(
+  coverage: CoverageJson,
+  relativePath: string
+): Promise<Segment[] | undefined> {
   const files = coverage.data[0].files;
   // TODO(ttylenda): Find the right file in a more accurate way.
   const currentFile = files.find(f => f.filename.endsWith(relativePath));

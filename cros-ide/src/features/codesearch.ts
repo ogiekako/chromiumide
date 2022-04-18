@@ -10,13 +10,13 @@ export function activate(context: vscode.ExtensionContext) {
   const codeSearch = new CodeSearch();
 
   const openFileCmd = vscode.commands.registerTextEditorCommand(
-      'cros-ide.codeSearchOpenCurrentFile',
-      (textEditor: vscode.TextEditor) => codeSearch.openCurrentFile(textEditor),
+    'cros-ide.codeSearchOpenCurrentFile',
+    (textEditor: vscode.TextEditor) => codeSearch.openCurrentFile(textEditor)
   );
 
   const searchSelectionCmd = vscode.commands.registerTextEditorCommand(
-      'cros-ide.codeSearchSearchForSelection',
-      (textEditor: vscode.TextEditor) => codeSearch.searchSelection(textEditor),
+    'cros-ide.codeSearchSearchForSelection',
+    (textEditor: vscode.TextEditor) => codeSearch.searchSelection(textEditor)
   );
 
   context.subscriptions.push(openFileCmd, searchSelectionCmd);
@@ -29,8 +29,7 @@ class CodeSearch {
   constructor(
     // WorkspaceConfiguration objects do not change when users change settings
     // so we need to obtain them every time the user opens a CS link.
-    private readonly getConfigRoot:
-        () => vscode.WorkspaceConfiguration = ideUtilities.getConfigRoot,
+    private readonly getConfigRoot: () => vscode.WorkspaceConfiguration = ideUtilities.getConfigRoot
   ) {}
 
   async openCurrentFile(textEditor: vscode.TextEditor) {
@@ -43,10 +42,15 @@ class CodeSearch {
 
     // generate_cs_path is a symlink that uses a wrapper to call a Python script,
     // so we need to spawn a shell.
-    const res = await commonUtil.exec('sh',
-        ['-c', `${generateCsPath} --show "--${csInstance}" --line=${line} "${fullpath}"`],
-        ideUtilities.getUiLogger().append,
-        {logStdout: true, ignoreNonZeroExit: true});
+    const res = await commonUtil.exec(
+      'sh',
+      [
+        '-c',
+        `${generateCsPath} --show "--${csInstance}" --line=${line} "${fullpath}"`,
+      ],
+      ideUtilities.getUiLogger().append,
+      {logStdout: true, ignoreNonZeroExit: true}
+    );
 
     if (res instanceof Error) {
       vscode.window.showErrorMessage('Could not run generate_cs_path:' + res);
@@ -55,7 +59,9 @@ class CodeSearch {
 
     const {exitStatus, stdout, stderr} = res;
     if (exitStatus) {
-      vscode.window.showErrorMessage(`generate_cs_path returned an error: ${stderr}`);
+      vscode.window.showErrorMessage(
+        `generate_cs_path returned an error: ${stderr}`
+      );
       metrics.send({
         category: 'codesearch',
         action: 'generate CodeSearch path',
@@ -82,13 +88,15 @@ class CodeSearch {
     // If the setting is gitiles, we use public CodeSearch
     const csInstance = this.getConfigRoot().get<string>(codeSearch);
     const csBase =
-      csInstance === 'internal' ?
-          'https://source.corp.google.com/' : 'https://source.chromium.org/';
+      csInstance === 'internal'
+        ? 'https://source.corp.google.com/'
+        : 'https://source.chromium.org/';
 
     const selectedText = textEditor.document.getText(textEditor.selection);
-    const uri =
-        vscode.Uri.parse(csBase)
-            .with({path: '/search', query: `q=${selectedText}`});
+    const uri = vscode.Uri.parse(csBase).with({
+      path: '/search',
+      query: `q=${selectedText}`,
+    });
     vscode.env.openExternal(uri);
     metrics.send({
       category: 'codesearch',

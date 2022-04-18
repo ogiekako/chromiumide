@@ -9,39 +9,52 @@ import * as vscode from 'vscode';
 import * as ideUtilities from '../../ide_utilities';
 import * as metricsUtils from './metrics_util';
 
-const informationMessageTitle = 'We would like to collect metrics to have a better understanding ' +
-    'and improve on your experience!';
+const informationMessageTitle =
+  'We would like to collect metrics to have a better understanding ' +
+  'and improve on your experience!';
 
 const informationMessageDetail =
-    'This includes data on install, uninstall, and command invocation events, to obtain insights ' +
-    'on how users are using our extension and their satisfaction level.\n' +
-    'Working directories of these events will be recorded to help us identifying repositories / ' +
-    'projects that the extension is less popular and/or helpful so we can improve on user ' +
-    'experience for the teams specifically.\n' +
-    'The data is pseudonymous. i.e. it is associated to a randomly generated unique user ID ' +
-    'which resets every 180 days automatically, and you can also reset it from the Command ' +
-    'Palette.\n' +
-    'Raw data is only accessible by the modern IDE team. However, aggregated data (e.g. trend ' +
-    'of number of users against time) might be shared with broader audience for retrospective or ' +
-    'advertising purpose.\n' +
-    'You can opt-in or out of metrics collection anytime in settings (> extension > CrOS IDE).\n' +
-    'Metrics from external (non-googler) users will not be collected.' +
-    '\n' +
-    'Would you like to assist us by turning on metrics collection?';
+  'This includes data on install, uninstall, and command invocation events, to obtain insights ' +
+  'on how users are using our extension and their satisfaction level.\n' +
+  'Working directories of these events will be recorded to help us identifying repositories / ' +
+  'projects that the extension is less popular and/or helpful so we can improve on user ' +
+  'experience for the teams specifically.\n' +
+  'The data is pseudonymous. i.e. it is associated to a randomly generated unique user ID ' +
+  'which resets every 180 days automatically, and you can also reset it from the Command ' +
+  'Palette.\n' +
+  'Raw data is only accessible by the modern IDE team. However, aggregated data (e.g. trend ' +
+  'of number of users against time) might be shared with broader audience for retrospective or ' +
+  'advertising purpose.\n' +
+  'You can opt-in or out of metrics collection anytime in settings (> extension > CrOS IDE).\n' +
+  'Metrics from external (non-googler) users will not be collected.' +
+  '\n' +
+  'Would you like to assist us by turning on metrics collection?';
 
 export function activate(_context: vscode.ExtensionContext) {
-  const showMessage = ideUtilities.getConfigRoot().get<boolean>('metrics.showMessage');
+  const showMessage = ideUtilities
+    .getConfigRoot()
+    .get<boolean>('metrics.showMessage');
   if (showMessage) {
-    vscode.window.showInformationMessage(informationMessageTitle,
-        {detail: informationMessageDetail, modal: true}, 'Yes')
-        .then(selection => {
-          if (selection && selection === 'Yes') {
-            ideUtilities.getConfigRoot().update(
-                'metrics.collectMetrics', true, vscode.ConfigurationTarget.Global);
-          }
-        });
-    ideUtilities.getConfigRoot().update(
-        'metrics.showMessage', false, vscode.ConfigurationTarget.Global);
+    vscode.window
+      .showInformationMessage(
+        informationMessageTitle,
+        {detail: informationMessageDetail, modal: true},
+        'Yes'
+      )
+      .then(selection => {
+        if (selection && selection === 'Yes') {
+          ideUtilities
+            .getConfigRoot()
+            .update(
+              'metrics.collectMetrics',
+              true,
+              vscode.ConfigurationTarget.Global
+            );
+        }
+      });
+    ideUtilities
+      .getConfigRoot()
+      .update('metrics.showMessage', false, vscode.ConfigurationTarget.Global);
   }
 
   vscode.commands.registerCommand('cros-ide.resetUserID', () => {
@@ -54,8 +67,16 @@ const trackingIdTesting = 'UA-221509619-1';
 const trackingIdReal = 'UA-221509619-2';
 const hitType = 'event';
 
-const ideDevelopers =
-  ['lokeric', 'hscham', 'oka', 'fqj', 'nya', 'yamaguchi', 'ttylenda', 'yoshiki'];
+const ideDevelopers = [
+  'lokeric',
+  'hscham',
+  'oka',
+  'fqj',
+  'nya',
+  'yamaguchi',
+  'ttylenda',
+  'yoshiki',
+];
 
 const optionsGA = {
   hostname: 'www.google-analytics.com',
@@ -76,17 +97,21 @@ interface Event {
 export class Analytics {
   private readonly userAgent: string;
 
-  private constructor(private readonly trackingId: string, private readonly userId: string) {
+  private constructor(
+    private readonly trackingId: string,
+    private readonly userId: string
+  ) {
     this.userAgent = metricsUtils.getUserAgent();
   }
 
   // Constructor cannot be async.
-  static async create() : Promise<Analytics> {
+  static async create(): Promise<Analytics> {
     const uid = await metricsUtils.readOrCreateUserId();
     // Send metrics to testing-purpose Google Analytics property if user is a cros-ide team member,
     // to avoid polluting user data when debugging extension during development.
-    const tid = ideDevelopers.includes(os.userInfo().username)?
-      trackingIdTesting : trackingIdReal;
+    const tid = ideDevelopers.includes(os.userInfo().username)
+      ? trackingIdTesting
+      : trackingIdReal;
     return new Analytics(tid, uid);
   }
 
@@ -116,20 +141,25 @@ export class Analytics {
 
   /**
    * Send event as query. Does not wait for its response.
-  */
+   */
   send(event: Event, options = optionsGA) {
     // Disable sending metrics at all until privacy review is approved.
     // Do not send event if userId fails to initialize or user is not a googler, or user opt-out of
     // metrics collection.
-    // eslint-disable-next-line no-constant-condition
-    if (true || !this.userId || this.userId === metricsUtils.externalUserIdStub() ||
-        !ideUtilities.getConfigRoot().get<boolean>('metrics.collectMetrics')) {
+    if (
+      // eslint-disable-next-line no-constant-condition
+      true ||
+      !this.userId ||
+      this.userId === metricsUtils.externalUserIdStub() ||
+      !ideUtilities.getConfigRoot().get<boolean>('metrics.collectMetrics')
+    ) {
       return;
     }
 
     const query = this.eventToQuery(event);
     console.debug(
-        `sending query ${query} to GA ${this.trackingId} property with uid ${this.userId}`);
+      `sending query ${query} to GA ${this.trackingId} property with uid ${this.userId}`
+    );
 
     const req = https.request(options, res => {
       console.debug(`Sent request, status code = ${res.statusCode}`);
@@ -137,7 +167,7 @@ export class Analytics {
       res.on('data', (chunk: Buffer) => {
         body.push(chunk);
       });
-      res.on(`end`, () => {
+      res.on('end', () => {
         const resString = Buffer.concat(body).toString();
         console.debug(`Sent request, response = ${resString}`);
       });
@@ -152,7 +182,7 @@ export class Analytics {
   }
 }
 
-let analytics: Promise<Analytics>|null;
+let analytics: Promise<Analytics> | null;
 export function send(event: Event) {
   if (!analytics) {
     analytics = Analytics.create();

@@ -19,7 +19,7 @@ export function escape(arg: string): string {
   if (safeRE.test(arg)) {
     return arg;
   }
-  return `'` + arg.replace(`'`, `'"'"'`) + `'`;
+  return "'" + arg.replace("'", "'\"'\"'") + "'";
 }
 
 /**
