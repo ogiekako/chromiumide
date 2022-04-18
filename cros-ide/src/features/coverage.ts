@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as util from 'util';
 import * as vscode from 'vscode';
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(_context: vscode.ExtensionContext) {
   // Highlight colors were copied from Code Search.
   const coveredDecoration = vscode.window.createTextEditorDecorationType({
     light: {backgroundColor: '#e5ffe5'},

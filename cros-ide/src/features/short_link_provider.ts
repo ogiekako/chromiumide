@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
  */
 export class ShortLinkProvider implements vscode.DocumentLinkProvider {
   public provideDocumentLinks(
-      document: vscode.TextDocument, token: vscode.CancellationToken)
+      document: vscode.TextDocument, _token: vscode.CancellationToken)
     : vscode.ProviderResult<vscode.DocumentLink[]> {
     // TODO(b/216429126): add caching
     return this.extractLinks(document, shortLinkPattern, shortLinkUri)

@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import * as ideUtilities from './ide_utilities';
 import * as install from './tools/install';
 
-export async function run(context: vscode.ExtensionContext) {
+export async function run(_context: vscode.ExtensionContext) {
   const extenstion = vscode.extensions.getExtension('google.cros-ide');
   // This should not happen.
   if (!extenstion) {

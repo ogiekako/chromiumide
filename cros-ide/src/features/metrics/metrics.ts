@@ -29,7 +29,7 @@ const informationMessageDetail =
     '\n' +
     'Would you like to assist us by turning on metrics collection?';
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(_context: vscode.ExtensionContext) {
   const showMessage = ideUtilities.getConfigRoot().get<boolean>('metrics.showMessage');
   if (showMessage) {
     vscode.window.showInformationMessage(informationMessageTitle,

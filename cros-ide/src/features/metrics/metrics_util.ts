@@ -18,10 +18,10 @@ export function getConfigPath() : string {
 }
 
 function isGoogler(): Promise<boolean> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
     https.get('https://cit-cli-metrics.appspot.com/should-upload', res => {
       resolve(res.statusCode === 200);
-    }).on('error', error => {
+    }).on('error', _error => {
       resolve(false);
     });
   });

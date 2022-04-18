@@ -4,7 +4,7 @@
 
 import * as vscode from 'vscode';
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(_context: vscode.ExtensionContext) {
   vscode.commands.registerCommand('cros-ide.fileIdeBug', () => {
     vscode.env.openExternal(vscode.Uri.parse('http://go/cros-ide-new-bug'));
   });
@@ -16,4 +16,3 @@ export function activate(context: vscode.ExtensionContext) {
   feedbackStatusBarItem.tooltip = 'File a CrOS IDE bug on Buganizer';
   feedbackStatusBarItem.show();
 }
-

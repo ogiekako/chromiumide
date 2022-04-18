@@ -11,7 +11,7 @@ import * as ideUtilities from '../ide_utilities';
  *
  * @returns `StatusManager` which allows other packages to create tasks with a status.
  */
-export function activate(context: vscode.ExtensionContext): StatusManager {
+export function activate(_context: vscode.ExtensionContext): StatusManager {
   vscode.commands.registerCommand('cros-ide.showIdeLog', () => {
     ideUtilities.getUiLogger().show();
   });
@@ -33,12 +33,8 @@ export function activate(context: vscode.ExtensionContext): StatusManager {
 }
 
 export enum TaskStatus {
-  // TODO(b:228543298): eslint incorrectly warns of unused enums.
-  // eslint-disable-next-line no-unused-vars
   OK,
-  // eslint-disable-next-line no-unused-vars
   ERROR,
-  // eslint-disable-next-line no-unused-vars
   RUNNING
 }
 

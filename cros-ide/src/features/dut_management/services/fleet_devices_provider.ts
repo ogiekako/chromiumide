@@ -54,7 +54,7 @@ export class FleetDevicesProvider implements vscode.TreeDataProvider<string> {
         } catch (_) { }
         dut.version = version;
         this.onDidChangeTreeDataEmitter.fire();
-      })().catch((e) => { });
+      })().catch((_) => { });
       updateJobs.push(p);
     }
     return Promise.all(updateJobs);

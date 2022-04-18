@@ -53,7 +53,7 @@ export class LocalDevicesProvider implements vscode.TreeDataProvider<string> {
         } catch (_) { }
         this.cachedVersions.set(host, version);
         this.onDidChangeTreeDataEmitter.fire();
-      })().catch((e) => { });
+      })().catch((_) => { });
     }
   }
 

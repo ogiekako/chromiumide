@@ -167,7 +167,7 @@ export async function activateDutManager(context: vscode.ExtensionContext) {
   */
 async function rsaKeyFixPermission(context: vscode.ExtensionContext) {
   const rsaKeyPath = ideutil.getTestingRsaPath(context);
-  await fs.promises.chmod(rsaKeyPath, '0600').catch((err) => {
+  await fs.promises.chmod(rsaKeyPath, '0600').catch((_err) => {
     vscode.window.showErrorMessage('Fatal: unable to update testing_rsa permission: ' + rsaKeyPath);
   });
 }

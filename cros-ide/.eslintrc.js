@@ -27,5 +27,15 @@ module.exports = {
     'no-throw-literal': 0,
     'no-invalid-this': 0,
     'valid-jsdoc': 0, // has been deprecated in ESLint v5.10.0.
+
+    // Disables the original "no-unused-vars" for JavaScript and enables the
+    // one for TypeScript.
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', {
+      'vars': 'all',
+      'args': 'after-used',
+      'ignoreRestSiblings': false,
+      'argsIgnorePattern': "^_"
+    }],
   },
 };
