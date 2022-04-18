@@ -106,12 +106,10 @@ describe('Build and publish', () => {
     wantReject: true,
   }, {
     name: 'fails when package.json is not updated',
-    // eslint-disable-next-line max-len
     customDiffOutput: '',
     wantReject: true,
   }, {
     name: 'fails when version is not updated',
-    // eslint-disable-next-line max-len
     customDiffOutput: `diff --git a/ide_tooling/cros-ide/package.json b/ide_tooling/cros-ide/package.json
 index 11eef9ccd..0ee259d51 100644
 --- a/ide_tooling/cros-ide/package.json
@@ -160,7 +158,6 @@ index 11eef9ccd..0ee259d51 100644
             if (testCase.customDiffOutput !== undefined) {
               return testCase.customDiffOutput;
             }
-            // eslint-disable-next-line max-len
             return `diff --git a/ide_tooling/cros-ide/package.json b/ide_tooling/cros-ide/package.json
 index ee8697e11..877d91ddd 100644
 --- a/ide_tooling/cros-ide/package.json

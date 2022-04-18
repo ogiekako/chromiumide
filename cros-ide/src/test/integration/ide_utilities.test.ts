@@ -31,7 +31,6 @@ describe('IDE utilities', () => {
       },
       {
         name: 'VSCode Insiders',
-        // eslint-disable-next-line max-len
         exe: '.vscode-server-insiders/bin/b84feecf9231d404a766e251f8a37c730089511b/bin/remote-cli/code-insiders',
         appRoot: '.vscode-server-insiders/bin/b84feecf9231d404a766e251f8a37c730089511b',
         appName: 'Visual Studio Code - Insiders',

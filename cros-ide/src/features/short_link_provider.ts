@@ -52,7 +52,6 @@ export class ShortLinkProvider implements vscode.DocumentLinkProvider {
 
 // Keep regular expression in one line to work around Gerrit syntax
 // highlighting bug.
-/* eslint max-len: ["error", { "ignoreRegExpLiterals": true }]*/
 
 // Matches bugs references with chromium:xxxxxx and b:xxxxxx.
 // We start with lookahead for spaces, '(' and line start to avoid mathichg

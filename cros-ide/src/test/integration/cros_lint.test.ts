@@ -7,8 +7,6 @@ import * as vscode from 'vscode';
 
 import * as crosLint from '../../features/cros_lint';
 
-/* eslint max-len: ["error", { "ignoreTemplateLiterals": true }]*/
-
 const cppFileName = 'cros-disks/aaa.h';
 
 const cppFileContents =

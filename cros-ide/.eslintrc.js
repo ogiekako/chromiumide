@@ -23,7 +23,15 @@ module.exports = {
     // violations are removed from the code.
     'require-jsdoc': 0,
     'arrow-parens': 0,
-    'max-len': ['error', {code: 100}],
+    'max-len': [
+      'error',
+      {
+        code: 100,
+        ignoreStrings: true,
+        ignoreTemplateLiterals: true,
+        ignoreRegExpLiterals: true,
+      },
+    ],
     'no-throw-literal': 0,
     'no-invalid-this': 0,
     'valid-jsdoc': 0, // has been deprecated in ESLint v5.10.0.
