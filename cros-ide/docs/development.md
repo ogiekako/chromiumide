@@ -56,6 +56,35 @@ To enable a features go to File > Preference > Settings (Ctrl+,) and then
 Extensions > CrOS (CrOS IDE must be activated first). After enabling a feature, run
 'Developer: Reload Window' (Ctrl+R) to make sure it is loaded correctly.
 
+## Coding styles
+
+We follow [Google TypeScript style guide].
+
+This project contains configurations for [ESLint] and [Prettier] derived from
+[GTS]. Install [ESLint extension] and [Prettier extension] to your VSCode to
+see lint errors in real-time and format on save. From command lines, you can
+run `npm run lint` to check lint errors, and `npm run fix` to fix many of them
+automatically.
+
+Note that we have slight deviations from [Google TypeScript style guide]:
+
+- Function parameters with a leading underscore can be unused. Google TS style
+  team is about to allow them ([b/173108529]).
+- Indentation style is a bit different (e.g. 2-space indentation for continued
+  lines). This difference comes from the fact that GTS uses Prettier as the
+  code formatter, in contrast to clang-format used within Google. After all,
+  TS style guide is replacing written formatting rules with recommendation to
+  rely on code formatters ([cl/433269475]).
+
+[Google TypeScript style guide]: http://go/ts-style
+[ESLint]: https://eslint.org/
+[Prettier]: https://prettier.io/
+[ESLint extension]: https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint
+[Prettier extension]: https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
+[GTS]: https://github.com/google/gts
+[b/173108529]: http://b/173108529
+[cl/433269475]: http://cl/433269475
+
 ## FAQs
 
 * How to check that my VSCode is connected to chroot?

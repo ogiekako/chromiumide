@@ -23,13 +23,17 @@
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
 
-  // Use eslint for linter and code-styler
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
-  },
+  // Use Prettier as the default code formatter.
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
   // Languages to be validated by eslint on vscode
   "eslint.validate": [
     "javascript",
     "typescript"
+  ],
+
+  // Treat formatting errors as informational.
+  "eslint.rules.customizations": [
+    { "rule": "prettier/prettier", "severity": "info" }
   ]
 }
