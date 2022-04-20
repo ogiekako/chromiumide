@@ -9,7 +9,7 @@ import * as commonUtil from '../../common/common_util';
 import * as ideUtil from '../../ide_util';
 import * as bgTaskStatus from '../../ui/bg_task_status';
 import * as constants from './constants';
-import * as packages from './packages';
+import {Packages} from './packages';
 
 export function activate(
   context: vscode.ExtensionContext,
@@ -18,7 +18,11 @@ export function activate(
   const log = vscode.window.createOutputChannel('CrOS IDE: C++ Support');
   vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => log.show());
 
-  const compildationDatabase = new CompilationDatabase(statusManager, log);
+  const compildationDatabase = new CompilationDatabase(
+    statusManager,
+    log,
+    new Packages()
+  );
 
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(editor => {
@@ -56,7 +60,8 @@ class CompilationDatabase {
 
   constructor(
     private readonly statusManager: bgTaskStatus.StatusManager,
-    private readonly log: vscode.OutputChannel
+    private readonly log: vscode.OutputChannel,
+    private readonly packages: Packages
   ) {}
 
   // Generate compilation database for clangd.
@@ -65,11 +70,11 @@ class CompilationDatabase {
     if (!this.enabled) {
       return;
     }
-    const packageInfo = await packages.getPackage(document.fileName);
+    const packageInfo = await this.packages.fromFilepath(document.fileName);
     if (!packageInfo) {
       return;
     }
-    const {sourceDir, pkg} = packageInfo;
+    const {sourceDir, atom} = packageInfo;
 
     const board = await ideUtil.getOrSelectTargetBoard();
     if (board instanceof ideUtil.NoBoardError) {
@@ -89,14 +94,14 @@ class CompilationDatabase {
         return; // early return from queued job.
       }
       try {
-        const {shouldRun, userConsent} = await shouldRunCrosWorkon(board, pkg);
+        const {shouldRun, userConsent} = await shouldRunCrosWorkon(board, atom);
         if (shouldRun && !userConsent) {
           return;
         }
         if (shouldRun) {
           const res = await commonUtil.exec(
             'cros_workon',
-            ['--board', board, 'start', pkg],
+            ['--board', board, 'start', atom],
             this.log.append
           );
           if (res instanceof Error) {
@@ -104,18 +109,18 @@ class CompilationDatabase {
           }
         }
 
-        const error = await this.runEmerge(board, pkg);
+        const error = await this.runEmerge(board, atom);
         if (error) {
           vscode.window.showErrorMessage(error.message);
           return;
         }
 
-        const filepath = `/build/${board}/build/compilation_database/${pkg}/compile_commands_chroot.json`;
+        const filepath = `/build/${board}/build/compilation_database/${atom}/compile_commands_chroot.json`;
         if (!fs.existsSync(filepath)) {
           const dismiss = 'Dismiss';
           const dialog = vscode.window.showErrorMessage(
             'Compilation database not found. ' +
-              `Update the ebuild file for ${pkg} to generate it. ` +
+              `Update the ebuild file for ${atom} to generate it. ` +
               'Example: https://crrev.com/c/2909734',
             dismiss
           );
@@ -160,8 +165,8 @@ class CompilationDatabase {
   }
 
   /** Runs emerge and shows a spinning progress indicator in the status bar. */
-  async runEmerge(board: string, pkg: string): Promise<Error | undefined> {
-    const task = `Building refs for ${pkg}`;
+  async runEmerge(board: string, atom: string): Promise<Error | undefined> {
+    const task = `Building refs for ${atom}`;
     this.statusManager.setTask(task, {
       status: bgTaskStatus.TaskStatus.RUNNING,
       command: SHOW_LOG_COMMAND,
@@ -172,12 +177,12 @@ class CompilationDatabase {
     const progress = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Left
     );
-    progress.text = `$(sync~spin)Building refs for ${pkg}`;
+    progress.text = `$(sync~spin)Building refs for ${atom}`;
     progress.command = SHOW_LOG_COMMAND;
     progress.show();
     const res = await commonUtil.exec(
       'env',
-      ['USE=compilation_database', `emerge-${board}`, pkg],
+      ['USE=compilation_database', `emerge-${board}`, atom],
       this.log.append,
       {logStdout: true}
     );
@@ -229,18 +234,18 @@ async function getUserConsent(
 const AUTO_CROS_WORKON_CONFIG = 'clangdSupport.crosWorkonPrompt';
 
 /**
- * Returns whether to run cros_workon start for the board and pkg. If the package is already being
+ * Returns whether to run cros_workon start for the board and atom. If the package is already being
  * worked on, it returns shouldRun = false. Otherwise, in addition to shouldRun = true, it tries
  * getting user consent to run the command and fills userConsent.
  */
 async function shouldRunCrosWorkon(
   board: string,
-  pkg: string
+  atom: string
 ): Promise<{
   shouldRun: boolean;
   userConsent?: boolean;
 }> {
-  if ((await workonList(board)).includes(pkg)) {
+  if ((await workonList(board)).includes(atom)) {
     return {
       shouldRun: false,
     };
@@ -255,7 +260,7 @@ async function shouldRunCrosWorkon(
     const choice = await commonUtil.withTimeout(
       vscode.window.showInformationMessage(
         "Generating cross references requires 'cros_workon " +
-          `--board=${board} start ${pkg}'. Proceed?`,
+          `--board=${board} start ${atom}'. Proceed?`,
         {},
         YES,
         ALWAYS,

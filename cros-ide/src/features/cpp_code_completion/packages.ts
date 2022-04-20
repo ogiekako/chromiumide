@@ -6,43 +6,53 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as constants from './constants';
 
+export type SourceDir = string; // directory containing source code relative to chromiumos/
+export type Atom = string; // category/packagename e.g. chromeos-base/codelab
+
 export interface PackageInfo {
-  sourceDir: string; // directory containing source code relative to chromiumos/
-  pkg: string; // package name
+  sourceDir: SourceDir;
+  atom: Atom;
 }
 
-// Get information of the package that would compile the file and generates
-// compilation database, or null if no such package is known.
-export async function getPackage(
-  filepath: string,
-  mntHostSource: string = constants.MNT_HOST_SOURCE
-): Promise<PackageInfo | null> {
-  let realpath = '';
-  try {
-    realpath = await fs.promises.realpath(filepath);
-  } catch (_e) {
-    return null;
-  }
-  const relPath = path.relative(mntHostSource, realpath);
-  if (relPath.startsWith('..') || path.isAbsolute(relPath)) {
-    return null;
-  }
-  let res = null;
-  for (const pkg of KNOWN_PACKAGES) {
-    if (
-      relPath.startsWith(pkg.sourceDir + '/') &&
-      (res === null || res.sourceDir.length < pkg.sourceDir.length)
-    ) {
-      res = pkg;
+// TODO(oka): Make this a singleton if this is used from multiple places.
+export class Packages {
+  private mapping = new Map<SourceDir, PackageInfo>();
+  constructor(private readonly mntHostSource = constants.MNT_HOST_SOURCE) {
+    for (const packageInfo of KNOWN_PACKAGES) {
+      this.mapping.set(packageInfo.sourceDir, packageInfo);
     }
   }
-  return res;
+
+  /**
+   * Get information of the package that would compile the file and generates
+   * compilation database, or null if no such package is known.
+   */
+  async fromFilepath(filepath: string): Promise<PackageInfo | null> {
+    let realpath = '';
+    try {
+      realpath = await fs.promises.realpath(filepath);
+    } catch (_e) {
+      return null;
+    }
+    let relPath = path.relative(this.mntHostSource, realpath);
+    if (relPath.startsWith('..') || path.isAbsolute(relPath)) {
+      return null;
+    }
+    while (relPath !== '.') {
+      const info = this.mapping.get(relPath);
+      if (info !== undefined) {
+        return info;
+      }
+      relPath = path.dirname(relPath);
+    }
+    return null;
+  }
 }
 
 // Known source code location to package name mapping which supports
 // compilation database generation.
 // TODO(oka): automatically generate this list when the extension is activated.
-export const KNOWN_PACKAGES: Array<PackageInfo> = [
+const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/aosp/frameworks/ml', 'chromeos-base/aosp-frameworks-ml-nn'],
   [
     'src/aosp/frameworks/ml/chromeos/tests',
@@ -295,10 +305,10 @@ export const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/platform2/vm_tools/sommelier', 'chromeos-base/sommelier'],
   ['src/platform2/vpn-manager', 'chromeos-base/vpn-manager'],
   ['src/platform2/webserver', 'chromeos-base/webserver'],
-].map(([sourceDir, pkg]) => {
+].map(([sourceDir, atom]) => {
   return {
     sourceDir,
-    pkg,
+    atom,
   };
 });
 Object.freeze(KNOWN_PACKAGES);
