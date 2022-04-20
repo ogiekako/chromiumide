@@ -251,6 +251,11 @@
           "description": "Enable Test Coverage (incomplete)",
           "default": false
         },
+        "cros-ide.underDevelopment.fasterCppXrefGeneration": {
+          "type": "boolean",
+          "description": "Faster compilation database generation for C++ xrefs (incomplete)",
+          "default": false
+        },
         "cros-ide.hosts": {
           "type": "array",
           "scope": "machine-overridable",

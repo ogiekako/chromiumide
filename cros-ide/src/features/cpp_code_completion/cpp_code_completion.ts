@@ -117,6 +117,27 @@ class CompilationDatabase {
     board: string,
     {sourceDir, atom}: PackageInfo
   ) {
+    if (
+      !ideUtil.getConfigRoot().get('underDevelopment.fasterCppXrefGeneration')
+    ) {
+      return await this.generateCompilationDatabaseLegecy(board, {
+        sourceDir,
+        atom,
+      });
+    }
+    // TODO(oka): Implement it.
+    vscode.window.showErrorMessage(
+      'Faster C++ xrefs generation is under construction'
+    );
+  }
+
+  /**
+   * Legacy logic to generate compilation database.
+   */
+  async generateCompilationDatabaseLegecy(
+    board: string,
+    {sourceDir, atom}: PackageInfo
+  ) {
     const {shouldRun, userConsent} = await shouldRunCrosWorkon(board, atom);
     if (shouldRun && !userConsent) {
       return;
