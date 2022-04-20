@@ -26,10 +26,17 @@ type SpiableVscodeWindow = Omit<
  */
 function newVscodeSpy() {
   return {
+    commands: jasmine.createSpyObj<typeof vscode.commands>('vscode.commands', [
+      'registerCommand',
+      'registerTextEditorCommand',
+      'executeCommand',
+    ]),
     env: jasmine.createSpyObj<typeof vscode.env>('vscode.env', [
       'openExternal',
     ]),
     window: jasmine.createSpyObj<SpiableVscodeWindow>('vscode.window', [
+      'createOutputChannel',
+      'createStatusBarItem',
       'showErrorMessage',
       'showInformationMessage',
       'showInputBox',
@@ -75,6 +82,7 @@ export function installVscodeDouble(): {
   const real = vscode;
   const original = Object.assign({}, real);
   beforeEach(() => {
+    real.commands = vscodeSpy.commands;
     real.env = vscodeSpy.env;
     real.window = buildNamespace(vscodeSpy.window, vscodeEmitters.window);
     real.workspace = buildNamespace(
