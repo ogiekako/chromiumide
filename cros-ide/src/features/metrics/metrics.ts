@@ -10,12 +10,12 @@ import * as ideUtil from '../../ide_util';
 import * as metricsUtils from './metrics_util';
 
 const informationMessageTitle =
-  'We would like to collect metrics to have a better understanding ' +
-  'and improve on your experience!';
+  'CrOS IDE team would like to collect metrics to have a better understanding and improve on ' +
+  'your experience!';
 
 const informationMessageDetail =
-  'This includes data on install, uninstall, and command invocation events, to obtain insights ' +
-  'on how users are using our extension and their satisfaction level.\n' +
+  'This includes data on install, uninstall, and invocation events of extension features, to ' +
+  'obtain insights on how users are using our extension and their satisfaction level.\n' +
   'Working directories of these events will be recorded to help us identifying repositories / ' +
   'projects that the extension is less popular and/or helpful so we can improve on user ' +
   'experience for the teams specifically.\n' +
@@ -28,7 +28,7 @@ const informationMessageDetail =
   'You can opt-in or out of metrics collection anytime in settings (> extension > CrOS IDE).\n' +
   'Metrics from external (non-googler) users will not be collected.' +
   '\n' +
-  'Would you like to assist us by turning on metrics collection?';
+  'Would you like to assist us by turning on metrics collection for CrOS IDE extension?';
 
 export function activate(_context: vscode.ExtensionContext) {
   const showMessage = ideUtil
