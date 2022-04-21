@@ -4,28 +4,32 @@
 
 import * as vscode from 'vscode';
 
+const VSCODE_SPY = newVscodeSpy();
+
 /**
  * Spy for the `vscode` module.
- *
+ */
+export type VscodeSpy = typeof VSCODE_SPY;
+
+type SpiableVscodeWindow = Omit<
+  typeof vscode.window,
+  'showInformationMessage'
+> & {
+  // Original type doesn't work due to
+  // https://github.com/DefinitelyTyped/DefinitelyTyped/issues/42455 .
+  showInformationMessage: jasmine.Func;
+};
+
+/**
+ * Creates a new VscodeSpy.
  * The fields should be substituted in installVscodeDouble().
  */
-export interface VscodeSpy {
-  env: {
-    openExternal: jasmine.Spy<typeof vscode.env.openExternal>;
-  };
-  window: {
-    // `typeof vscode.window.showInformationMessage` doesn't work due to
-    // https://github.com/DefinitelyTyped/DefinitelyTyped/issues/42455 .
-    showInformationMessage: jasmine.Spy<jasmine.Func>;
-  };
-}
-
-function newVscodeSpy(): VscodeSpy {
+function newVscodeSpy() {
   return {
     env: jasmine.createSpyObj<typeof vscode.env>('vscode.env', [
       'openExternal',
     ]),
-    window: jasmine.createSpyObj<typeof vscode.window>('vscode.window', [
+    window: jasmine.createSpyObj<SpiableVscodeWindow>('vscode.window', [
       'showInformationMessage',
     ]),
   };
