@@ -111,6 +111,8 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
   >();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
+  constructor(private readonly rootDir = '/') {}
+
   async getChildren(element?: ChrootItem): Promise<ChrootItem[]> {
     // Welcome messages are shown when there are no elements, so return an empty result
     // even if there are boards in the chroot message is dismissed.
@@ -119,7 +121,9 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
     }
 
     if (element === undefined) {
-      return (await cros.getSetupBoardsAlphabetic()).map(x => new Board(x));
+      return (await cros.getSetupBoardsAlphabetic(this.rootDir)).map(
+        x => new Board(x)
+      );
     }
     if (element && element instanceof Board) {
       return (await getWorkedOnPackages(element.name)).map(
@@ -177,6 +181,7 @@ async function getWorkedOnPackages(board: string): Promise<string[]> {
 export const TEST_ONLY = {
   Board,
   Package,
+  BoardPackageProvider,
   crosWorkonStart,
   crosWorkonStop,
 };

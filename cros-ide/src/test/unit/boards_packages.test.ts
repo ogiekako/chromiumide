@@ -3,12 +3,15 @@
 // found in the LICENSE file.
 
 import 'jasmine';
+import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
 import {TEST_ONLY} from '../../features/boards_packages';
 import {installVscodeDouble} from '../integration/doubles';
-import {exactMatch, FakeExec} from '../testing';
+import {fakeGetConfiguration} from '../integration/fakes/workspace_configuration';
+import {exactMatch, FakeExec, putFiles} from '../testing';
 
-const {Board, Package, crosWorkonStart, crosWorkonStop} = TEST_ONLY;
+const {Board, Package, BoardPackageProvider, crosWorkonStart, crosWorkonStop} =
+  TEST_ONLY;
 
 describe('Boards and Packages view', () => {
   const {vscodeSpy} = installVscodeDouble();
@@ -60,5 +63,63 @@ describe('Boards and Packages view', () => {
     }
   });
 
-  // TODO(ttylenda): test listing boards and packages
+  // TODO(ttylenda): test error cases
+  it('lists setup boards and packages', async () => {
+    await commonUtil.withTempDir(async td => {
+      await putFiles(td, {
+        '/build/amd64-generic/x': 'x',
+        '/build/bin/x': 'x',
+        '/build/coral/x': 'x',
+      });
+
+      vscodeSpy.workspace.getConfiguration.and.callFake(fakeGetConfiguration());
+      vscode.workspace
+        .getConfiguration('cros-ide')
+        .update('boardsAndPackages.showWelcomeMessage', false);
+
+      const fakeExec = new FakeExec().on(
+        'cros_workon',
+        exactMatch(['--board', 'coral', 'list'], async () => {
+          return `chromeos-base/cryptohome
+chromeos-base/shill`;
+        })
+      );
+      const cleanUp = commonUtil.setExecForTesting(
+        fakeExec.exec.bind(fakeExec)
+      );
+
+      try {
+        const bpProvider = new BoardPackageProvider(td);
+
+        // List boards.
+        const boards = await bpProvider.getChildren();
+        expect(boards).toEqual([
+          jasmine.objectContaining({
+            label: 'amd64-generic',
+            contextValue: 'board',
+          }),
+          jasmine.objectContaining({
+            label: 'coral',
+            contextValue: 'board',
+          }),
+        ]);
+
+        // List active packages for coral.
+        const coral = boards[1];
+        const pkgs = await bpProvider.getChildren(coral);
+        expect(pkgs).toEqual([
+          jasmine.objectContaining({
+            label: 'chromeos-base/cryptohome',
+            contextValue: 'package',
+          }),
+          jasmine.objectContaining({
+            label: 'chromeos-base/shill',
+            contextValue: 'package',
+          }),
+        ]);
+      } finally {
+        cleanUp();
+      }
+    });
+  });
 });
