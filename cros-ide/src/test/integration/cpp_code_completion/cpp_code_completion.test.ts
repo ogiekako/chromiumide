@@ -57,6 +57,9 @@ describe('C++ code completion', () => {
         },
       },
     ]);
+    expect(vscodeSpy.commands.executeCommand).toHaveBeenCalledOnceWith(
+      'clangd.restart'
+    );
   });
 
   it('runs for platform2 GN file', async () => {

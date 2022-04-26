@@ -79,6 +79,7 @@ export class CompilationDatabase implements vscode.Disposable {
 
   // Generate compilation database for clangd.
   private async generate(document: vscode.TextDocument) {
+    // TODO(oka): If clangd extension is not installed, we should return here.
     if (!this.compdbService.isEnabled()) {
       return;
     }
@@ -106,7 +107,7 @@ export class CompilationDatabase implements vscode.Disposable {
       }
       try {
         await this.compdbService.generate(board, packageInfo);
-        // TODO(oka): reload clangd with 'clangd.restart' command.
+        await vscode.commands.executeCommand('clangd.restart');
       } catch (e) {
         if (e instanceof CompdbError) {
           switch (e.kind) {
