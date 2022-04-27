@@ -9,7 +9,8 @@ import {installVscodeDouble} from './doubles';
 describe('VSCode test doubles', () => {
   installVscodeDouble();
 
-  it('can activate CrOS IDE', async () => {
+  // TODO(b:230425191): This test is flaky. Fix flakiness and enable it again.
+  xit('can activate CrOS IDE', async () => {
     const ext = vscode.extensions.getExtension('google.cros-ide');
     assert.ok(ext);
     await ext.activate();

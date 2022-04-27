@@ -10,7 +10,8 @@ describe('CrOS IDE', () => {
    * The test will fail if activating the extension is not possible,
    * for example, if the main function, extension.activate(), throws an Error.
    */
-  it('activates without errors', async () => {
+  // TODO(b:230425191): This test is flaky. Fix flakiness and enable it again.
+  xit('activates without errors', async () => {
     const ext = vscode.extensions.getExtension('google.cros-ide');
     assert.ok(ext);
     await ext.activate();
