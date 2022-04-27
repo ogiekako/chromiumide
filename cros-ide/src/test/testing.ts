@@ -144,3 +144,16 @@ export function installFakeExec(): {fakeExec: FakeExec} {
 
   return {fakeExec};
 }
+
+/**
+ * Ensure all currently pending microtasks and all microtasks transitively
+ * queued by them have finished.
+ *
+ * This function can be useful for waiting for an async event handler to finish
+ * after an event is fired, for example.
+ */
+export async function flushMicrotasks(): Promise<void> {
+  return new Promise(resolve => {
+    setTimeout(resolve, 0);
+  });
+}

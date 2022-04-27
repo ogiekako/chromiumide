@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as util from 'util';
 import * as vscode from 'vscode';
 import {activateSingle} from '../../features/suggest_extension';
+import {flushMicrotasks} from '../testing';
 import {installVscodeDouble} from './doubles';
 
 describe('Suggest extension module', () => {
@@ -32,7 +32,7 @@ describe('Suggest extension module', () => {
       },
     } as vscode.TextEditor);
 
-    await util.promisify(setTimeout)(0); // tick
+    await flushMicrotasks();
 
     expect(vscodeSpy.commands.executeCommand).toHaveBeenCalledWith(
       'extension.open',
