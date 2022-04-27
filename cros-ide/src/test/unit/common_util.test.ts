@@ -4,6 +4,7 @@
 
 import * as assert from 'assert';
 import * as commonUtil from '../../common/common_util';
+import {flushMicrotasks} from '../testing';
 
 class BlockingPromise<T> {
   readonly promise: Promise<T | undefined>;
@@ -33,7 +34,7 @@ describe('Job manager', () => {
       return true;
     });
 
-    await new Promise(resolve => setTimeout(resolve, 0)); // tick to run p1
+    await flushMicrotasks();
 
     const p2 = manager.offer(async () => {
       assert.fail('Intermediate job should not run');
@@ -68,7 +69,7 @@ describe('Job manager', () => {
       throw new Error('p1');
     });
 
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await flushMicrotasks();
 
     const p2 = manager.offer(async () => {
       assert.fail('Intermediate job should not run');

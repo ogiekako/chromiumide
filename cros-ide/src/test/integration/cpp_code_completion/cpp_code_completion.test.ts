@@ -3,12 +3,11 @@
 // found in the LICENSE file.
 
 import 'jasmine';
-import * as util from 'util';
 import * as vscode from 'vscode';
 import {CompilationDatabase} from '../../../features/cpp_code_completion/cpp_code_completion';
 import {Packages} from '../../../features/cpp_code_completion/packages';
 import * as bgTaskStatus from '../../../ui/bg_task_status';
-import {cleanState} from '../../testing';
+import {cleanState, flushMicrotasks} from '../../testing';
 import {installVscodeDouble} from '../doubles';
 import {FakeOutputChannel} from '../fakes/output_channel';
 import {fakeGetConfiguration} from '../fakes/workspace_configuration';
@@ -46,7 +45,7 @@ describe('C++ code completion', () => {
       },
     } as vscode.TextEditor);
 
-    await util.promisify(setTimeout)(0); // tick
+    await flushMicrotasks();
 
     expect(state.spiedCompdbService.requests).toEqual([
       {
@@ -73,7 +72,7 @@ describe('C++ code completion', () => {
       languageId: 'gn',
     } as vscode.TextDocument);
 
-    await util.promisify(setTimeout)(0); // tick
+    await flushMicrotasks();
 
     expect(state.spiedCompdbService.requests).toEqual([
       {
@@ -97,7 +96,7 @@ describe('C++ code completion', () => {
       languageId: 'cpp',
     } as vscode.TextDocument);
 
-    await util.promisify(setTimeout)(0); // tick
+    await flushMicrotasks();
 
     // The service should not have been called.
     expect(state.spiedCompdbService.requests).toEqual([]);
