@@ -9,7 +9,11 @@ import {SpiedCompdbService} from './spied_compdb_service';
 describe('Compdb service', () => {
   it('uses legacy service when instructed', async () => {
     const legacyService = new SpiedCompdbService();
-    const compdbService = new CompdbServiceImpl(legacyService, () => true);
+    const compdbService = new CompdbServiceImpl(
+      (_line: string) => {},
+      legacyService,
+      () => true
+    );
     await compdbService.generate('foo', {sourceDir: 'bar', atom: 'baz'});
     assert.deepStrictEqual(legacyService.requests, [
       {board: 'foo', packageInfo: {sourceDir: 'bar', atom: 'baz'}},

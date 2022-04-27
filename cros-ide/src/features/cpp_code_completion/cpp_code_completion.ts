@@ -24,7 +24,11 @@ export function activate(
   vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => log.show());
 
   const legacyService = new LegacyCompdbService(statusManager, log);
-  const compdbService = new CompdbServiceImpl(legacyService, useLegacy);
+  const compdbService = new CompdbServiceImpl(
+    log.append.bind(log),
+    legacyService,
+    useLegacy
+  );
   context.subscriptions.push(
     new CompilationDatabase(statusManager, new Packages(), log, compdbService)
   );

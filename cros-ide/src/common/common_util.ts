@@ -120,6 +120,8 @@ export class ProcessError extends Error {
   }
 }
 
+export type Log = (line: string) => void;
+
 /**
  * Executes command with optionally logging its output. The promise will be
  * resolved with outputs of the command or an Error. It's guaranteed that
@@ -136,7 +138,7 @@ export class ProcessError extends Error {
 export function exec(
   name: string,
   args: string[],
-  log?: (line: string) => void,
+  log?: Log,
   opt?: ExecOptions
 ): Promise<ExecResult | Error> {
   return execPtr(name, args, log, opt);

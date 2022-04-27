@@ -36,6 +36,7 @@ export enum CompdbErrorKind {
 
 export class CompdbServiceImpl implements CompdbService {
   constructor(
+    private readonly log: commonUtil.Log,
     private readonly legacyService: CompdbService,
     private readonly useLegacy: () => boolean
   ) {}
@@ -53,7 +54,7 @@ export class CompdbServiceImpl implements CompdbService {
       });
     }
 
-    const ebuild = new Ebuild(board, atom);
+    const ebuild = new Ebuild(board, atom, this.log);
     const artifact = await ebuild.generate();
     if (artifact === undefined) {
       throw new CompdbError(
@@ -67,6 +68,7 @@ export class CompdbServiceImpl implements CompdbService {
       'compile_commands.json'
     );
     try {
+      this.log(`Copying ${artifact} to ${destination}`);
       await fs.promises.copyFile(artifact, destination);
     } catch (e) {
       throw new CompdbError(CompdbErrorKind.CopyFailed, e as Error);
@@ -86,7 +88,11 @@ function packageName(atom: Atom): string {
 }
 
 class Ebuild {
-  constructor(private readonly board: Board, private readonly atom: Atom) {}
+  constructor(
+    private readonly board: Board,
+    private readonly atom: Atom,
+    private readonly log: commonUtil.Log
+  ) {}
 
   /**
    * Generates compilation database.
@@ -145,18 +151,27 @@ class Ebuild {
   }
   private async removeCache() {
     for (const dir of this.buildDirs()) {
-      await fs.promises.rm(path.join(dir, '.configured'), {force: true});
-      await fs.promises.rm(path.join(dir, '.compiled'), {force: true});
+      const configured = path.join(dir, '.configured');
+      const compiled = path.join(dir, '.compiled');
+      this.log(`Removing ${configured}\n`);
+      await fs.promises.rm(configured, {force: true});
+      this.log(`Removing ${compiled}\n`);
+      await fs.promises.rm(compiled, {force: true});
     }
   }
   private async runCompgen() {
     // TODO(oka): Add logging.
-    const res = await commonUtil.exec('env', [
-      'USE=compdb_only',
-      this.ebuildExecutable(),
-      this.ebuild9999(),
-      'compile',
-    ]);
+    const res = await commonUtil.exec(
+      'env',
+      [
+        'USE=compdb_only',
+        this.ebuildExecutable(),
+        this.ebuild9999(),
+        'compile',
+      ],
+      this.log,
+      {logStdout: true}
+    );
     if (res instanceof Error) {
       throw res;
     }
