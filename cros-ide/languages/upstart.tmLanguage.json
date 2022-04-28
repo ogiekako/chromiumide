@@ -1,0 +1,14 @@
+{
+  "name": "upstart",
+  "scopeName": "source.upstart",
+  "patterns": [
+    { "include": "#comment" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.upstart",
+      "begin": "#",
+      "end": "$"
+    }
+  }
+}

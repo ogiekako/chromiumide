@@ -309,7 +309,15 @@
         "id": "upstart",
         "aliases": [
           "Upstart"
-        ]
+        ],
+        "configuration": "./languages/upstart-language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "upstart",
+        "scopeName": "source.upstart",
+        "path": "./languages/upstart.tmLanguage.json"
       }
     ]
   },
