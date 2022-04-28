@@ -56,5 +56,10 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   checkUpdates.run(context);
-  metrics.send({category: 'extension', action: 'activate'});
+
+  metrics.send({
+    category: 'extension',
+    action: 'activate',
+    value: context.extension.packageJSON.version,
+  });
 }
