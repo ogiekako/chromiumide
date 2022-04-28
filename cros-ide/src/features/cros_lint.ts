@@ -4,8 +4,8 @@
 
 import * as vscode from 'vscode';
 import * as commonUtil from '../common/common_util';
-import * as bgTaskStatus from '../ui/bg_task_status';
 import * as metrics from '../features/metrics/metrics';
+import * as bgTaskStatus from '../ui/bg_task_status';
 
 export function activate(
   context: vscode.ExtensionContext,
@@ -52,7 +52,7 @@ interface LintConfig {
   ): vscode.Diagnostic[];
 }
 
-const GNLINT_PATH = '~/chromiumos/src/platform2/common-mk/gnlint.py';
+const GNLINT_PATH = '/mnt/host/source/src/platform2/common-mk/gnlint.py';
 
 // Don't forget to update package.json when adding more languages.
 const lintConfigs = new Map<string, LintConfig>([
