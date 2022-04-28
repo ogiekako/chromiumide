@@ -154,6 +154,6 @@ export function installFakeExec(): {fakeExec: FakeExec} {
  */
 export async function flushMicrotasks(): Promise<void> {
   return new Promise(resolve => {
-    setTimeout(resolve, 0);
+    setImmediate(resolve);
   });
 }
