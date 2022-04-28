@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(openFileCmd, searchSelectionCmd);
 }
 
-const generateCsPath = '~/chromiumos/chromite/contrib/generate_cs_path';
+const generateCsPath = '/mnt/host/source/chromite/contrib/generate_cs_path';
 const codeSearch = 'codeSearch';
 
 async function openCurrentFile(textEditor: vscode.TextEditor) {
@@ -31,14 +31,9 @@ async function openCurrentFile(textEditor: vscode.TextEditor) {
 
   const line = textEditor.selection.active.line + 1;
 
-  // generate_cs_path is a symlink that uses a wrapper to call a Python script,
-  // so we need to spawn a shell.
   const res = await commonUtil.exec(
-    'sh',
-    [
-      '-c',
-      `${generateCsPath} --show "--${csInstance}" --line=${line} "${fullpath}"`,
-    ],
+    generateCsPath,
+    ['--show', `--${csInstance}`, `--line=${line}`, fullpath],
     ideUtil.getUiLogger().append,
     {logStdout: true, ignoreNonZeroExit: true}
   );

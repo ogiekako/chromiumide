@@ -73,10 +73,12 @@ describe('CodeSearch: opening current file', () => {
       },
     } as unknown as vscode.TextEditor,
 
-    generateCsLinkInvocation:
-      '~/chromiumos/chromite/contrib/generate_cs_path ' +
-      '--show "--public" --line=41 ' +
-      '"/home/sundar/chromiumos/src/platform2/cros-disks/archive_mounter.cc"',
+    generateCsPathInvocation: [
+      '--show',
+      '--public',
+      '--line=41',
+      '/home/sundar/chromiumos/src/platform2/cros-disks/archive_mounter.cc',
+    ],
   }));
 
   beforeEach(() => {
@@ -92,8 +94,8 @@ describe('CodeSearch: opening current file', () => {
       'src/platform2/cros-disks/archive_mounter.cc;l=41';
 
     fakeExec.on(
-      'sh',
-      exactMatch(['-c', state.generateCsLinkInvocation], async () => {
+      '/mnt/host/source/chromite/contrib/generate_cs_path',
+      exactMatch(state.generateCsPathInvocation, async () => {
         return CS_LINK;
       })
     );
@@ -106,8 +108,8 @@ describe('CodeSearch: opening current file', () => {
 
   it('shows error popup when generate_cs_link cannot be found', async () => {
     fakeExec.on(
-      'sh',
-      exactMatch(['-c', state.generateCsLinkInvocation], async () => {
+      '/mnt/host/source/chromite/contrib/generate_cs_path',
+      exactMatch(state.generateCsPathInvocation, async () => {
         return Error('not found');
       })
     );
@@ -121,8 +123,8 @@ describe('CodeSearch: opening current file', () => {
 
   it('shows error popup when generate_cs_link fails', async () => {
     fakeExec.on(
-      'sh',
-      exactMatch(['-c', state.generateCsLinkInvocation], async () => {
+      '/mnt/host/source/chromite/contrib/generate_cs_path',
+      exactMatch(state.generateCsPathInvocation, async () => {
         return {stdout: '', stderr: 'error msg', exitStatus: 1};
       })
     );
