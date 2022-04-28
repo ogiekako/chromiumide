@@ -118,8 +118,10 @@ export class Analytics {
   /**
    * Creates query from event for Google Analytics measurement protocol, see
    * https://developers.google.com/analytics/devguides/collection/protocol/v1/devguide
+   *
+   * Prepend the currently active file path to event label.
    */
-  private eventToQuery(event: Event) {
+  private eventToQuery(event: Event, gitRepo: string | undefined) {
     const data: Record<string, string | number> = {
       v: protocolVersion,
       tid: this.trackingId,
@@ -127,11 +129,9 @@ export class Analytics {
       t: hitType,
       ec: event.category,
       ea: event.action,
+      el: (gitRepo ?? 'NA') + ': ' + (event.label ?? ''),
       ua: this.userAgent,
     };
-    if (event.label) {
-      data.el = event.label;
-    }
     if (event.value) {
       data.ev = event.value;
     }
@@ -153,7 +153,9 @@ export class Analytics {
       return;
     }
 
-    const query = this.eventToQuery(event);
+    const filePath = vscode.window.activeTextEditor?.document.fileName ?? '';
+    const gitRepo = metricsUtils.getGitRepoName(filePath);
+    const query = this.eventToQuery(event, gitRepo);
     console.debug(
       `sending query ${query} to GA ${this.trackingId} property with uid ${this.userId}`
     );

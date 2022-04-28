@@ -7,8 +7,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as commonUtil from '../../common/common_util';
 import * as metricsUtil from '../../features/metrics/metrics_util';
+import * as testing from '../testing';
 
-describe('Metrics util', () => {
+describe('Metrics util: user id', () => {
   it('initializes and read id', async () => {
     const testUid = 'testing-uid';
     await commonUtil.withTempDir(async td => {
@@ -66,6 +67,54 @@ describe('Metrics util', () => {
         async () => testUidNew
       );
       assert.strictEqual(uidRead, testUidNew);
+    });
+  });
+});
+
+describe('Metrics util: get git repo name', () => {
+  it('path with prefix /home/<username>/chromiumos/', async () => {
+    await commonUtil.withTempDir(async td => {
+      await testing.putFiles(td, {
+        '/home/foo/chromiumos/src/platform2/.git/HEAD': '',
+        '/home/foo/chromiumos/src/platform2/bar/baz.cc': '',
+      });
+
+      assert.strictEqual(
+        metricsUtil.getGitRepoName(
+          `${td}/home/foo/chromiumos/src/platform2/bar/baz.cc`
+        ),
+        'src/platform2'
+      );
+    });
+  });
+  it('path with prefix /mnt/host/source/', async () => {
+    await commonUtil.withTempDir(async td => {
+      await testing.putFiles(td, {
+        '/mnt/host/source/src/platform2/.git/HEAD': '',
+        '/mnt/host/source/src/platform2/bar/baz.cc': '',
+      });
+
+      assert.strictEqual(
+        metricsUtil.getGitRepoName(
+          `${td}/mnt/host/source/src/platform2/bar/baz.cc`
+        ),
+        'src/platform2'
+      );
+    });
+  });
+  it('invalid path', async () => {
+    await commonUtil.withTempDir(async td => {
+      // Do not create .git/ directory anywhere.
+      await testing.putFiles(td, {
+        '/mnt/host/source/src/platform2/bar/baz.cc': '',
+      });
+
+      assert.strictEqual(
+        metricsUtil.getGitRepoName(
+          `${td}/mnt/host/source/src/platform2/bar/baz.cc`
+        ),
+        undefined
+      );
     });
   });
 });

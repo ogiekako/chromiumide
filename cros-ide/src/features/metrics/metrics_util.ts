@@ -122,3 +122,24 @@ export function getUserAgent(): string {
 
   return [type, platform, release, version, appName].join('-');
 }
+
+const crOSPathRE = /(\/home\/\w+\/chromiumos|\/mnt\/host\/source)\/(.*)/;
+
+// Return git repository name by looking for closest .git directory, undefined if none.
+export function getGitRepoName(filePath: string): string | undefined {
+  let gitDir = path.dirname(filePath);
+  while (!fs.existsSync(path.join(gitDir, '.git'))) {
+    const parent = path.dirname(gitDir);
+    if (parent === gitDir) {
+      return undefined;
+    }
+    gitDir = parent;
+  }
+
+  // Trim prefixes corresponding to path of chromium checkout.
+  const match = crOSPathRE.exec(gitDir);
+  if (match) {
+    return match[2];
+  }
+  return undefined;
+}
