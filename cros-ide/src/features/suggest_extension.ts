@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import * as ideUtil from '../ide_util';
 
 export async function activate(context: vscode.ExtensionContext) {
   const recommendations: Recommendation[] = [
@@ -12,6 +13,15 @@ export async function activate(context: vscode.ExtensionContext) {
       message:
         'Clangd extension provides cross references and autocompletion in C++. ' +
         'Would you like to install it?',
+      availableForCodeServer: true,
+    },
+    {
+      languageId: 'gn',
+      extensionId: 'msedge-dev.gnls',
+      message:
+        'GN Language Server extension provides syntax highlighting and code navigation for GN build files. ' +
+        'Would you like to install it?',
+      availableForCodeServer: false,
     },
     {
       languageId: 'go',
@@ -19,11 +29,13 @@ export async function activate(context: vscode.ExtensionContext) {
       message:
         'Go extension provides rich language support for the Go programming language. ' +
         'Would you like to install it?',
+      availableForCodeServer: true,
     },
   ];
 
+  const isCodeServer = ideUtil.isCodeServer();
   for (const recommended of recommendations) {
-    const disposable = await activateSingle(recommended);
+    const disposable = await activateSingle(recommended, isCodeServer);
     if (disposable === undefined) {
       continue;
     }
@@ -35,6 +47,10 @@ export interface Recommendation {
   languageId: string;
   extensionId: string;
   message: string;
+
+  // Whether the recommended extension is available for both the regular VS Code and
+  // code-server. It is assumed that the former is a superset of the latter.
+  availableForCodeServer: boolean;
 }
 
 /**
@@ -44,20 +60,25 @@ export interface Recommendation {
  * the extension is already installed.
  */
 export async function activateSingle(
-  recommended: Recommendation
+  recommended: Recommendation,
+  isCodeServer: boolean
 ): Promise<vscode.Disposable | undefined> {
   // Don't install handler if the extension is already installed.
   if (vscode.extensions.getExtension(recommended.extensionId)) {
     return undefined;
   }
 
-  await suggestOnMatch(recommended, vscode.window.activeTextEditor);
+  await suggestOnMatch(
+    recommended,
+    isCodeServer,
+    vscode.window.activeTextEditor
+  );
 
   const subscription: vscode.Disposable[] = [];
 
   return vscode.window.onDidChangeActiveTextEditor(
     async editor => {
-      if (await suggestOnMatch(recommended, editor)) {
+      if (await suggestOnMatch(recommended, isCodeServer, editor)) {
         subscription[0].dispose();
       }
     },
@@ -68,6 +89,7 @@ export async function activateSingle(
 
 async function suggestOnMatch(
   recommended: Recommendation,
+  isCodeServer: boolean,
   editor?: vscode.TextEditor
 ): Promise<boolean> {
   if (!editor) {
@@ -76,6 +98,10 @@ async function suggestOnMatch(
   if (editor.document.languageId !== recommended.languageId) {
     return false;
   }
+  if (!recommended.availableForCodeServer && isCodeServer) {
+    return false;
+  }
+
   return await suggest(recommended);
 }
 

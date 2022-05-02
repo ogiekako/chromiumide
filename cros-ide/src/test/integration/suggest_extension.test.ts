@@ -11,11 +11,15 @@ describe('Suggest extension module', () => {
   const {vscodeSpy, vscodeEmitters} = installVscodeDouble();
 
   it('suggests an extension', async () => {
-    await activateSingle({
-      languageId: 'cpp',
-      extensionId: 'foo',
-      message: 'It is recommended to install Foo extension for C++. Proceed?',
-    });
+    await activateSingle(
+      {
+        languageId: 'cpp',
+        extensionId: 'foo',
+        message: 'It is recommended to install Foo extension for C++. Proceed?',
+        availableForCodeServer: true,
+      },
+      false /* isCodeServer */
+    );
 
     vscodeSpy.window.showInformationMessage
       .withArgs(
@@ -44,11 +48,37 @@ describe('Suggest extension module', () => {
   });
 
   it('does not suggest if languages do not match', async () => {
-    await activateSingle({
-      languageId: 'cpp',
-      extensionId: 'foo',
-      message: 'It is recommended to install Foo extension for C++. Proceed?',
-    });
+    await activateSingle(
+      {
+        languageId: 'cpp',
+        extensionId: 'foo',
+        message: 'It is recommended to install Foo extension for C++. Proceed?',
+        availableForCodeServer: true,
+      },
+      false /* isCodeServer */
+    );
+
+    vscodeEmitters.window.onDidChangeActiveTextEditor.fire({
+      document: {
+        languageId: 'gn',
+      },
+    } as vscode.TextEditor);
+
+    expect(vscodeSpy.window.showInformationMessage).not.toHaveBeenCalled();
+  });
+
+  it('does not suggest extension not available for code-server', async () => {
+    await activateSingle(
+      {
+        languageId: 'gn',
+        extensionId: 'msedge-dev.gnls',
+        message:
+          'GN Language Server extension provides syntax highlighting and code navigation for GN build files. ' +
+          'Would you like to install it?',
+        availableForCodeServer: false,
+      },
+      true /* isCodeServer */
+    );
 
     vscodeEmitters.window.onDidChangeActiveTextEditor.fire({
       document: {

@@ -227,3 +227,12 @@ export function vscodeExecutablePath(
   }
   return new Error(`vscode app name not recognized: ${appName}`);
 }
+
+export function isCodeServer(appHost = vscode.env.appHost): boolean {
+  // vscode.env.appHost stores the hosted location of the application.
+  // On desktop this is 'desktop'. In the web it is the specified embedder.
+  // See https://code.visualstudio.com/api/references/vscode-api#env
+  // TODO(b/232050207): Check if the IDE is run on code-server or on the
+  //   desktop app more reliably.
+  return appHost !== 'desktop';
+}
