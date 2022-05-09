@@ -148,4 +148,12 @@ describe('Short Link Provider', () => {
     assert.ok(links);
     assert.deepStrictEqual(links, []);
   });
+
+  it('ignores paths', async () => {
+    const links = await getLinks(
+      'Text obj/somepath more text; text obj/multi/level more text'
+    );
+    assert.ok(links);
+    assert.deepStrictEqual(links, []);
+  });
 });

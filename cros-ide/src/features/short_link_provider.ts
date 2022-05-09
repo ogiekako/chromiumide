@@ -84,15 +84,17 @@ function todoLdapUri(match: RegExpMatchArray): vscode.Uri {
   return vscode.Uri.parse(`http://teams/${ldap}`);
 }
 
-// Match (up-to-5-letters)[.com]/(path). There are two capturing groups:
-//   - host (for example, crbug), it may include '.com'
+// Match link.com/path and (b|go|crrrev|...)/path. There are two capturing groups:
+//   - host (for example, crbug, crbug.com),
 //   - url (for example, 123456)
 // For robustness, the regex starts with a lookbehind matching one of:
 //  - start of line
 //  - whitespace
 //  - match to '(', because links are often used in "TODO(link)"
+// In order to avoid matching things like `obj/path`, we require that the host either
+// ends in `.com` or it is a known short links.
 const shortLinkPattern =
-  /(?<=^|\s|\()\b([a-z]{1,5}(?:\.com)?)\/([^)\s.,;'"]+)/g;
+  /(?<=^|\s|\()\b([a-z]+\.com|b|go|crbug|crrev)\/([^)\s.,;'"]+)/g;
 
 // Extract the uri from matches to shortLinkPattern.
 function shortLinkUri(match: RegExpMatchArray): vscode.Uri {
