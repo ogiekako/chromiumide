@@ -4,7 +4,9 @@
   "patterns": [
     { "include": "#comment" },
     { "include": "#exec" },
-    { "include": "#script" }
+    { "include": "#script" },
+    { "include": "#env" },
+    { "include": "#export" }
   ],
   "repository": {
     "comment": {
@@ -29,6 +31,22 @@
       "patterns": [
         { "include": "source.shell" }
       ]
+    },
+    "env": {
+      "match": "^env\\s+(\\w+)(?:(=)(.+))?$",
+      "name": "keyword.other.env.upstart",
+      "captures": {
+        "1": { "name": "variable.upstart" },
+        "2": { "name": "keyword.operator.equals.upstart" },
+        "3": { "name": "string.upstart" }
+      }
+    },
+    "export": {
+      "match": "^export (\\w+)$",
+      "name": "keyword.other.export.upstart",
+      "captures": {
+        "1": { "name": "variable.upstart"}
+      }
     }
   }
 }
