@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import * as semver from 'semver';
 import * as ideUtil from './ide_util';
 import * as install from './tools/install';
 
@@ -12,15 +13,12 @@ export async function run(_context: vscode.ExtensionContext) {
   if (!extenstion) {
     return;
   }
-  const installed = install.versionFromString(extenstion.packageJSON.version);
+  const installed = new semver.SemVer(extenstion.packageJSON.version);
 
   const latest = (await install.findArchive()).version;
 
-  if (install.compareVersion(installed, latest) < 0) {
-    showInstallPrompt(
-      install.versionToString(installed),
-      install.versionToString(latest)
-    );
+  if (installed.compare(latest) < 0) {
+    showInstallPrompt(installed.toString(), latest.toString());
   }
 }
 

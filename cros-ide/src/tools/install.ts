@@ -8,6 +8,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as semver from 'semver';
 import * as commonUtil from '../common/common_util';
 
 function assertInsideChroot() {
@@ -40,7 +41,7 @@ async function execute(
  *
  * @throws Error if specified version is not found.
  */
-export async function findArchive(version?: Version): Promise<Archive> {
+export async function findArchive(version?: semver.SemVer): Promise<Archive> {
   // The result of `gsutil ls` is lexicographically sorted.
   const stdout = await execute('gsutil', ['ls', GS_PREFIX]);
   const archives = stdout
@@ -54,11 +55,11 @@ export async function findArchive(version?: Version): Promise<Archive> {
     return archives.pop()!;
   }
   for (const archive of archives) {
-    if (compareVersion(archive.version, version) === 0) {
+    if (archive.version.compare(version) === 0) {
       return archive;
     }
   }
-  throw new Error(`Version ${versionToString(version)} not found`);
+  throw new Error(`Version ${version} not found`);
 }
 
 // Assert the working directory is clean and get git commit hash.
@@ -90,7 +91,7 @@ async function cleanCommitHash() {
 }
 
 class Archive {
-  readonly version: Version;
+  readonly version: semver.SemVer;
   constructor(readonly name: string, readonly hash?: string) {
     this.version = versionFromFilename(name);
   }
@@ -110,54 +111,20 @@ class Archive {
   }
 
   static compareFn(first: Archive, second: Archive): number {
-    return compareVersion(first.version, second.version);
+    return first.version.compare(second.version);
   }
 }
 
-export interface Version {
-  major: number;
-  minor: number;
-  patch: number;
-}
-
-export function compareVersion(first: Version, second: Version): number {
-  if (first.major !== second.major) {
-    return first.major - second.major;
-  }
-  if (first.minor !== second.minor) {
-    return first.minor - second.minor;
-  }
-  if (first.patch !== second.patch) {
-    return first.patch - second.patch;
-  }
-  return 0;
-}
+// Matches the version suffix of a file name.
+const VERSION_SUFFIX_RE = /-(\d.*)\.[^.]+/;
 
 // Get version from filename such as "cros-ide-0.0.1.vsix"
-function versionFromFilename(name: string): Version {
-  const suffix = name.split('-').pop()!;
-  const version = suffix.split('.').slice(0, 3).join('.');
-  return versionFromString(version);
-}
-
-/**
- * Get version from string such as "0.0.1".
- * @throws Error on invalid input.
- */
-export function versionFromString(s: string): Version {
-  const version = s.trim().split('.').map(Number);
-  if (version.length !== 3 || version.some(isNaN)) {
-    throw new Error(`Invalid version format ${s}`);
+function versionFromFilename(name: string): semver.SemVer {
+  const match = VERSION_SUFFIX_RE.exec(name);
+  if (!match) {
+    throw new Error(`Version suffix not found: ${name}`);
   }
-  return {
-    major: version[0],
-    minor: version[1],
-    patch: version[2],
-  };
-}
-
-export function versionToString(v: Version): string {
-  return `${v.major}.${v.minor}.${v.patch}`;
+  return new semver.SemVer(match[1]);
 }
 
 async function build(tempDir: string, hash?: string): Promise<Archive> {
@@ -172,7 +139,7 @@ export async function buildAndUpload() {
 
   await commonUtil.withTempDir(async td => {
     const built = await build(td, hash);
-    if (compareVersion(latestInGs.version, built.version) >= 0) {
+    if (latestInGs.version.compare(built.version) >= 0) {
       throw new Error(
         `${built.name} is older than the latest published version ` +
           `${latestInGs.name}. Update the version and rerun the program.`
@@ -198,7 +165,7 @@ export async function installDev(exe: string) {
  *
  * @throws Error if install fails
  */
-export async function install(exe: string, forceVersion?: Version) {
+export async function install(exe: string, forceVersion?: semver.SemVer) {
   const src = await findArchive(forceVersion);
 
   await commonUtil.withTempDir(async td => {
@@ -215,7 +182,7 @@ export async function install(exe: string, forceVersion?: Version) {
 }
 
 interface Config {
-  forceVersion?: Version;
+  forceVersion?: semver.SemVer;
   dev?: boolean;
   upload?: boolean;
   exe: string;
@@ -250,7 +217,7 @@ export function parseArgs(args: string[]): Config {
         if (!s) {
           throw new Error('Version is not given; see --help');
         }
-        config.forceVersion = versionFromString(s);
+        config.forceVersion = new semver.SemVer(s);
         break;
       }
       case '--exe': {

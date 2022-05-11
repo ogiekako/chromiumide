@@ -4,6 +4,7 @@
 
 import * as assert from 'assert';
 import * as fs from 'fs';
+import * as semver from 'semver';
 import * as install from '../../tools/install';
 import {
   exactMatch,
@@ -89,14 +90,12 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.2.vsix@253d24b6b54fa72d21f622b8
         )
       );
 
-    await install.install('code', {major: 0, minor: 0, patch: 1});
+    await install.install('code', new semver.SemVer('0.0.1'));
     assert.deepStrictEqual(installed, true);
     const name = tempFile.split('/').pop();
     assert.deepStrictEqual(name, 'cros-ide-0.0.1.vsix');
 
-    await assert.rejects(
-      install.install('code', {major: 0, minor: 0, patch: 99})
-    );
+    await assert.rejects(install.install('code', new semver.SemVer('0.0.99')));
   });
 });
 
@@ -332,11 +331,7 @@ describe('Argument parser', () => {
       install.parseArgs(['ts-node', 'install.ts', '--force', '1.2.3']),
       {
         exe: 'code',
-        forceVersion: {
-          major: 1,
-          minor: 2,
-          patch: 3,
-        },
+        forceVersion: new semver.SemVer('1.2.3'),
       }
     );
   });
@@ -349,9 +344,7 @@ describe('Argument parser', () => {
   it('throws on invalid input', () => {
     assert.throws(() => install.parseArgs(['--force']));
     assert.throws(() => install.parseArgs(['--force', 'invalid']));
-    assert.throws(() => install.parseArgs(['--force', 'v1.2.3']));
-    assert.throws(() => install.parseArgs(['--force', '1.2']));
-    assert.throws(() => install.parseArgs(['--force', '1.2.3.4']));
+    assert.throws(() => install.parseArgs(['--force', 'ver1.2.3']));
     assert.throws(() => install.parseArgs(['--dev', '--upload']));
     assert.throws(() => install.parseArgs(['--upload', '--force', '1.2.3']));
     assert.throws(() => install.parseArgs(['--unknownflag']));
