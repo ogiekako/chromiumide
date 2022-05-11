@@ -6,7 +6,10 @@
     { "include": "#exec" },
     { "include": "#script" },
     { "include": "#env" },
-    { "include": "#export" }
+    { "include": "#export" },
+    { "include": "#expect" },
+    { "include": "#kill-reload-signal" },
+    { "include": "#kill-timeout" }
   ],
   "repository": {
     "comment": {
@@ -47,6 +50,43 @@
       "captures": {
         "1": { "name": "variable.upstart"}
       }
+    },
+    "expect": {
+      "match": "^expect (fork|daemon|stop)$",
+      "name": "keyword.other.expect.upstart"
+    },
+    "signal-numeric": {
+      "match": "\\b\\d+\\b",
+      "name": "constant.numeric.signal.upstart"
+    },
+    "signal-name": {
+      "match": "\\b(SIG)?(HUP|INT|QUIT|ILL|TRAP|ABRT|IOT|BUS|EMT|FPE|KILL|USR1|SEGV|USR2|PIPE|ALRM|TERM|STKFLT|CHLD|CLD|CONT|STOP|TSTP|TTIN|TTOU|URG|XCPU|XFSZ|VTALRM|PROF|WINCH|IO|POLL|PWR|INFO|LOST|SYS|UNUSED)\\b",
+      "name": "constant.language.signal.upstart"
+    },
+    "kill-reload-signal": {
+      "begin": "^(kill|reload) signal",
+      "end": "$",
+      "beginCaptures": {
+        "0": { "name": "keyword.other.kill-reload.upstart" }
+      },
+      "patterns": [
+        { "include": "#signal-numeric" },
+        { "include": "#signal-name" }
+      ]
+    },
+    "number": {
+      "match": "\\b\\d+\\b",
+      "name": "constant.numeric.upstart"
+    },
+    "kill-timeout": {
+      "begin": "^kill timeout",
+      "end": "$",
+      "beginCaptures": {
+        "0": { "name": "keyword.other.kill-timeout.upstart" }
+      },
+      "patterns": [
+        { "include": "#number" }
+      ]
     }
   }
 }
