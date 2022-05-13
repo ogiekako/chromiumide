@@ -9,7 +9,9 @@
     { "include": "#export" },
     { "include": "#expect" },
     { "include": "#kill-reload-signal" },
-    { "include": "#kill-timeout" }
+    { "include": "#kill-timeout" },
+    { "include": "#documentation" },
+    { "include": "#emits"}
   ],
   "repository": {
     "comment": {
@@ -86,6 +88,35 @@
       },
       "patterns": [
         { "include": "#number" }
+      ]
+    },
+    "double-quoted-string": {
+      "begin": "\"",
+      "end": "\"",
+      "name": "string.quoted.double.upstart"
+    },
+    "documentation": {
+      "begin": "^(author|description|version|usage)",
+      "end": "$",
+      "beginCaptures": {
+        "0": { "name": "keyword.other.documentation.upstart"}
+      },
+      "patterns":[
+        { "include": "#double-quoted-string" }
+      ]
+    },
+    "emits": {
+      "begin": "^emits",
+      "end": "$",
+      "beginCaptures": {
+        "0": { "name": "keyword.other.emits.upstart" }
+      },
+      "patterns": [
+        {
+          "comment": "No special treatment for wildcards (*,?), becuase there is no usage in platform2.",
+          "match": "\\S+",
+          "name": "string.unquoted.event.upstart"
+        }
       ]
     }
   }
