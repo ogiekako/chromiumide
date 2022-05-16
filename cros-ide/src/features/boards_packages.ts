@@ -2,19 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../common/common_util';
 import * as cros from '../common/cros';
 import * as ideUtil from '../ide_util';
+import {ChrootService} from '../services/chroot';
 
-export async function activate() {
-  const boardPackageProvider = new BoardPackageProvider();
+export async function activate(chrootService: ChrootService) {
+  const boardPackageProvider = new BoardPackageProvider(chrootService);
 
-  vscode.commands.registerCommand('cros-ide.crosWorkonStart', crosWorkonStart);
-  vscode.commands.registerCommand('cros-ide.crosWorkonStop', crosWorkonStop);
+  vscode.commands.registerCommand('cros-ide.crosWorkonStart', board =>
+    crosWorkonStart(board)
+  );
+  vscode.commands.registerCommand('cros-ide.crosWorkonStop', board =>
+    crosWorkonStop(board)
+  );
 
   vscode.commands.registerCommand('cros-ide.refreshBoardsPackages', () =>
     boardPackageProvider.refresh()
@@ -39,27 +41,34 @@ export async function activate() {
     boardPackageProvider
   );
 
-  await createPackageWatches();
+  await createPackageWatches(chrootService);
 }
 
 const VIRTUAL_BOARDS_HOST = 'host';
 const CONFIG_SHOW_WELCOME_MESSAGE = 'boardsAndPackages.showWelcomeMessage';
 
 // TODO: Write a unit test for watching packages.
-async function createPackageWatches() {
-  const boards = await cros.getSetupBoardsAlphabetic();
-  const crosWorkonDir = path.join(
-    os.homedir(),
-    'chromiumos/.config/cros_workon/'
-  );
-
-  // Watching for non-existent directory throws errors,
-  // which happens when we run tests outside chroot.
-  if (!fs.existsSync(crosWorkonDir)) {
+async function createPackageWatches(chrootService: ChrootService) {
+  const chroot = chrootService.chroot();
+  if (!chroot) {
     return;
   }
 
-  fs.watch(crosWorkonDir, (eventType, fileName) => {
+  const boards = await cros.getSetupBoardsAlphabetic(chroot);
+  const crosWorkonDir = '.config/cros_workon/';
+
+  const source = chrootService.source();
+  if (!source) {
+    return;
+  }
+
+  // Watching for non-existent directory throws errors,
+  // which happens when we run tests outside chroot.
+  if (!source.existsSync(crosWorkonDir)) {
+    return;
+  }
+
+  source.watchSync(crosWorkonDir, (_eventType, fileName) => {
     // Multiple files can be changed. This restrictions limits the number of refreshes to one.
     if (boards.includes(fileName)) {
       vscode.commands.executeCommand('cros-ide.refreshBoardsPackages');
@@ -116,7 +125,7 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
   >();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
-  constructor(private readonly rootDir = '/') {}
+  constructor(private readonly chrootService: ChrootService) {}
 
   async getChildren(element?: ChrootItem): Promise<ChrootItem[]> {
     // Welcome messages are shown when there are no elements, so return an empty result
@@ -126,7 +135,11 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
     }
 
     if (element === undefined) {
-      return (await cros.getSetupBoardsAlphabetic(this.rootDir))
+      const chroot = this.chrootService.chroot();
+      if (chroot === undefined) {
+        return [];
+      }
+      return (await cros.getSetupBoardsAlphabetic(chroot))
         .map(x => new Board(x))
         .concat([new Board(VIRTUAL_BOARDS_HOST)]);
     }

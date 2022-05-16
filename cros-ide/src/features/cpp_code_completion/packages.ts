@@ -4,7 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as constants from './constants';
+import {findChroot, sourceDir} from '../../common/common_util';
 
 export type SourceDir = string; // directory containing source code relative to chromiumos/
 export type Atom = string; // category/packagename e.g. chromeos-base/codelab
@@ -17,7 +17,7 @@ export interface PackageInfo {
 // TODO(oka): Make this a singleton if this is used from multiple places.
 export class Packages {
   private mapping = new Map<SourceDir, PackageInfo>();
-  constructor(private readonly mntHostSource = constants.MNT_HOST_SOURCE) {
+  constructor() {
     for (const packageInfo of KNOWN_PACKAGES) {
       this.mapping.set(packageInfo.sourceDir, packageInfo);
     }
@@ -40,7 +40,14 @@ export class Packages {
         return null;
       }
     }
-    let relPath = path.relative(this.mntHostSource, realpath);
+
+    const chroot = findChroot(realpath);
+    if (chroot === undefined) {
+      return null;
+    }
+    const sourcePath = sourceDir(chroot);
+
+    let relPath = path.relative(sourcePath, realpath);
     if (relPath.startsWith('..') || path.isAbsolute(relPath)) {
       return null;
     }

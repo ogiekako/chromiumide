@@ -3,12 +3,15 @@
 // found in the LICENSE file.
 
 import 'jasmine';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import {CLANGD_EXTENSION} from '../../../features/cpp_code_completion/constants';
+import {WrapFs} from '../../../common/cros';
 import {CompilationDatabase} from '../../../features/cpp_code_completion/cpp_code_completion';
 import {Packages} from '../../../features/cpp_code_completion/packages';
+import {ChrootService} from '../../../services/chroot';
 import * as bgTaskStatus from '../../../ui/bg_task_status';
-import {cleanState} from '../../testing';
+import {buildFakeChroot, cleanState, tempDir} from '../../testing';
 import {installVscodeDouble} from '../doubles';
 import {FakeOutputChannel} from '../fakes/output_channel';
 import {fakeGetConfiguration} from '../fakes/workspace_configuration';
@@ -27,18 +30,26 @@ function newEventWaiter(
 describe('C++ code completion', () => {
   const {vscodeSpy, vscodeEmitters} = installVscodeDouble();
 
-  const state = cleanState(() => {
+  const temp = tempDir();
+  const state = cleanState(async () => {
+    const osDir = temp.path;
+    const chroot = await buildFakeChroot(osDir);
+
     const spiedCompdbService = new SpiedCompdbService();
     // CompilationDatabase registers event handlers in the constructor.
     const compilationDatabase = new CompilationDatabase(
       new bgTaskStatus.TEST_ONLY.StatusManagerImpl(),
       new Packages(),
       new FakeOutputChannel(),
-      spiedCompdbService
+      spiedCompdbService,
+      new ChrootService(new WrapFs(chroot), undefined)
     );
-    return {spiedCompdbService, compilationDatabase};
+    return {
+      osDir,
+      spiedCompdbService,
+      compilationDatabase,
+    };
   });
-
   afterEach(() => {
     state.compilationDatabase.dispose();
   });
@@ -59,7 +70,7 @@ describe('C++ code completion', () => {
 
     vscodeEmitters.window.onDidChangeActiveTextEditor.fire({
       document: {
-        fileName: '/mnt/host/source/src/platform2/cros-disks/foo.cc',
+        fileName: path.join(state.osDir, 'src/platform2/cros-disks/foo.cc'),
         languageId: 'cpp',
       },
     } as vscode.TextEditor);
@@ -96,7 +107,7 @@ describe('C++ code completion', () => {
     const done = newEventWaiter(state.compilationDatabase);
 
     vscodeEmitters.workspace.onDidSaveTextDocument.fire({
-      fileName: '/mnt/host/source/src/platform2/cros-disks/BUILD.gn',
+      fileName: path.join(state.osDir, 'src/platform2/cros-disks/BUILD.gn'),
       languageId: 'gn',
     } as vscode.TextDocument);
 
@@ -129,7 +140,7 @@ describe('C++ code completion', () => {
     const done = newEventWaiter(state.compilationDatabase);
 
     vscodeEmitters.workspace.onDidSaveTextDocument.fire({
-      fileName: '/mnt/host/source/src/platform2/cros-disks/foo.cc',
+      fileName: path.join(state.osDir, 'src/platform2/cros-disks/foo.cc'),
       languageId: 'cpp',
     } as vscode.TextDocument);
 
@@ -158,7 +169,7 @@ describe('C++ code completion', () => {
     // A C++ file in the cros-disks project is opened.
     vscodeEmitters.window.onDidChangeActiveTextEditor.fire({
       document: {
-        fileName: '/mnt/host/source/src/platform2/cros-disks/foo.cc',
+        fileName: path.join(state.osDir, 'src/platform2/cros-disks/foo.cc'),
         languageId: 'cpp',
       },
     } as vscode.TextEditor);
@@ -173,7 +184,7 @@ describe('C++ code completion', () => {
     // Another C++ file in the cros-disks project is opened.
     vscodeEmitters.window.onDidChangeActiveTextEditor.fire({
       document: {
-        fileName: '/mnt/host/source/src/platform2/cros-disks/bar.cc',
+        fileName: path.join(state.osDir, 'src/platform2/cros-disks/bar.cc'),
         languageId: 'cpp',
       },
     } as vscode.TextEditor);
@@ -188,7 +199,7 @@ describe('C++ code completion', () => {
     // A C++ file in the codelab project is opened.
     vscodeEmitters.window.onDidChangeActiveTextEditor.fire({
       document: {
-        fileName: '/mnt/host/source/src/platform2/codelab/baz.cc',
+        fileName: path.join(state.osDir, 'src/platform2/codelab/baz.cc'),
         languageId: 'cpp',
       },
     } as vscode.TextEditor);

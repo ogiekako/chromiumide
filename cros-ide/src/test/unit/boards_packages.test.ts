@@ -4,10 +4,18 @@
 
 import 'jasmine';
 import * as vscode from 'vscode';
+import {WrapFs} from '../../common/cros';
 import {TEST_ONLY} from '../../features/boards_packages';
+import {ChrootService} from '../../services/chroot';
 import {installVscodeDouble} from '../integration/doubles';
 import {fakeGetConfiguration} from '../integration/fakes/workspace_configuration';
-import {exactMatch, installFakeExec, putFiles, tempDir} from '../testing';
+import {
+  buildFakeChroot,
+  exactMatch,
+  installFakeExec,
+  putFiles,
+  tempDir,
+} from '../testing';
 
 const {Board, Package, BoardPackageProvider, crosWorkonStart, crosWorkonStop} =
   TEST_ONLY;
@@ -56,7 +64,8 @@ describe('Boards and Packages view', () => {
 
   // TODO(ttylenda): test error cases
   it('lists setup boards and packages', async () => {
-    await putFiles(temp.path, {
+    const chroot = await buildFakeChroot(temp.path);
+    await putFiles(chroot, {
       '/build/amd64-generic/x': 'x',
       '/build/bin/x': 'x',
       '/build/coral/x': 'x',
@@ -82,7 +91,9 @@ chromeos-base/shill`;
       })
     );
 
-    const bpProvider = new BoardPackageProvider(temp.path);
+    const bpProvider = new BoardPackageProvider(
+      new ChrootService(new WrapFs(chroot), undefined)
+    );
 
     // List boards.
     const boards = await bpProvider.getChildren();

@@ -4,6 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import {Chroot} from './common_util';
 
 // Wraps functions in fs or fs.promises, adding prefix to given paths.
 export class WrapFs<T extends string> {
@@ -49,11 +50,11 @@ export class WrapFs<T extends string> {
  * oldest).
  */
 export async function getSetupBoardsRecentFirst(
-  rootDir = '/'
+  chroot: WrapFs<Chroot>
 ): Promise<string[]> {
   return getSetupBoardsOrdered(
-    rootDir,
-    async dir => fs.promises.stat(dir),
+    chroot,
+    async dir => chroot.stat(dir),
     (a, b) => b.atimeMs - a.atimeMs
   );
 }
@@ -62,28 +63,28 @@ export async function getSetupBoardsRecentFirst(
  * @returns Boards that have been set up in alphabetic order.
  */
 export async function getSetupBoardsAlphabetic(
-  rootDir = '/'
+  chroot: WrapFs<Chroot>
 ): Promise<string[]> {
   return getSetupBoardsOrdered(
-    rootDir,
+    chroot,
     async dir => dir,
     (a, b) => a.localeCompare(b)
   );
 }
 
 async function getSetupBoardsOrdered<T>(
-  rootDir = '/',
+  chroot: WrapFs<Chroot>,
   keyFn: (dir: string) => Promise<T>,
   compareFn: (a: T, b: T) => number
 ): Promise<string[]> {
-  const build = path.join(rootDir, 'build');
+  const build = '/build';
 
   // /build does not exist outside chroot, which causes problems in tests.
-  if (!fs.existsSync(build)) {
+  if (!chroot.existsSync(build)) {
     return [];
   }
 
-  const dirs = await fs.promises.readdir(build);
+  const dirs = await chroot.readdir(build);
   const dirStat: Array<[string, T]> = [];
   for (const dir of dirs) {
     if (dir === 'bin') {

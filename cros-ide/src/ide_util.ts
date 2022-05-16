@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from './common/common_util';
+import {Chroot} from './common/common_util';
 import * as cros from './common/cros';
 
 export function getConfigRoot(): vscode.WorkspaceConfiguration {
@@ -45,14 +46,14 @@ export const BOARD = 'board';
  * @returns The targe board name. null if the user ignores popup. NoBoardError if there is no
  *   available board.
  */
-export async function getOrSelectTargetBoard(): Promise<
-  string | null | NoBoardError
-> {
+export async function getOrSelectTargetBoard(
+  chroot: cros.WrapFs<Chroot>
+): Promise<string | null | NoBoardError> {
   const board = getConfigRoot().get<string>(BOARD);
   if (board) {
     return board;
   }
-  return await selectAndUpdateTargetBoard({suggestMostRecent: true});
+  return await selectAndUpdateTargetBoard(chroot, {suggestMostRecent: true});
 }
 
 export class NoBoardError extends Error {
@@ -73,10 +74,13 @@ export class NoBoardError extends Error {
  *
  * TODO(oka): unit test this function (consider stubbing vscode APIs).
  */
-export async function selectAndUpdateTargetBoard(config: {
-  suggestMostRecent: boolean;
-}): Promise<string | null | NoBoardError> {
-  const boards = await cros.getSetupBoardsRecentFirst();
+export async function selectAndUpdateTargetBoard(
+  chroot: cros.WrapFs<Chroot>,
+  config: {
+    suggestMostRecent: boolean;
+  }
+): Promise<string | null | NoBoardError> {
+  const boards = await cros.getSetupBoardsRecentFirst(chroot);
   const board = await selectBoard(boards, config.suggestMostRecent);
 
   if (board) {

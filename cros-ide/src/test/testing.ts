@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as extension from '../extension';
-import {ExecResult, setExecForTesting} from '../common/common_util';
+import {Chroot, ExecResult, setExecForTesting} from '../common/common_util';
 
 /**
  * Returns execution result or undefined if args is not handled.
@@ -173,6 +173,15 @@ export async function flushMicrotasks(): Promise<void> {
   return new Promise(resolve => {
     setImmediate(resolve);
   });
+}
+
+/**
+ * Builds fake chroot environment under tempDir, and returns the path to the
+ * fake chroot (`${tempDir}/chroot`).
+ */
+export async function buildFakeChroot(tempDir: string): Promise<Chroot> {
+  await putFiles(tempDir, {'chroot/etc/cros_chroot_version': '42'});
+  return path.join(tempDir, 'chroot') as Chroot;
 }
 
 /**

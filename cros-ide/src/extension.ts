@@ -22,6 +22,7 @@ import * as shortLinkProvider from './features/short_link_provider';
 import * as suggestExtension from './features/suggest_extension';
 import * as targetBoard from './features/target_board';
 import * as ideUtil from './ide_util';
+import * as chroot from './services/chroot';
 import * as bgTaskStatus from './ui/bg_task_status';
 
 export interface ExtensionApi {
@@ -34,6 +35,7 @@ export async function activate(
   context: vscode.ExtensionContext
 ): Promise<ExtensionApi> {
   const statusManager = bgTaskStatus.activate(context);
+  const chrootService = chroot.activate(context);
 
   // Activate metrics first so that other components can emit metrics on activation.
   metrics.activate(context);
@@ -50,12 +52,12 @@ export async function activate(
   });
 
   crosLint.activate(context, statusManager);
-  boardsPackages.activate();
+  boardsPackages.activate(chrootService);
   shortLinkProvider.activate(context);
   codesearch.activate(context);
-  cppCodeCompletion.activate(context, statusManager);
+  cppCodeCompletion.activate(context, statusManager, chrootService);
   suggestExtension.activate(context);
-  targetBoard.activate(context);
+  targetBoard.activate(context, chrootService);
   feedback.activate(context);
 
   if (ideUtil.getConfigRoot().get<boolean>('underDevelopment.dutManager')) {

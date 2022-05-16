@@ -8,10 +8,14 @@
 
 import * as vscode from 'vscode';
 import * as ideUtil from '../ide_util';
+import {ChrootService} from '../services/chroot';
 
 const BOARD_CONFIG = 'cros-ide.board';
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(
+  context: vscode.ExtensionContext,
+  chrootService: ChrootService
+) {
   const boardStatusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Left
   );
@@ -29,7 +33,11 @@ export function activate(context: vscode.ExtensionContext) {
   updateBoardStatus(boardStatusBarItem);
 
   vscode.commands.registerCommand('cros-ide.selectBoard', async () => {
-    const board = await ideUtil.selectAndUpdateTargetBoard({
+    const chroot = chrootService.chroot();
+    if (chroot === undefined) {
+      return;
+    }
+    const board = await ideUtil.selectAndUpdateTargetBoard(chroot, {
       suggestMostRecent: false,
     });
     if (board instanceof ideUtil.NoBoardError) {

@@ -9,21 +9,19 @@ import * as testing from '../../testing';
 
 describe('Packages', () => {
   const tempDir = testing.tempDir();
-
   it('returns package information', async () => {
-    const packages = new Packages(path.join(tempDir.path, '/mnt/host/source'));
+    await testing.buildFakeChroot(tempDir.path);
+
+    const packages = new Packages();
     // A file should exists in the filepath to get its absolute path.
     await testing.putFiles(tempDir.path, {
-      '/mnt/host/source/src/platform2/cros-disks/foo.cc': 'x',
-      '/mnt/host/source/src/platform2/unknown_dir/foo.cc': 'x',
+      'src/platform2/cros-disks/foo.cc': 'x',
+      'src/platform2/unknown_dir/foo.cc': 'x',
     });
 
     assert.deepStrictEqual(
       await packages.fromFilepath(
-        path.join(
-          tempDir.path,
-          '/mnt/host/source/src/platform2/cros-disks/foo.cc'
-        )
+        path.join(tempDir.path, 'src/platform2/cros-disks/foo.cc')
       ),
       {
         sourceDir: 'src/platform2/cros-disks',
@@ -34,19 +32,14 @@ describe('Packages', () => {
 
     assert.deepStrictEqual(
       await packages.fromFilepath(
-        path.join(
-          tempDir.path,
-          '/mnt/host/source/src/platform2/unknown_dir/foo.cc'
-        )
+        path.join(tempDir.path, 'src/platform2/unknown_dir/foo.cc')
       ),
       null,
       'unknown'
     );
 
     assert.deepStrictEqual(
-      await packages.fromFilepath(
-        path.join(tempDir.path, '/mnt/host/source/not_exist')
-      ),
+      await packages.fromFilepath(path.join(tempDir.path, 'not_exist')),
       null,
       'not exist'
     );

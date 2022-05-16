@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as fs from 'fs';
 import * as path from 'path';
 import * as commonUtil from '../../common/common_util';
+import {WrapFs} from '../../common/cros';
 import {Atom, PackageInfo} from '../../features/cpp_code_completion/packages';
+import {ChrootService} from '../../services/chroot';
 import {MNT_HOST_SOURCE} from './constants';
 
 /**
@@ -55,7 +56,8 @@ export class CompdbServiceImpl implements CompdbService {
   constructor(
     private readonly log: commonUtil.Log,
     private readonly legacyService: CompdbService,
-    private readonly useLegacy: () => boolean
+    private readonly useLegacy: () => boolean,
+    private readonly chrootService: ChrootService
   ) {}
 
   /**
@@ -71,7 +73,16 @@ export class CompdbServiceImpl implements CompdbService {
       });
     }
 
-    const ebuild = new Ebuild(board, atom, this.log);
+    const sourceFs = this.chrootService.source();
+    const chrootFs = this.chrootService.chroot();
+    if (!sourceFs || !chrootFs) {
+      this.log(
+        `Failed to generate compdb; source exists = ${!!sourceFs}, chroot exists = ${!!chrootFs}`
+      );
+      return;
+    }
+
+    const ebuild = new Ebuild(board, atom, this.log, chrootFs);
     const artifact = await ebuild.generate();
     if (artifact === undefined) {
       throw new CompdbError({
@@ -79,13 +90,13 @@ export class CompdbServiceImpl implements CompdbService {
       });
     }
     const destination = path.join(
-      MNT_HOST_SOURCE,
+      sourceFs.root,
       sourceDir,
       'compile_commands.json'
     );
     try {
       this.log(`Copying ${artifact} to ${destination}`);
-      await fs.promises.copyFile(artifact, destination);
+      await chrootFs.copyFile(artifact, destination);
     } catch (e) {
       throw new CompdbError({
         kind: CompdbErrorKind.CopyFailed,
@@ -111,7 +122,8 @@ class Ebuild {
   constructor(
     private readonly board: Board,
     private readonly atom: Atom,
-    private readonly log: commonUtil.Log
+    private readonly log: commonUtil.Log,
+    private readonly chrootFs: WrapFs<commonUtil.Chroot>
   ) {}
 
   /**
@@ -179,11 +191,11 @@ class Ebuild {
       try {
         cache = path.join(dir, '.configured');
         this.log(`Removing cache file ${cache}\n`);
-        await fs.promises.rm(cache, {force: true});
+        await this.chrootFs.rm(cache, {force: true});
 
         cache = path.join(dir, '.compiled');
         this.log(`Removing cache file ${cache}\n`);
-        await fs.promises.rm(cache, {force: true});
+        await this.chrootFs.rm(cache, {force: true});
       } catch (e) {
         throw new CompdbError({
           kind: CompdbErrorKind.RemoveCache,
@@ -211,11 +223,14 @@ class Ebuild {
     }
   }
   private async artifactPath(): Promise<string | undefined> {
+    const filepath = commonUtil.isInsideChroot()
+      ? 'compile_commands_chroot.json'
+      : 'compile_commands_no_chroot.json';
     const candidates: Array<[Date, string]> = [];
     for (const dir of this.buildDirs()) {
-      const file = path.join(dir, 'out/Default/compile_commands_chroot.json');
+      const file = path.join(dir, 'out/Default', filepath);
       try {
-        const stat = await fs.promises.stat(file);
+        const stat = await this.chrootFs.stat(file);
         candidates.push([stat.mtime, file]);
       } catch (_e) {
         // Ignore possible file not found error, which happens because we

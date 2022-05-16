@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
 import * as ideUtil from '../../ide_util';
+import {ChrootService} from '../../services/chroot';
 import * as bgTaskStatus from '../../ui/bg_task_status';
 import {
   CompdbError,
@@ -18,7 +19,8 @@ import {Atom, Packages} from './packages';
 
 export function activate(
   context: vscode.ExtensionContext,
-  statusManager: bgTaskStatus.StatusManager
+  statusManager: bgTaskStatus.StatusManager,
+  chrootService: ChrootService
 ) {
   const log = vscode.window.createOutputChannel('CrOS IDE: C++ Support');
   vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => log.show());
@@ -27,10 +29,17 @@ export function activate(
   const compdbService = new CompdbServiceImpl(
     log.append.bind(log),
     legacyService,
-    useLegacy
+    useLegacy,
+    chrootService
   );
   context.subscriptions.push(
-    new CompilationDatabase(statusManager, new Packages(), log, compdbService)
+    new CompilationDatabase(
+      statusManager,
+      new Packages(),
+      log,
+      compdbService,
+      chrootService
+    )
   );
 }
 
@@ -62,7 +71,8 @@ export class CompilationDatabase implements vscode.Disposable {
     private readonly statusManager: bgTaskStatus.StatusManager,
     private readonly packages: Packages,
     private readonly log: vscode.OutputChannel,
-    private readonly compdbService: CompdbService
+    private readonly compdbService: CompdbService,
+    private readonly chrootService: ChrootService
   ) {
     this.disposables.push(
       vscode.window.onDidChangeActiveTextEditor(async editor => {
@@ -132,8 +142,12 @@ export class CompilationDatabase implements vscode.Disposable {
     if (skipIfAlreadyGenerated && this.generated.has(packageInfo.atom)) {
       return;
     }
+    const chroot = this.chrootService.chroot();
+    if (chroot === undefined) {
+      return;
+    }
 
-    const board = await ideUtil.getOrSelectTargetBoard();
+    const board = await ideUtil.getOrSelectTargetBoard(chroot);
     if (board instanceof ideUtil.NoBoardError) {
       await vscode.window.showErrorMessage(
         `Generate compilation database: ${board.message}`

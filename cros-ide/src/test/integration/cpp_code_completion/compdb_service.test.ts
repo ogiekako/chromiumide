@@ -4,6 +4,7 @@
 
 import * as assert from 'assert';
 import {CompdbServiceImpl} from '../../../features/cpp_code_completion/compdb_service';
+import {ChrootService} from '../../../services/chroot';
 import {SpiedCompdbService} from './spied_compdb_service';
 
 describe('Compdb service', () => {
@@ -12,7 +13,8 @@ describe('Compdb service', () => {
     const compdbService = new CompdbServiceImpl(
       (_line: string) => {},
       legacyService,
-      () => true
+      () => true,
+      new ChrootService(undefined, undefined)
     );
     await compdbService.generate('foo', {sourceDir: 'bar', atom: 'baz'});
     assert.deepStrictEqual(legacyService.requests, [
