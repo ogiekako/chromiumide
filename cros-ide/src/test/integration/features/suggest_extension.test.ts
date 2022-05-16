@@ -3,9 +3,9 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {activateSingle} from '../../features/suggest_extension';
-import {flushMicrotasks} from '../testing';
-import {installVscodeDouble} from './doubles';
+import {activateSingle} from '../../../features/suggest_extension';
+import {flushMicrotasks} from '../../testing';
+import {installVscodeDouble} from '../doubles';
 
 describe('Suggest extension module', () => {
   const {vscodeSpy, vscodeEmitters} = installVscodeDouble();

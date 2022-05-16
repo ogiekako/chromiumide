@@ -4,8 +4,7 @@
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-
-import * as shortLinkProvider from '../../features/short_link_provider';
+import * as shortLinkProvider from '../../../features/short_link_provider';
 
 const fakeCancellationToken = new (class implements vscode.CancellationToken {
   isCancellationRequested!: boolean;

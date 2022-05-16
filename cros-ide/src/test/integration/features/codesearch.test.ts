@@ -3,10 +3,10 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as codesearch from '../../features/codesearch';
-import {cleanState, exactMatch, installFakeExec} from '../testing';
-import {installVscodeDouble} from './doubles';
-import {fakeGetConfiguration} from './fakes/workspace_configuration';
+import * as codesearch from '../../../features/codesearch';
+import {cleanState, exactMatch, installFakeExec} from '../../testing';
+import {installVscodeDouble} from '../doubles';
+import {fakeGetConfiguration} from '../fakes/workspace_configuration';
 
 const {openCurrentFile, searchSelection} = codesearch.TEST_ONLY;
 

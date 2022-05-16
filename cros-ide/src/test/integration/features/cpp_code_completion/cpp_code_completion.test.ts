@@ -5,16 +5,16 @@
 import 'jasmine';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {CLANGD_EXTENSION} from '../../../features/cpp_code_completion/constants';
-import {WrapFs} from '../../../common/cros';
-import {CompilationDatabase} from '../../../features/cpp_code_completion/cpp_code_completion';
-import {Packages} from '../../../features/cpp_code_completion/packages';
-import {ChrootService} from '../../../services/chroot';
-import * as bgTaskStatus from '../../../ui/bg_task_status';
-import {buildFakeChroot, cleanState, tempDir} from '../../testing';
-import {installVscodeDouble} from '../doubles';
-import {FakeOutputChannel} from '../fakes/output_channel';
-import {fakeGetConfiguration} from '../fakes/workspace_configuration';
+import {WrapFs} from '../../../../common/cros';
+import {CLANGD_EXTENSION} from '../../../../features/cpp_code_completion/constants';
+import {CompilationDatabase} from '../../../../features/cpp_code_completion/cpp_code_completion';
+import {Packages} from '../../../../features/cpp_code_completion/packages';
+import {ChrootService} from '../../../../services/chroot';
+import * as bgTaskStatus from '../../../../ui/bg_task_status';
+import {buildFakeChroot, cleanState, tempDir} from '../../../testing';
+import {installVscodeDouble} from '../../doubles';
+import {FakeOutputChannel} from '../../fakes/output_channel';
+import {fakeGetConfiguration} from '../../fakes/workspace_configuration';
 import {SpiedCompdbService} from './spied_compdb_service';
 
 function newEventWaiter(
