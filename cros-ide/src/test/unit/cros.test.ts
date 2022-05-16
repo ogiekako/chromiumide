@@ -5,7 +5,6 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as commonUtil from '../../common/common_util';
 import * as cros from '../../common/cros';
 import * as testing from '../testing';
 
@@ -27,33 +26,32 @@ async function prepareBoardsDir(td: string) {
 }
 
 describe('Boards that are set up', () => {
-  it('are listed most recent first', async () => {
-    await commonUtil.withTempDir(async td => {
-      await prepareBoardsDir(td);
+  const tempDir = testing.tempDir();
 
-      assert.deepStrictEqual(await cros.getSetupBoardsRecentFirst(td), [
-        'coral',
-        'amd64-generic',
-        'betty-pi-arc',
-      ]);
-    });
+  it('are listed most recent first', async () => {
+    await prepareBoardsDir(tempDir.path);
+
+    assert.deepStrictEqual(await cros.getSetupBoardsRecentFirst(tempDir.path), [
+      'coral',
+      'amd64-generic',
+      'betty-pi-arc',
+    ]);
   });
 
   it('are listed in alphabetic order', async () => {
-    await commonUtil.withTempDir(async td => {
-      await prepareBoardsDir(td);
+    await prepareBoardsDir(tempDir.path);
 
-      assert.deepStrictEqual(await cros.getSetupBoardsAlphabetic(td), [
-        'amd64-generic',
-        'betty-pi-arc',
-        'coral',
-      ]);
-    });
+    assert.deepStrictEqual(await cros.getSetupBoardsAlphabetic(tempDir.path), [
+      'amd64-generic',
+      'betty-pi-arc',
+      'coral',
+    ]);
   });
 
   it('can be listed, even if /build does not exist', async () => {
-    await commonUtil.withTempDir(async td => {
-      assert.deepStrictEqual(await cros.getSetupBoardsAlphabetic(td), []);
-    });
+    assert.deepStrictEqual(
+      await cros.getSetupBoardsAlphabetic(tempDir.path),
+      []
+    );
   });
 });

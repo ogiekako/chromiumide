@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import {ExecResult, setExecForTesting} from '../common/common_util';
 
@@ -143,6 +144,20 @@ export function installFakeExec(): {fakeExec: FakeExec} {
   });
 
   return {fakeExec};
+}
+
+/**
+ * Returns a state with the path to a temporary directory, installing an
+ * afterEach hook to remove the directory.
+ */
+export function tempDir(): {path: string} {
+  const state = cleanState(async () => {
+    return {
+      path: await fs.promises.mkdtemp(os.tmpdir() + '/'),
+    };
+  });
+  afterEach(() => fs.promises.rm(state.path, {recursive: true}));
+  return state;
 }
 
 /**

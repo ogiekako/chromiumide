@@ -4,11 +4,12 @@
 
 import * as assert from 'assert';
 import * as path from 'path';
-import * as commonUtil from '../../common/common_util';
 import * as ideUtil from '../../ide_util';
 import * as testing from '../testing';
 
 describe('IDE utilities', () => {
+  const tempDir = testing.tempDir();
+
   it('returns VSCode executable path', async () => {
     interface TestCase {
       name: string;
@@ -30,7 +31,7 @@ describe('IDE utilities', () => {
         appName: 'Visual Studio Code',
       },
       {
-        name: 'VSCode Insiders',
+        name: 'VSCodeInsiders',
         exe: '.vscode-server-insiders/bin/b84feecf9231d404a766e251f8a37c730089511b/bin/remote-cli/code-insiders',
         appRoot:
           '.vscode-server-insiders/bin/b84feecf9231d404a766e251f8a37c730089511b',
@@ -38,48 +39,46 @@ describe('IDE utilities', () => {
       },
     ];
     for (const tc of testCases) {
-      await commonUtil.withTempDir(async home => {
-        await testing.putFiles(home, {
-          [tc.exe]: 'exe',
-        });
-        const appRoot = path.join(home, tc.appRoot);
-        const appName = tc.appName;
-        const expected = path.join(home, tc.exe);
-        assert.strictEqual(
-          ideUtil.vscodeExecutablePath(appRoot, appName),
-          expected,
-          tc.name
-        );
+      const home = path.join(tempDir.path, tc.name);
+      await testing.putFiles(home, {
+        [tc.exe]: 'exe',
       });
+      const appRoot = path.join(home, tc.appRoot);
+      const appName = tc.appName;
+      const expected = path.join(home, tc.exe);
+      assert.strictEqual(
+        ideUtil.vscodeExecutablePath(appRoot, appName),
+        expected,
+        tc.name
+      );
     }
   });
 
   it('returns Error on failure', async () => {
-    await commonUtil.withTempDir(async home => {
-      await testing.putFiles(home, {
-        'foo/bin/code-server': 'exe',
-      });
-
-      // Assert test is properly set up
-      assert.strictEqual(
-        ideUtil.vscodeExecutablePath(path.join(home, 'foo'), 'code-server'),
-        path.join(home, 'foo/bin/code-server')
-      );
-
-      assert(
-        ideUtil.vscodeExecutablePath(
-          path.join(home, 'bar'),
-          'code-server'
-        ) instanceof Error,
-        'not found'
-      );
-      assert(
-        ideUtil.vscodeExecutablePath(
-          path.join(home, 'foo'),
-          'unknown app'
-        ) instanceof Error,
-        'unknown app'
-      );
+    const home = tempDir.path;
+    await testing.putFiles(home, {
+      'foo/bin/code-server': 'exe',
     });
+
+    // Assert test is properly set up
+    assert.strictEqual(
+      ideUtil.vscodeExecutablePath(path.join(home, 'foo'), 'code-server'),
+      path.join(home, 'foo/bin/code-server')
+    );
+
+    assert(
+      ideUtil.vscodeExecutablePath(
+        path.join(home, 'bar'),
+        'code-server'
+      ) instanceof Error,
+      'not found'
+    );
+    assert(
+      ideUtil.vscodeExecutablePath(
+        path.join(home, 'foo'),
+        'unknown app'
+      ) instanceof Error,
+      'unknown app'
+    );
   });
 });
