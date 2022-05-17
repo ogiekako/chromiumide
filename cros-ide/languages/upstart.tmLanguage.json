@@ -12,7 +12,10 @@
     { "include": "#kill-timeout" },
     { "include": "#documentation" },
     { "include": "#emits" },
-    { "include": "#event-definition" }
+    { "include": "#event-definition" },
+    { "include": "#normal-exit" },
+    { "include": "#respawn-limit" },
+    { "include": "#tasks-respawning" }
   ],
   "repository": {
     "comment": {
@@ -58,9 +61,9 @@
       "match": "^expect (fork|daemon|stop)$",
       "name": "keyword.other.expect.upstart"
     },
-    "signal-numeric": {
+    "unsigned-number": {
       "match": "\\b\\d+\\b",
-      "name": "constant.numeric.signal.upstart"
+      "name": "constant.numeric.upstart"
     },
     "signal-name": {
       "match": "\\b(SIG)?(HUP|INT|QUIT|ILL|TRAP|ABRT|IOT|BUS|EMT|FPE|KILL|USR1|SEGV|USR2|PIPE|ALRM|TERM|STKFLT|CHLD|CLD|CONT|STOP|TSTP|TTIN|TTOU|URG|XCPU|XFSZ|VTALRM|PROF|WINCH|IO|POLL|PWR|INFO|LOST|SYS|UNUSED)\\b",
@@ -73,7 +76,7 @@
         "0": { "name": "keyword.other.kill-reload.upstart" }
       },
       "patterns": [
-        { "include": "#signal-numeric" },
+        { "include": "#unsigned-number" },
         { "include": "#signal-name" }
       ]
     },
@@ -140,6 +143,31 @@
           "name": "entity.name.function.event.upstart"
         }
       ]
+    },
+    "normal-exit": {
+      "begin": "^normal exit",
+      "end": "$",
+      "beginCaptures": {
+        "0": { "name": "keyword.other.normal-exit.upstart" }
+      },
+      "patterns": [
+        { "include": "#unsigned-number" },
+        { "include": "#signal-name"}
+      ]
+    },
+    "respawn-limit": {
+      "match": "^(respawn limit) (?:(\\d+) (\\d+)|(unlimited))",
+      "name": "meta.respawn-limit.upstart",
+      "captures": {
+        "1": { "name": "keyword.other.respawn-limit.upstart" },
+        "2": { "name": "constant.numeric.upstart" },
+        "3": { "name": "constant.numeric.upstart" },
+        "4": { "name": "constant.language.unlimited.upstart" }
+      }
+    },
+    "tasks-respawning": {
+      "match": "^(task|respawn)",
+      "name": "keyword.other.task-respawn.upstart"
     }
   }
 }
