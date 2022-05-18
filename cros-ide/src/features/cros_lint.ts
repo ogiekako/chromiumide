@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../common/common_util';
 import * as metrics from '../features/metrics/metrics';
@@ -43,7 +45,10 @@ export function activate(
 
 /** Describes how to run a linter and parse its output. */
 interface LintConfig {
-  executable: string;
+  /**
+   * Returns the executable name to lint the realpath. It returns undefined in case linter is not found.
+   */
+  executable(realpath: string): string | undefined;
   arguments(path: string): string[];
   parse(
     stdout: string,
@@ -52,14 +57,24 @@ interface LintConfig {
   ): vscode.Diagnostic[];
 }
 
-const GNLINT_PATH = '/mnt/host/source/src/platform2/common-mk/gnlint.py';
+const GNLINT_PATH = 'src/platform2/common-mk/gnlint.py';
+const CROS_PATH = 'chromite/bin/cros';
+
+function crosExeFor(realpath: string): string | undefined {
+  const chroot = commonUtil.findChroot(realpath);
+  if (chroot === undefined) {
+    return undefined;
+  }
+  const source = commonUtil.sourceDir(chroot);
+  return path.join(source, CROS_PATH);
+}
 
 // Don't forget to update package.json when adding more languages.
 const lintConfigs = new Map<string, LintConfig>([
   [
     'cpp',
     {
-      executable: 'cros',
+      executable: realpath => crosExeFor(realpath),
       arguments: (path: string) => ['lint', path],
       parse: parseCrosLintCpp,
     },
@@ -67,7 +82,14 @@ const lintConfigs = new Map<string, LintConfig>([
   [
     'gn',
     {
-      executable: GNLINT_PATH,
+      executable: realpath => {
+        const chroot = commonUtil.findChroot(realpath);
+        if (chroot === undefined) {
+          return undefined;
+        }
+        const source = commonUtil.sourceDir(chroot);
+        return path.join(source, GNLINT_PATH);
+      },
       arguments: (path: string) => [path],
       parse: parseCrosLintGn,
     },
@@ -75,7 +97,7 @@ const lintConfigs = new Map<string, LintConfig>([
   [
     'python',
     {
-      executable: 'cros',
+      executable: realpath => crosExeFor(realpath),
       arguments: (path: string) => ['lint', path],
       parse: parseCrosLintPython,
     },
@@ -83,7 +105,7 @@ const lintConfigs = new Map<string, LintConfig>([
   [
     'shellscript',
     {
-      executable: 'cros',
+      executable: realpath => crosExeFor(realpath),
       arguments: (path: string) => ['lint', '--output=parseable', path],
       parse: parseCrosLintShell,
     },
@@ -106,35 +128,41 @@ async function updateCrosLintDiagnostics(
 ): Promise<void> {
   if (document && document.uri.scheme === 'file') {
     const lintConfig = lintConfigs.get(document.languageId);
-    if (lintConfig) {
-      const res = await commonUtil.exec(
-        lintConfig.executable,
-        lintConfig.arguments(document.uri.fsPath),
-        log.append,
-        {ignoreNonZeroExit: true, logStdout: true}
-      );
-      if (res instanceof Error) {
-        log.append(res.message);
-        statusManager.setTask(LINTER_TASK_ID, {
-          status: bgTaskStatus.TaskStatus.ERROR,
-          command: SHOW_LOG_COMMAND,
-        });
-        return;
-      }
-      const {stdout, stderr} = res;
-      const diagnostics = lintConfig.parse(stdout, stderr, document);
-      collection.set(document.uri, diagnostics);
+    if (!lintConfig) {
+      return;
+    }
+    const realpath = await fs.promises.realpath(document.uri.fsPath);
+    const name = lintConfig.executable(realpath);
+    if (!name) {
+      log.append(`Could not find lint executable for ${document.uri.fsPath}\n`);
+      return;
+    }
+    const args = lintConfig.arguments(realpath);
+    const res = await commonUtil.exec(name, args, log.append, {
+      ignoreNonZeroExit: true,
+      logStdout: true,
+    });
+    if (res instanceof Error) {
+      log.append(res.message);
       statusManager.setTask(LINTER_TASK_ID, {
-        status: bgTaskStatus.TaskStatus.OK,
+        status: bgTaskStatus.TaskStatus.ERROR,
         command: SHOW_LOG_COMMAND,
       });
-      metrics.send({
-        category: 'cros lint',
-        action: 'update diagnostics',
-        label: document.languageId,
-        value: diagnostics.length,
-      });
+      return;
     }
+    const {stdout, stderr} = res;
+    const diagnostics = lintConfig.parse(stdout, stderr, document);
+    collection.set(document.uri, diagnostics);
+    statusManager.setTask(LINTER_TASK_ID, {
+      status: bgTaskStatus.TaskStatus.OK,
+      command: SHOW_LOG_COMMAND,
+    });
+    metrics.send({
+      category: 'cros lint',
+      action: 'update diagnostics',
+      label: document.languageId,
+      value: diagnostics.length,
+    });
   }
 }
 
