@@ -42,6 +42,7 @@ export async function activate() {
   await createPackageWatches();
 }
 
+const VIRTUAL_BOARDS_HOST = 'host';
 const CONFIG_SHOW_WELCOME_MESSAGE = 'boardsAndPackages.showWelcomeMessage';
 
 // TODO: Write a unit test for watching packages.
@@ -86,7 +87,11 @@ async function crosWorkonStop(pkg: Package) {
 async function crosWorkon(boardName: string, cmd: string, pkgName: string) {
   const res = await commonUtil.exec(
     'cros_workon',
-    [`--board=${boardName}`, cmd, pkgName],
+    [
+      boardName === VIRTUAL_BOARDS_HOST ? '--host' : `--board=${boardName}`,
+      cmd,
+      pkgName,
+    ],
     ideUtil.getUiLogger().append,
     {logStdout: true, ignoreNonZeroExit: true}
   );
@@ -121,9 +126,9 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
     }
 
     if (element === undefined) {
-      return (await cros.getSetupBoardsAlphabetic(this.rootDir)).map(
-        x => new Board(x)
-      );
+      return (await cros.getSetupBoardsAlphabetic(this.rootDir))
+        .map(x => new Board(x))
+        .concat([new Board(VIRTUAL_BOARDS_HOST)]);
     }
     if (element && element instanceof Board) {
       return (await getWorkedOnPackages(element.name)).map(
@@ -168,7 +173,7 @@ class Package extends ChrootItem {
 async function getWorkedOnPackages(board: string): Promise<string[]> {
   const res = await commonUtil.exec(
     'cros_workon',
-    ['--board', board, 'list'],
+    [board === VIRTUAL_BOARDS_HOST ? '--host' : `--board=${board}`, 'list'],
     ideUtil.getUiLogger().append,
     {logStdout: true}
   );

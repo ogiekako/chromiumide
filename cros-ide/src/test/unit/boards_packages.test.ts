@@ -70,9 +70,16 @@ describe('Boards and Packages view', () => {
 
       fakeExec.on(
         'cros_workon',
-        exactMatch(['--board', 'coral', 'list'], async () => {
+        exactMatch(['--board=coral', 'list'], async () => {
           return `chromeos-base/cryptohome
 chromeos-base/shill`;
+        })
+      );
+
+      fakeExec.on(
+        'cros_workon',
+        exactMatch(['--host', 'list'], async () => {
+          return 'chromeos-base/libbrillo';
         })
       );
 
@@ -89,18 +96,32 @@ chromeos-base/shill`;
           label: 'coral',
           contextValue: 'board',
         }),
+        jasmine.objectContaining({
+          label: 'host',
+          contextValue: 'board',
+        }),
       ]);
 
       // List active packages for coral.
       const coral = boards[1];
-      const pkgs = await bpProvider.getChildren(coral);
-      expect(pkgs).toEqual([
+      const coral_pkgs = await bpProvider.getChildren(coral);
+      expect(coral_pkgs).toEqual([
         jasmine.objectContaining({
           label: 'chromeos-base/cryptohome',
           contextValue: 'package',
         }),
         jasmine.objectContaining({
           label: 'chromeos-base/shill',
+          contextValue: 'package',
+        }),
+      ]);
+
+      // List active packages for host.
+      const host = boards[2];
+      const host_pkgs = await bpProvider.getChildren(host);
+      expect(host_pkgs).toEqual([
+        jasmine.objectContaining({
+          label: 'chromeos-base/libbrillo',
           contextValue: 'package',
         }),
       ]);
