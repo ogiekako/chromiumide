@@ -287,7 +287,6 @@ async function main() {
     return;
   }
   if (config.dev) {
-    assertInsideChroot();
     await installDev(config.exe);
     return;
   }
