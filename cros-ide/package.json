@@ -20,17 +20,9 @@
     "Testing"
   ],
   "activationEvents": [
-    "onCommand:cros-ide.addHost",
-    "onCommand:cros-ide.deleteHost",
-    "onCommand:cros-ide.connectToHostForScreen",
-    "onCommand:cros-ide.connectToHostForShell",
-    "onCommand:cros-ide.refreshCrosfleet",
-    "onCommand:cros-ide.addFleetHost",
     "onCommand:cros-ide.codeSearchOpenCurrentFile",
     "onCommand:cros-ide.codeSearchSearchForSelection",
     "onCommand:cros-ide.fileIdeBug",
-    "onView:static-devices",
-    "onView:fleet-devices",
     "onView:boards-packages",
     "onLanguage:cpp",
     "onLanguage:gn",
@@ -42,42 +34,6 @@
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "cros-ide.connectToHostForScreen",
-        "title": "CrOS: Connect to Host (VNC)",
-        "icon": "$(window)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
-      },
-      {
-        "command": "cros-ide.connectToHostForShell",
-        "title": "CrOS: Connect to Host (Shell)",
-        "icon": "$(terminal)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
-      },
-      {
-        "command": "cros-ide.addHost",
-        "title": "CrOS: Add New Host",
-        "icon": "$(add)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
-      },
-      {
-        "command": "cros-ide.deleteHost",
-        "title": "CrOS: Delete Host",
-        "icon": "$(remove)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
-      },
-      {
-        "command": "cros-ide.refreshCrosfleet",
-        "title": "CrOS: Refresh crosfleet devices",
-        "icon": "$(refresh)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
-      },
-      {
-        "command": "cros-ide.addFleetHost",
-        "title": "CrOS: Add crosfleet Host",
-        "icon": "$(add)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
-      },
       {
         "command": "cros-ide.refreshBoardsPackages",
         "title": "CrOS: Refresh Boards and Packages",
@@ -117,24 +73,14 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "cros-devices",
+          "id": "cros-view",
           "title": "CrOS Development",
           "icon": "media/cros-device.svg"
         }
       ]
     },
     "views": {
-      "cros-devices": [
-        {
-          "id": "static-devices",
-          "name": "My Devices",
-          "when": "config.cros-ide.underDevelopment.dutManager"
-        },
-        {
-          "id": "fleet-devices",
-          "name": "Crosfleet Devices",
-          "when": "config.cros-ide.underDevelopment.dutManager"
-        },
+      "cros-view": [
         {
           "id": "boards-packages",
           "name": "Boards and Packages"
@@ -156,42 +102,12 @@
       ],
       "view/title": [
         {
-          "command": "cros-ide.addHost",
-          "when": "view == static-devices",
-          "group": "navigation"
-        },
-        {
-          "command": "cros-ide.addFleetHost",
-          "when": "view == fleet-devices",
-          "group": "navigation"
-        },
-        {
-          "command": "cros-ide.refreshCrosfleet",
-          "when": "view == fleet-devices",
-          "group": "navigation"
-        },
-        {
           "command": "cros-ide.refreshBoardsPackages",
           "when": "view == boards-packages",
           "group": "navigation"
         }
       ],
       "view/item/context": [
-        {
-          "command": "cros-ide.connectToHostForScreen",
-          "when": "view == static-devices || view == fleet-devices",
-          "group": "inline@1"
-        },
-        {
-          "command": "cros-ide.connectToHostForShell",
-          "when": "view == static-devices || view == fleet-devices",
-          "group": "inline@2"
-        },
-        {
-          "command": "cros-ide.deleteHost",
-          "when": "view == static-devices || view == fleet-devices",
-          "group": "inline@3"
-        },
         {
           "command": "cros-ide.crosWorkonStart",
           "when": "view == boards-packages && viewItem == board",
@@ -205,10 +121,6 @@
       ]
     },
     "viewsWelcome": [
-      {
-        "view": "static-devices",
-        "contents": "No host added yet.\n[Add New Host](command:cros-ide.addHost)"
-      },
       {
         "view": "boards-packages",
         "contents": "This view shows boards set up in the chroot and packages marked active with [cros_workon start](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#run-cros_workon-start). You can start and stop working on new packages from the UI. Selecting a new board and initializizing the build must be done on the command line. Visit [the developer guide](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#Select-a-board) to learn more.\n[Show Boards and Packages](command:cros-ide.dismissBoardsPkgsWelcome)",

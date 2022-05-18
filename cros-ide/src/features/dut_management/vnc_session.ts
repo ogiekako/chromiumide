@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
 import * as ws from 'ws';
-import * as ideUtil from '../../../ide_util';
+import * as ideUtil from '../../ide_util';
 
 /**
  * Represents an active VNC session of a DUT.
