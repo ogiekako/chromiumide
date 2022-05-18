@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as extension from '../extension';
 import {ExecResult, setExecForTesting} from '../common/common_util';
 
 /**
@@ -171,4 +173,21 @@ export async function flushMicrotasks(): Promise<void> {
   return new Promise(resolve => {
     setImmediate(resolve);
   });
+}
+
+/**
+ * ExtensionApiForTesting is similar to ExtensionApi, but some fields are
+ * guaranteed to be available.
+ */
+interface ExtensionApiForTesting extends extension.ExtensionApi {
+  context: vscode.ExtensionContext;
+}
+
+/**
+ * Activates the extension and returns its public API.
+ */
+export async function activateExtension(): Promise<ExtensionApiForTesting> {
+  const extension =
+    vscode.extensions.getExtension<ExtensionApiForTesting>('google.cros-ide')!;
+  return await extension.activate();
 }

@@ -24,7 +24,15 @@ import * as targetBoard from './features/target_board';
 import * as ideUtil from './ide_util';
 import * as bgTaskStatus from './ui/bg_task_status';
 
-export function activate(context: vscode.ExtensionContext) {
+export interface ExtensionApi {
+  // ExtensionContext passed to the activation function.
+  // Available only when the extension is activated for testing.
+  context: vscode.ExtensionContext | undefined;
+}
+
+export async function activate(
+  context: vscode.ExtensionContext
+): Promise<ExtensionApi> {
   const statusManager = bgTaskStatus.activate(context);
 
   vscode.commands.registerCommand(ideUtil.SHOW_UI_LOG.command, () =>
@@ -70,4 +78,9 @@ export function activate(context: vscode.ExtensionContext) {
     action: 'activate',
     label: context.extension.packageJSON.version,
   });
+
+  return {
+    context:
+      context.extensionMode === vscode.ExtensionMode.Test ? context : undefined,
+  };
 }
