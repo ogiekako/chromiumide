@@ -30,18 +30,27 @@
       "end": "$"
     },
     "script": {
-      "begin": "\\bscript\\b",
-      "end": "\\bend script\\b",
-      "name": "storage.type.script.upstart",
+      "begin": "^((pre|post)-(start|stop) )?script",
+      "end": "^end script",
+      "name": "meta.script.upstart",
+      "beginCaptures": {
+        "0": { "name": "storage.type.script.upstart" }
+      },
+      "endCaptures": {
+        "0": { "name": "storage.type.script.upstart" }
+      },
       "contentName": "meta.embedded.block.shellscript",
       "patterns": [
         { "include": "source.shell" }
       ]
     },
     "exec": {
-      "begin": "\\bexec\\b",
+      "begin": "^((pre|post)-(start|stop) )?exec",
       "end": "(?<!\\\\)\\n",
-      "name": "storage.type.exec.upstart",
+      "name": "meta.exec.upstart",
+      "beginCaptures": {
+        "0": { "name": "storage.type.exec.upstart" }
+      },
       "contentName": "meta.embedded.block.shellscript",
       "patterns": [
         { "include": "source.shell" }
