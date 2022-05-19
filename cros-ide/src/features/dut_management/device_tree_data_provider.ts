@@ -8,6 +8,7 @@ import * as deviceRepository from './device_repository';
 export enum ItemKind {
   DEVICE,
   CATEGORY,
+  PLACEHOLDER,
 }
 
 export class DeviceItem extends vscode.TreeItem {
@@ -43,7 +44,15 @@ export class CategoryItem extends vscode.TreeItem {
   }
 }
 
-type Item = DeviceItem | CategoryItem;
+export class PlaceholderItem extends vscode.TreeItem {
+  readonly kind = ItemKind.PLACEHOLDER;
+
+  constructor(label: string) {
+    super(label, vscode.TreeItemCollapsibleState.None);
+  }
+}
+
+type Item = DeviceItem | CategoryItem | PlaceholderItem;
 
 /**
  * Provides data for the device tree view.
@@ -97,7 +106,19 @@ export class DeviceTreeDataProvider
           devices = await this.leasedDeviceRepository.getDevices();
           break;
       }
-      return devices.map(d => new DeviceItem(d.hostname, parent.category));
+      const items: Item[] = devices.map(
+        d => new DeviceItem(d.hostname, parent.category)
+      );
+      if (items.length === 0) {
+        items.push(
+          new PlaceholderItem(
+            parent.category === deviceRepository.DeviceCategory.STATIC
+              ? 'No device configured yet'
+              : 'No leased device'
+          )
+        );
+      }
+      return items;
     }
     return [];
   }

@@ -77,4 +77,27 @@ describe('Device tree data provider', () => {
       },
     ]);
   });
+
+  it('builds a correct tree for initial state', async () => {
+    await repositoryUtil.setStaticHosts([]);
+    const rendered = await renderTree(state.deviceTreeDataProvider);
+    expect(rendered).toEqual([
+      {
+        item: new provider.CategoryItem(repository.DeviceCategory.STATIC),
+        children: [
+          {
+            item: new provider.PlaceholderItem('No device configured yet'),
+            children: [],
+          },
+        ],
+      },
+    ]);
+  });
+});
+
+describe('Integration test results', () => {
+  xit('are printed successfully (what?)', () => {
+    // Without this entry, integration tests end before printing a summary.
+    // TODO: Investigate the cause and remove this test.
+  });
 });
