@@ -10,32 +10,9 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from './common/common_util';
 import * as cros from './common/cros';
-import * as metrics from './features/metrics/metrics';
 
 export function getConfigRoot(): vscode.WorkspaceConfiguration {
   return vscode.workspace.getConfiguration('cros-ide');
-}
-
-export function createTerminalForHost(
-  host: string,
-  namePrefix: string,
-  context: vscode.ExtensionContext,
-  extraOptions?: string
-): vscode.Terminal {
-  const terminal = vscode.window.createTerminal(`${namePrefix} ${host}`);
-
-  terminal.sendText(
-    'ssh '.concat(
-      sshFormatArgs(
-        host,
-        '; exit $?',
-        getTestingRsaPath(context),
-        extraOptions
-      ).join(' ')
-    )
-  );
-  metrics.send({category: 'ideUtil', action: 'create terminal for host'});
-  return terminal;
 }
 
 const loggerInstance = vscode.window.createOutputChannel(
@@ -58,48 +35,6 @@ export const SHOW_UI_LOG: vscode.Command = {
   command: 'cros-ide.showUiLog',
   title: '',
 };
-
-export function getTestingRsaPath(context: vscode.ExtensionContext): string {
-  return vscode.Uri.joinPath(context.extensionUri, 'resources', 'testing_rsa')
-    .fsPath;
-}
-
-/**
- *
- * @param host hostname, which can be in the format of 'hostname' or 'hostname:port'
- * @param cmd CLI command to execute
- * @param testingRsaPath absolute path to the testingRSA key
- * @param extraOptions additional CLI options for your command
- * @returns formatted SSH command
- */
-export function sshFormatArgs(
-  host: string,
-  cmd: string,
-  testingRsaPath: string,
-  extraOptions?: string
-): string[] {
-  let port = '22';
-  const [hostname, portname] = host.split(':');
-  if (portname !== undefined) {
-    host = hostname;
-    port = portname;
-  }
-
-  let args = ['-i', testingRsaPath];
-  const trailingArgs = [
-    '-o StrictHostKeyChecking=no',
-    '-o UserKnownHostsFile=/dev/null',
-    '-p',
-    port,
-    `root@${host}`,
-    cmd,
-  ];
-  if (extraOptions !== undefined) {
-    args.push(extraOptions);
-  }
-  args = args.concat(trailingArgs);
-  return args;
-}
 
 // Config section name for the target board.
 export const BOARD = 'board';

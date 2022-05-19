@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
 import * as ws from 'ws';
-import * as ideUtil from '../../ide_util';
+import * as dutUtil from './dut_util';
 
 /**
  * Represents an active VNC session of a DUT.
@@ -81,7 +81,7 @@ export class VncSession {
     forwardPort: number,
     context: vscode.ExtensionContext
   ): vscode.Terminal {
-    const terminal = ideUtil.createTerminalForHost(
+    const terminal = dutUtil.createTerminalForHost(
       host,
       'CrOS: VNC Server',
       context,
