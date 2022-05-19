@@ -310,6 +310,10 @@
         "aliases": [
           "Upstart"
         ],
+        "filenamePatterns": [
+          "**/init/*.conf",
+          "**/upstart/*.conf"
+        ],
         "configuration": "./languages/upstart-language-configuration.json"
       }
     ],
