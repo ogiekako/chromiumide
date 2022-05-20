@@ -13,6 +13,7 @@ import * as boardsPackages from './features/boards_packages';
 import * as codesearch from './features/codesearch';
 import * as coverage from './features/coverage';
 import * as cppCodeCompletion from './features/cpp_code_completion/cpp_code_completion';
+import * as crosFormat from './features/cros_format';
 import * as crosLint from './features/cros_lint';
 import * as dutManager from './features/dut_management/dut_manager';
 import * as feedback from './features/metrics/feedback';
@@ -53,6 +54,10 @@ export function activate(context: vscode.ExtensionContext) {
 
   if (ideUtil.getConfigRoot().get<boolean>('underDevelopment.testCoverage')) {
     coverage.activate(context);
+  }
+
+  if (ideUtil.getConfigRoot().get<boolean>('underDevelopment.crosFormat')) {
+    crosFormat.activate(context);
   }
 
   checkUpdates.run(context);
