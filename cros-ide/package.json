@@ -154,6 +154,11 @@
           "description": "Code Search instance to open files in",
           "default": "public"
         },
+        "cros-ide.underDevelopment.crosFormat": {
+          "type": "boolean",
+          "description": "Format files with 'cros format' (under development)",
+          "default": false
+        },
         "cros-ide.underDevelopment.dutManager": {
           "type": "boolean",
           "description": "Enable DUT Manager (incomplete)",
