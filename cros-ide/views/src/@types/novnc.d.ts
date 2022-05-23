@@ -7,10 +7,24 @@ declare module '@novnc/novnc/core/rfb' {
     shared?: boolean;
   }
 
+  export interface DataChannel {
+    binaryType: string;
+    readonly protocol: string;
+    readonly readyState: number;
+
+    onopen: ((ev: Event) => void) | null;
+    onmessage: ((data: MessageEvent) => void) | null;
+    onerror: ((err: Event) => void) | null;
+    onclose: ((err: CloseEvent) => void) | null;
+
+    send: (data: ArrayBuffer) => void;
+    close: () => void;
+  }
+
   export default class RFB {
     constructor(
       target: HTMLElement,
-      urlOrDataChannel: string | WebSocket,
+      urlOrDataChannel: string | DataChannel,
       options?: RFBOptions
     );
 

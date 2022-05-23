@@ -8,7 +8,7 @@
       "DOM.iterable"
     ],
     "sourceMap": true,
-    "rootDir": "src",
+    "rootDirs": ["src", "../src"],
     "strict": true
   },
   "include": [

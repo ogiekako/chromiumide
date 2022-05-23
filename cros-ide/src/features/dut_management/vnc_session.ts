@@ -8,6 +8,15 @@ import * as net from 'net';
 import * as path from 'path';
 import * as ws from 'ws';
 import * as dutUtil from './dut_util';
+import * as webviewShared from './webview_shared';
+
+/**
+ * Represents a protocol used between the WebView and localhost.
+ */
+export enum ProxyProtocol {
+  WEBSOCKET,
+  MESSAGE_PASSING,
+}
 
 /**
  * Represents an active VNC session of a DUT.
@@ -15,8 +24,15 @@ import * as dutUtil from './dut_util';
  * It manages UI resources associated to a VNC session, such as a vscode.Terminal used to start and
  * forward KMSVNC server on the DUT, and a vscode.WebViewPanel to render NoVNC UI on.
  *
- * It also starts a local WebSocket server which acts as a protocol proxy between the NoVNC client
- * and the KMSVNC server, since NoVNC on WebView cannot directly speak VNC protocol.
+ * It also manages a proxy to allow the WebView to connect to the VNC server. There are two kinds
+ * of proxies used:
+ *
+ * - WebSocketProxy: Starts a local WebSocket server that proxies communication between the WebView
+ *    client and the VNC server. This proxy is used when the WebView can connect to the localhost,
+ *    possibly with port forwarding in the case of remote development.
+ * - MessagePassingProxy: Starts a in-process server that implements a socket over the WebView's
+ *    message passing mechanism. This proxy is used when the WebView can NOT connect to the
+ *    localhost, e.g. when the editor is running within a web browser.
  *
  * The WebView is initially empty. Call start() to start WebView, possibly after subscribing to
  * some events.
@@ -33,13 +49,13 @@ export class VncSession {
 
   private readonly terminal: vscode.Terminal;
   private readonly panel: vscode.WebviewPanel;
-  private readonly proxy: WebSocketProxy;
+  private readonly proxy: WebSocketProxy | MessagePassingProxy;
 
   private readonly onDidDisposeEmitter = new vscode.EventEmitter<void>();
   readonly onDidDispose = this.onDidDisposeEmitter.event;
 
   private readonly onDidReceiveMessageEmitter =
-    new vscode.EventEmitter<unknown>();
+    new vscode.EventEmitter<webviewShared.ClientMessage>();
   readonly onDidReceiveMessage = this.onDidReceiveMessageEmitter.event;
 
   private readonly subscriptions: vscode.Disposable[] = [
@@ -47,18 +63,31 @@ export class VncSession {
     this.onDidReceiveMessageEmitter,
   ];
 
-  constructor(host: string, private readonly context: vscode.ExtensionContext) {
+  constructor(
+    host: string,
+    private readonly context: vscode.ExtensionContext,
+    proxyProtocol?: ProxyProtocol
+  ) {
     const forwardPort = VncSession.nextAvailablePort++;
+
     this.terminal = VncSession.startVncServer(host, forwardPort, context);
     this.panel = VncSession.createWebview(host);
-    this.proxy = new WebSocketProxy(forwardPort);
-
+    switch (proxyProtocol ?? detectProxyProtocol()) {
+      case ProxyProtocol.WEBSOCKET:
+        this.proxy = new WebSocketProxy(forwardPort);
+        break;
+      case ProxyProtocol.MESSAGE_PASSING:
+        this.proxy = new MessagePassingProxy(forwardPort, this.panel.webview);
+        break;
+    }
     this.subscriptions.push(this.terminal, this.panel, this.proxy);
 
     this.subscriptions.push(
-      this.panel.webview.onDidReceiveMessage((msg: unknown) => {
-        this.onDidReceiveMessageEmitter.fire(msg);
-      })
+      this.panel.webview.onDidReceiveMessage(
+        (message: webviewShared.ClientMessage) => {
+          this.onDidReceiveMessageEmitter.fire(message);
+        }
+      )
     );
 
     // Dispose the session when the panel is closed.
@@ -70,11 +99,7 @@ export class VncSession {
   }
 
   start(): void {
-    VncSession.startWebview(
-      this.panel.webview,
-      this.proxy.listenPort,
-      this.context
-    );
+    VncSession.startWebview(this.panel.webview, this.proxy, this.context);
   }
 
   dispose(): void {
@@ -120,22 +145,27 @@ export class VncSession {
 
   private static async startWebview(
     webview: vscode.Webview,
-    proxyPort: number,
+    proxy: WebSocketProxy | MessagePassingProxy,
     context: vscode.ExtensionContext
   ): Promise<void> {
-    // Call asExternalUri with http:// URL to set up port forwarding
-    // in the case of remote development.
-    // https://code.visualstudio.com/api/advanced-topics/remote-extensions#option-1-use-asexternaluri
-    const proxyHttpUrl = await vscode.env.asExternalUri(
-      vscode.Uri.parse(`http://localhost:${proxyPort}/`)
-    );
-    const proxyUrl = proxyHttpUrl.with({scheme: 'ws'});
+    let proxyUrl: string;
+    if (proxy instanceof MessagePassingProxy) {
+      proxyUrl = webviewShared.MESSAGE_PASSING_URL;
+    } else {
+      // Call asExternalUri with http:// URL to set up port forwarding
+      // in the case of remote development.
+      // https://code.visualstudio.com/api/advanced-topics/remote-extensions#option-1-use-asexternaluri
+      const proxyHttpUrl = await vscode.env.asExternalUri(
+        vscode.Uri.parse(`http://localhost:${proxy.listenPort}/`)
+      );
+      proxyUrl = proxyHttpUrl.with({scheme: 'ws'}).toString();
+    }
     webview.html = VncSession.getWebviewContent(webview, proxyUrl, context);
   }
 
   private static getWebviewContent(
     webview: vscode.Webview,
-    proxyUrl: vscode.Uri,
+    proxyUrl: string,
     context: vscode.ExtensionContext
   ): string {
     const filePath = path.join(context.extensionPath, 'dist/views/vnc.html');
@@ -145,7 +175,7 @@ export class VncSession {
         from: /%EXTENSION_ROOT_URL%/g,
         to: webview.asWebviewUri(context.extensionUri).toString(),
       },
-      {from: /%WEB_SOCKET_PROXY_URL%/g, to: proxyUrl.toString()},
+      {from: /%WEB_SOCKET_PROXY_URL%/g, to: proxyUrl},
     ]);
   }
 }
@@ -197,6 +227,96 @@ class WebSocketProxy implements vscode.Disposable {
   }
 }
 
+// Handles socket operations implemented over VSCode WebView's message passing mechanism.
+// Specify a VNC server port on localhost to construct.
+class MessagePassingProxy implements vscode.Disposable {
+  private readonly subscriptions: vscode.Disposable[] = [];
+  private readonly sockets = new Map<number, net.Socket>();
+
+  constructor(
+    private readonly vncPort: number,
+    private readonly webview: vscode.Webview
+  ) {
+    this.subscriptions.push(
+      webview.onDidReceiveMessage((message: webviewShared.ClientMessage) =>
+        this.onMessage(message)
+      )
+    );
+  }
+
+  dispose(): void {
+    vscode.Disposable.from(...this.subscriptions).dispose();
+    for (const socket of this.sockets.values()) {
+      socket.destroy();
+    }
+    this.sockets.clear();
+  }
+
+  private onMessage(message: webviewShared.ClientMessage): void {
+    if (message.type !== 'socket') {
+      return;
+    }
+
+    const {subtype, socketId} = message;
+    switch (subtype) {
+      case 'open': {
+        const socket = net.createConnection(this.vncPort, 'localhost');
+        this.sockets.set(socketId, socket);
+        socket.on('connect', () => {
+          postServerMessage(this.webview, {
+            type: 'socket',
+            subtype: 'open',
+            socketId,
+          });
+        });
+        socket.on('error', (err: Error) => {
+          postServerMessage(this.webview, {
+            type: 'socket',
+            subtype: 'error',
+            socketId,
+            reason: err.message,
+          });
+        });
+        socket.on('data', (data: Buffer) => {
+          postServerMessage(this.webview, {
+            type: 'socket',
+            subtype: 'data',
+            socketId,
+            data: data.toString('base64'),
+          });
+        });
+        socket.on('close', () => {
+          postServerMessage(this.webview, {
+            type: 'socket',
+            subtype: 'close',
+            socketId,
+          });
+        });
+        break;
+      }
+
+      case 'close': {
+        const socket = this.sockets.get(socketId);
+        if (!socket) {
+          break;
+        }
+        socket.destroy();
+        this.sockets.delete(socketId);
+        break;
+      }
+
+      case 'data': {
+        const socket = this.sockets.get(socketId);
+        if (!socket) {
+          break;
+        }
+        socket.write(Buffer.from(message.data, 'base64'));
+        break;
+      }
+    }
+  }
+}
+
 interface ReplacePattern {
   from: RegExp;
   to: string;
@@ -207,4 +327,21 @@ function replaceAll(s: string, patterns: ReplacePattern[]): string {
     s = s.replace(pattern.from, pattern.to);
   }
   return s;
+}
+
+// Type-safe wrapper of vscode.Webview.postMessage.
+async function postServerMessage(
+  webview: vscode.Webview,
+  message: webviewShared.ServerMessage
+): Promise<void> {
+  await webview.postMessage(message);
+}
+
+function detectProxyProtocol(): ProxyProtocol {
+  // Prefer WebSocket protocol as it's more efficient.
+  if (vscode.env.appHost === 'desktop') {
+    return ProxyProtocol.WEBSOCKET;
+  }
+  // In other cases, fall back to the message passing protocol.
+  return ProxyProtocol.MESSAGE_PASSING;
 }
