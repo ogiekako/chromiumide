@@ -71,8 +71,6 @@ export class NoBoardError extends Error {
  *
  * @params config If config.suggestMostRecent is true, the board most recently
  * used is proposed to the user, before showing the board picker.
- *
- * TODO(oka): unit test this function (consider stubbing vscode APIs).
  */
 export async function selectAndUpdateTargetBoard(
   chroot: cros.WrapFs<Chroot>,
@@ -83,6 +81,9 @@ export async function selectAndUpdateTargetBoard(
   const boards = await cros.getSetupBoardsRecentFirst(chroot);
   const board = await selectBoard(boards, config.suggestMostRecent);
 
+  if (board instanceof Error) {
+    return board;
+  }
   if (board) {
     // TODO(oka): This should be per chroot (i.e. Remote) setting, instead of global (i.e. User).
     await getConfigRoot().update(

@@ -18,6 +18,8 @@ type SpiableVscodeWindow = Omit<
   // https://github.com/DefinitelyTyped/DefinitelyTyped/issues/42455 .
   showErrorMessage: jasmine.Func;
   showInformationMessage: jasmine.Func;
+  showQuickPick: jasmine.Func;
+  showWarningMessage: jasmine.Func;
 };
 
 /**
@@ -40,6 +42,8 @@ function newVscodeSpy() {
       'showErrorMessage',
       'showInformationMessage',
       'showInputBox',
+      'showQuickPick',
+      'showWarningMessage',
     ]),
     workspace: jasmine.createSpyObj<typeof vscode.workspace>(
       'vscode.workspace',
