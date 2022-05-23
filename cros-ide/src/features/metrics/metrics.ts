@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import * as https from 'https';
-import * as os from 'os';
 import * as queryString from 'querystring';
 import * as vscode from 'vscode';
 import * as ideUtil from '../../ide_util';
@@ -30,31 +29,44 @@ const informationMessageDetail =
   '\n' +
   'Would you like to assist us by turning on metrics collection for CrOS IDE extension?';
 
-export function activate(_context: vscode.ExtensionContext) {
-  const showMessage = ideUtil
-    .getConfigRoot()
-    .get<boolean>('metrics.showMessage');
-  if (showMessage) {
-    vscode.window
-      .showInformationMessage(
-        informationMessageTitle,
-        {detail: informationMessageDetail, modal: true},
-        'Yes'
-      )
-      .then(selection => {
-        if (selection && selection === 'Yes') {
-          ideUtil
-            .getConfigRoot()
-            .update(
-              'metrics.collectMetrics',
-              true,
-              vscode.ConfigurationTarget.Global
-            );
-        }
-      });
-    ideUtil
+// This variable is set by activate() to make the extension mode available globally.
+let extensionMode: vscode.ExtensionMode | undefined = undefined;
+
+export function activate(context: vscode.ExtensionContext) {
+  extensionMode = context.extensionMode;
+
+  // Do not show the consent dialog if the extension is running for integration tests.
+  // Modal dialogs make tests fail.
+  if (context.extensionMode !== vscode.ExtensionMode.Test) {
+    const showMessage = ideUtil
       .getConfigRoot()
-      .update('metrics.showMessage', false, vscode.ConfigurationTarget.Global);
+      .get<boolean>('metrics.showMessage');
+    if (showMessage) {
+      vscode.window
+        .showInformationMessage(
+          informationMessageTitle,
+          {detail: informationMessageDetail, modal: true},
+          'Yes'
+        )
+        .then(selection => {
+          if (selection && selection === 'Yes') {
+            ideUtil
+              .getConfigRoot()
+              .update(
+                'metrics.collectMetrics',
+                true,
+                vscode.ConfigurationTarget.Global
+              );
+          }
+        });
+      ideUtil
+        .getConfigRoot()
+        .update(
+          'metrics.showMessage',
+          false,
+          vscode.ConfigurationTarget.Global
+        );
+    }
   }
 
   vscode.commands.registerCommand('cros-ide.resetUserID', () => {
@@ -66,17 +78,6 @@ const protocolVersion = '1';
 const trackingIdTesting = 'UA-221509619-1';
 const trackingIdReal = 'UA-221509619-2';
 const hitType = 'event';
-
-const ideDevelopers = [
-  'lokeric',
-  'hscham',
-  'oka',
-  'fqj',
-  'nya',
-  'yamaguchi',
-  'ttylenda',
-  'yoshiki',
-];
 
 const optionsGA = {
   hostname: 'www.google-analytics.com',
@@ -107,11 +108,12 @@ export class Analytics {
   // Constructor cannot be async.
   static async create(): Promise<Analytics> {
     const uid = await metricsUtils.readOrCreateUserId();
-    // Send metrics to testing-purpose Google Analytics property if user is a cros-ide team member,
-    // to avoid polluting user data when debugging extension during development.
-    const tid = ideDevelopers.includes(os.userInfo().username)
-      ? trackingIdTesting
-      : trackingIdReal;
+    // Send metrics to testing-purpose Google Analytics property to avoid polluting
+    // user data when debugging the extension for development.
+    const tid =
+      extensionMode === vscode.ExtensionMode.Production
+        ? trackingIdReal
+        : trackingIdTesting;
     return new Analytics(tid, uid);
   }
 
@@ -140,16 +142,28 @@ export class Analytics {
   }
 
   /**
+   * Decides if we should upload metrics.
+   */
+  private shouldSend(): boolean {
+    return (
+      // The extension should have been activated for production or development.
+      // Note that we use a different tracking ID in the development mode.
+      (extensionMode === vscode.ExtensionMode.Production ||
+        extensionMode === vscode.ExtensionMode.Development) &&
+      // User ID should be available.
+      this.userId !== '' &&
+      // User should be a Googler.
+      this.userId !== metricsUtils.externalUserIdStub() &&
+      // User should have accepted to collect metrics.
+      ideUtil.getConfigRoot().get<boolean>('metrics.collectMetrics', false)
+    );
+  }
+
+  /**
    * Send event as query. Does not wait for its response.
    */
   send(event: Event, options = optionsGA) {
-    // Do not send event if userId fails to initialize or user is not a googler, or user opt-out of
-    // metrics collection.
-    if (
-      !this.userId ||
-      this.userId === metricsUtils.externalUserIdStub() ||
-      !ideUtil.getConfigRoot().get<boolean>('metrics.collectMetrics')
-    ) {
+    if (!this.shouldSend()) {
       return;
     }
 

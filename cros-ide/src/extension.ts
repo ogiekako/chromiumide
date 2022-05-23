@@ -35,6 +35,9 @@ export async function activate(
 ): Promise<ExtensionApi> {
   const statusManager = bgTaskStatus.activate(context);
 
+  // Activate metrics first so that other components can emit metrics on activation.
+  metrics.activate(context);
+
   vscode.commands.registerCommand(ideUtil.SHOW_UI_LOG.command, () =>
     ideUtil.getUiLogger().show()
   );
@@ -54,7 +57,6 @@ export async function activate(
   suggestExtension.activate(context);
   targetBoard.activate(context);
   feedback.activate(context);
-  metrics.activate(context);
 
   if (ideUtil.getConfigRoot().get<boolean>('underDevelopment.dutManager')) {
     dutManager.activateDutManager(context);
