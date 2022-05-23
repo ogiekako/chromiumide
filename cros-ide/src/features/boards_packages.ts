@@ -9,12 +9,13 @@ import {ChrootService} from '../services/chroot';
 
 export async function activate(chrootService: ChrootService) {
   const boardPackageProvider = new BoardPackageProvider(chrootService);
+  const boardsPackages = new BoardsPackages(chrootService);
 
   vscode.commands.registerCommand('cros-ide.crosWorkonStart', board =>
-    crosWorkonStart(chrootService, board)
+    boardsPackages.crosWorkonStart(board)
   );
   vscode.commands.registerCommand('cros-ide.crosWorkonStop', board =>
-    crosWorkonStop(chrootService, board)
+    boardsPackages.crosWorkonStop(board)
   );
 
   vscode.commands.registerCommand('cros-ide.refreshBoardsPackages', () =>
@@ -40,81 +41,80 @@ export async function activate(chrootService: ChrootService) {
     boardPackageProvider
   );
 
-  await createPackageWatches(chrootService);
+  await boardsPackages.createPackageWatches();
 }
 
 const VIRTUAL_BOARDS_HOST = 'host';
 const CONFIG_SHOW_WELCOME_MESSAGE = 'boardsAndPackages.showWelcomeMessage';
 
-// TODO: Write a unit test for watching packages.
-async function createPackageWatches(chrootService: ChrootService) {
-  const chroot = chrootService.chroot();
-  if (!chroot) {
-    return;
-  }
+class BoardsPackages {
+  constructor(private readonly chrootService: ChrootService) {}
 
-  const boards = await cros.getSetupBoardsAlphabetic(chroot);
-  const crosWorkonDir = '.config/cros_workon/';
-
-  const source = chrootService.source();
-  if (!source) {
-    return;
-  }
-
-  // Watching for non-existent directory throws errors,
-  // which happens when we run tests outside chroot.
-  if (!source.existsSync(crosWorkonDir)) {
-    return;
-  }
-
-  source.watchSync(crosWorkonDir, (_eventType, fileName) => {
-    // Multiple files can be changed. This restrictions limits the number of refreshes to one.
-    if (boards.includes(fileName) || fileName === VIRTUAL_BOARDS_HOST) {
-      vscode.commands.executeCommand('cros-ide.refreshBoardsPackages');
+  // TODO: Write a unit test for watching packages.
+  async createPackageWatches() {
+    const chroot = this.chrootService.chroot();
+    if (!chroot) {
+      return;
     }
-  });
-}
 
-async function crosWorkonStart(chrootService: ChrootService, board: Board) {
-  const pkgName = await vscode.window.showInputBox({
-    title: 'Package',
-    placeHolder: 'package, e.g. chromeos-base/shill',
-  });
+    const boards = await cros.getSetupBoardsAlphabetic(chroot);
+    const crosWorkonDir = '.config/cros_workon/';
 
-  if (!pkgName) {
-    return;
+    const source = this.chrootService.source();
+    if (!source) {
+      return;
+    }
+
+    // Watching for non-existent directory throws errors,
+    // which happens when we run tests outside chroot.
+    if (!source.existsSync(crosWorkonDir)) {
+      return;
+    }
+
+    source.watchSync(crosWorkonDir, (_eventType, fileName) => {
+      // Multiple files can be changed. This restrictions limits the number of refreshes to one.
+      if (boards.includes(fileName) || fileName === VIRTUAL_BOARDS_HOST) {
+        vscode.commands.executeCommand('cros-ide.refreshBoardsPackages');
+      }
+    });
   }
 
-  await crosWorkon(chrootService, board.name, 'start', pkgName);
-}
+  async crosWorkonStart(board: Board) {
+    const pkgName = await vscode.window.showInputBox({
+      title: 'Package',
+      placeHolder: 'package, e.g. chromeos-base/shill',
+    });
 
-async function crosWorkonStop(chrootService: ChrootService, pkg: Package) {
-  await crosWorkon(chrootService, pkg.board.name, 'stop', pkg.name);
-}
+    if (!pkgName) {
+      return;
+    }
 
-async function crosWorkon(
-  chrootService: ChrootService,
-  boardName: string,
-  cmd: string,
-  pkgName: string
-) {
-  const res = await chrootService.exec(
-    'cros_workon',
-    [
-      boardName === VIRTUAL_BOARDS_HOST ? '--host' : `--board=${boardName}`,
-      cmd,
-      pkgName,
-    ],
-    ideUtil.getUiLogger().append,
-    {logStdout: true, ignoreNonZeroExit: true}
-  );
-  if (res instanceof Error) {
-    vscode.window.showErrorMessage(res.message);
-    return;
+    await this.crosWorkon(board.name, 'start', pkgName);
   }
-  const {exitStatus, stderr} = res;
-  if (exitStatus !== 0) {
-    vscode.window.showErrorMessage(`cros_workon failed: ${stderr}`);
+
+  async crosWorkonStop(pkg: Package) {
+    await this.crosWorkon(pkg.board.name, 'stop', pkg.name);
+  }
+
+  async crosWorkon(boardName: string, cmd: string, pkgName: string) {
+    const res = await this.chrootService.exec(
+      'cros_workon',
+      [
+        boardName === VIRTUAL_BOARDS_HOST ? '--host' : `--board=${boardName}`,
+        cmd,
+        pkgName,
+      ],
+      ideUtil.getUiLogger().append,
+      {logStdout: true, ignoreNonZeroExit: true}
+    );
+    if (res instanceof Error) {
+      vscode.window.showErrorMessage(res.message);
+      return;
+    }
+    const {exitStatus, stderr} = res;
+    if (exitStatus !== 0) {
+      vscode.window.showErrorMessage(`cros_workon failed: ${stderr}`);
+    }
   }
 }
 
@@ -148,9 +148,9 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
         .concat([new Board(VIRTUAL_BOARDS_HOST)]);
     }
     if (element && element instanceof Board) {
-      return (await getWorkedOnPackages(this.chrootService, element.name)).map(
-        x => new Package(element, x)
-      );
+      return (
+        await this.getWorkedOnPackages(this.chrootService, element.name)
+      ).map(x => new Package(element, x));
     }
     return [];
   }
@@ -161,6 +161,25 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
 
   refresh(): void {
     this.onDidChangeTreeDataEmitter.fire();
+  }
+
+  /**
+   * @returns Packages that are worked on.
+   */
+  async getWorkedOnPackages(
+    chrootService: ChrootService,
+    board: string
+  ): Promise<string[]> {
+    const res = await chrootService.exec(
+      'cros_workon',
+      [board === VIRTUAL_BOARDS_HOST ? '--host' : `--board=${board}`, 'list'],
+      ideUtil.getUiLogger().append,
+      {logStdout: true}
+    );
+    if (res instanceof Error) {
+      throw res;
+    }
+    return res.stdout.split('\n').filter(x => x.trim() !== '');
   }
 }
 
@@ -184,29 +203,9 @@ class Package extends ChrootItem {
   iconPath = new vscode.ThemeIcon('package');
 }
 
-/**
- * @returns Packages that are worked on.
- */
-async function getWorkedOnPackages(
-  chrootService: ChrootService,
-  board: string
-): Promise<string[]> {
-  const res = await chrootService.exec(
-    'cros_workon',
-    [board === VIRTUAL_BOARDS_HOST ? '--host' : `--board=${board}`, 'list'],
-    ideUtil.getUiLogger().append,
-    {logStdout: true}
-  );
-  if (res instanceof Error) {
-    throw res;
-  }
-  return res.stdout.split('\n').filter(x => x.trim() !== '');
-}
-
 export const TEST_ONLY = {
   Board,
   Package,
   BoardPackageProvider,
-  crosWorkonStart,
-  crosWorkonStop,
+  BoardsPackages,
 };

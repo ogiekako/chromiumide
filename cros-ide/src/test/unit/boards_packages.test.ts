@@ -17,8 +17,7 @@ import {
   tempDir,
 } from '../testing';
 
-const {Board, Package, BoardPackageProvider, crosWorkonStart, crosWorkonStop} =
-  TEST_ONLY;
+const {Board, Package, BoardPackageProvider, BoardsPackages} = TEST_ONLY;
 
 describe('Boards and Packages view', () => {
   const {vscodeSpy} = installVscodeDouble();
@@ -45,7 +44,7 @@ describe('Boards and Packages view', () => {
     );
 
     const board = new Board('eve');
-    await crosWorkonStart(chrootService, board);
+    await new BoardsPackages(chrootService).crosWorkonStart(board);
     expect(vscodeSpy.window.showErrorMessage.calls.argsFor(0)).toEqual([
       'cros_workon failed: could not find the package',
     ]);
@@ -66,7 +65,7 @@ describe('Boards and Packages view', () => {
 
     const board = new Board('eve');
     const pkg = new Package(board, 'shill');
-    await crosWorkonStop(chrootService, pkg);
+    await new BoardsPackages(chrootService).crosWorkonStop(pkg);
     expect(vscodeSpy.window.showErrorMessage.calls.argsFor(0)).toEqual([
       'cros_workon not found',
     ]);
