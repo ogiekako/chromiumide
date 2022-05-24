@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
@@ -42,10 +43,6 @@ export enum ProxyProtocol {
  * the WebView panel.
  */
 export class VncSession {
-  // Tracks the next port number to use for SSH port forwarding.
-  // TODO: Think of a better way to find an unused port.
-  private static nextAvailablePort = 55900;
-
   // This CancellationToken is cancelled on disposal of this session.
   private readonly canceller = new vscode.CancellationTokenSource();
 
@@ -71,7 +68,7 @@ export class VncSession {
     output: vscode.OutputChannel,
     proxyProtocol?: ProxyProtocol
   ) {
-    const forwardPort = VncSession.nextAvailablePort++;
+    const forwardPort = findUnusedPort();
 
     this.panel = VncSession.createWebview(host);
     switch (proxyProtocol ?? detectProxyProtocol()) {
@@ -456,6 +453,13 @@ function replaceAll(s: string, patterns: ReplacePattern[]): string {
     s = s.replace(pattern.from, pattern.to);
   }
   return s;
+}
+
+function findUnusedPort(): number {
+  // Pick a random port without actually checking if it is in use.
+  // TODO: Improve the method. Maybe we can bind a temporary server
+  // socket and return its port.
+  return crypto.randomInt(20000, 60000);
 }
 
 // Type-safe wrapper of vscode.Webview.postMessage.
