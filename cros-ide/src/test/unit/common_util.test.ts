@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as assert from 'assert';
+import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
 import {flushMicrotasks} from '../testing';
 
@@ -203,6 +204,16 @@ describe('Logging exec', () => {
       res.message.includes('does_not_exist --version'),
       'actual message: ' + res.message
     );
+  });
+
+  it('can abort command execution', async () => {
+    const canceller = new vscode.CancellationTokenSource();
+    const process = commonUtil.exec('sleep', ['100'], undefined, {
+      cancellationToken: canceller.token,
+    });
+    canceller.cancel();
+    const res = await process;
+    assert(res instanceof commonUtil.CancelledError);
   });
 });
 

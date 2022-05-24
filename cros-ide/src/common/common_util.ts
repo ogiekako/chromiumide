@@ -11,6 +11,7 @@ import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import type * as vscode from 'vscode'; // import type definitions only
 import * as shutil from './shutil';
 
 // Type Chroot represents the path to chroot.
@@ -143,6 +144,11 @@ export interface ExecOptions {
    * When set, pipeStdin is written to the stdin of the command.
    */
   pipeStdin?: string;
+
+  /**
+   * Allows interrupting a command execution.
+   */
+  cancellationToken?: vscode.CancellationToken;
 }
 
 /**
@@ -167,6 +173,15 @@ export class ProcessError extends Error {
   constructor(cmd: string, args: string[], cause: Error) {
     // Chain errors with `cause` option is not available.
     super(`"${shutil.escapeArray([cmd, ...args])}" failed: ${cause.message}`);
+  }
+}
+
+/**
+ * Command execution was interrupted with vscode.CancellationToken.
+ */
+export class CancelledError extends Error {
+  constructor(cmd: string, args: string[]) {
+    super(`"${shutil.escapeArray([cmd, ...args])}" cancelled`);
   }
 }
 
@@ -261,10 +276,23 @@ function realExec(
 
       resolve({exitStatus, stdout, stderr});
     });
+
     // 'error' happens when the command is not available
     command.on('error', err => {
       resolve(new ProcessError(name, args, err));
     });
+
+    if (opt?.cancellationToken !== undefined) {
+      const cancel = () => {
+        command.kill();
+        resolve(new CancelledError(name, args));
+      };
+      if (opt.cancellationToken.isCancellationRequested) {
+        cancel();
+      } else {
+        opt.cancellationToken.onCancellationRequested(cancel);
+      }
+    }
   });
 }
 
