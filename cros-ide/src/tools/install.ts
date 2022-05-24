@@ -286,6 +286,10 @@ async function main() {
     await buildAndUpload();
     return;
   }
+
+  if ((await commonUtil.exec('which', [config.exe])) instanceof Error) {
+    throw new Error('VSCode executable not found. Did you forget `--exe`?');
+  }
   if (config.dev) {
     await installDev(config.exe);
     return;
