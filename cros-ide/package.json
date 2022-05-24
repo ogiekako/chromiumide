@@ -191,7 +191,7 @@
       "properties": {
         "cros-ide.board": {
           "type": "string",
-          "description": "The board to use on commands such as emerge"
+          "description": "The board to use for generating C++ cross references and autocompletion"
         },
         "cros-ide.boardsAndPackages.showWelcomeMessage": {
           "type": "boolean",
