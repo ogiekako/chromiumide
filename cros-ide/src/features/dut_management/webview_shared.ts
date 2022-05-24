@@ -13,6 +13,11 @@ interface EventClientMessageBase {
   type: 'event';
 }
 
+// Notifies that VNC client code has been loaded.
+export interface EventReadyClientMessage extends EventClientMessageBase {
+  subtype: 'ready';
+}
+
 // Notifies that VNC client has connected to the server.
 export interface EventConnectClientMessage extends EventClientMessageBase {
   subtype: 'connect';
@@ -46,11 +51,21 @@ export interface SocketCloseClientMessage extends SocketClientMessageBase {
 
 // All messages that can be sent from client (WebView) to server (extension).
 export type ClientMessage =
+  | EventReadyClientMessage
   | EventConnectClientMessage
   | EventDisconnectClientMessage
   | SocketOpenClientMessage
   | SocketDataClientMessage
   | SocketCloseClientMessage;
+
+interface EventServerMessageBase {
+  type: 'event';
+}
+
+// Notifies that the VNC server has started and is ready for connections.
+export interface EventReadyServerMessage extends EventServerMessageBase {
+  subtype: 'ready';
+}
 
 interface SocketServerMessageBase {
   type: 'socket';
@@ -81,6 +96,7 @@ export interface SocketCloseServerMessage extends SocketServerMessageBase {
 
 // All messages that can be sent from server (extension) to client (WebView).
 export type ServerMessage =
+  | EventReadyServerMessage
   | SocketOpenServerMessage
   | SocketDataServerMessage
   | SocketErrorServerMessage

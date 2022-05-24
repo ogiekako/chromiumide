@@ -140,52 +140,9 @@ function openDataChannel(url: string): DataChannel {
   return new WebSocket(url);
 }
 
-function pollWebSocket(url: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const socket = openDataChannel(url);
-    socket.onmessage = () => {
-      socket.close();
-      resolve();
-    };
-    socket.onclose = (ev: CloseEvent) => {
-      socket.close();
-      reject(new Error(ev.reason));
-    };
-  });
-}
-
-async function pollWebSocketWithRetries(url: string): Promise<void> {
-  const TIMEOUT = 10 * 1000; // total time allowed to poll
-  const INTERVAL = 100; // minimum interval between attempts
-
-  const timeoutError = new Error('failed to connect to VNC server');
-  const timer = new Promise<never>((_resolve, reject) => {
-    setTimeout(() => {
-      reject(timeoutError);
-    }, TIMEOUT);
-  });
-
-  for (;;) {
-    const throttle = new Promise<void>(resolve => {
-      setTimeout(resolve, INTERVAL);
-    });
-    try {
-      return await Promise.race([pollWebSocket(url), timer]);
-    } catch (err: unknown) {
-      if (err === timeoutError) {
-        throw err;
-      }
-    }
-    await throttle;
-  }
-}
-
-async function main() {
+function onReady(): void {
   const container = document.getElementById('main')!;
   const proxyUrl = container.dataset.webSocketProxyUrl!;
-
-  // Wait until the server starts.
-  await pollWebSocketWithRetries(proxyUrl);
 
   const rfb = new RFB(container, openDataChannel(proxyUrl));
   rfb.scaleViewport = true;
@@ -195,6 +152,23 @@ async function main() {
   rfb.addEventListener('disconnect', () => {
     postClientMessage({type: 'event', subtype: 'disconnect'});
   });
+}
+
+function main(): void {
+  postClientMessage({
+    type: 'event',
+    subtype: 'ready',
+  });
+
+  window.addEventListener(
+    'message',
+    (ev: MessageEvent<webviewShared.ServerMessage>) => {
+      const {type, subtype} = ev.data;
+      if (type === 'event' && subtype === 'ready') {
+        onReady();
+      }
+    }
+  );
 }
 
 main();

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import * as shutil from '../../common/shutil';
 import * as metrics from '../metrics/metrics';
 import * as repository from './device_repository';
 import * as provider from './device_tree_data_provider';
@@ -18,6 +19,7 @@ export class CommandsProvider implements vscode.Disposable {
 
   constructor(
     private readonly context: vscode.ExtensionContext,
+    private readonly output: vscode.OutputChannel,
     private readonly staticDeviceRepository: repository.StaticDeviceRepository,
     private readonly leasedDeviceRepository: repository.LeasedDeviceRepository
   ) {
@@ -86,7 +88,7 @@ export class CommandsProvider implements vscode.Disposable {
     }
 
     // Create a new session and store it to this.sessions.
-    const newSession = new vnc.VncSession(hostname, this.context);
+    const newSession = new vnc.VncSession(hostname, this.context, this.output);
     newSession.onDidDispose(() => {
       this.sessions.delete(hostname);
     });
@@ -108,10 +110,12 @@ export class CommandsProvider implements vscode.Disposable {
     }
 
     // Create a new terminal.
-    const terminal = dutUtil.createTerminalForHost(
-      hostname,
-      'CrOS: Shell',
-      this.context
+    const terminal = vscode.window.createTerminal(hostname);
+    terminal.sendText(
+      'exec ' +
+        shutil.escapeArray(
+          dutUtil.buildSshCommand(hostname, this.context.extensionUri)
+        )
     );
     terminal.show();
   }

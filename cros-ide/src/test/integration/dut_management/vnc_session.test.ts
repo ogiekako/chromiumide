@@ -24,11 +24,17 @@ function waitConnectEvent(session: vnc.VncSession): Promise<void> {
 }
 
 describe('VNC session', () => {
-  const subscriptions: vscode.Disposable[] = [];
+  const state = testing.cleanState(() => {
+    const subscriptions: vscode.Disposable[] = [];
+    const output = vscode.window.createOutputChannel(
+      'CrOS IDE: DUT Manager (testing)'
+    );
+    subscriptions.push(output);
+    return {subscriptions, output};
+  });
 
   afterEach(() => {
-    vscode.Disposable.from(...subscriptions).dispose();
-    subscriptions.splice(0);
+    vscode.Disposable.from(...state.subscriptions).dispose();
   });
 
   it('can connect to a server', async () => {
@@ -36,20 +42,21 @@ describe('VNC session', () => {
 
     // Start a fake VNC server.
     const vncServer = new FakeVncServer();
-    subscriptions.push(vncServer);
+    state.subscriptions.push(vncServer);
     await vncServer.listen();
 
     // Start a fake SSH server.
     const sshServer = new FakeSshServer(vncServer.listenPort);
-    subscriptions.push(sshServer);
+    state.subscriptions.push(sshServer);
     await sshServer.listen();
 
     // Prepare a VNC session.
     const session = new vnc.VncSession(
       `localhost:${sshServer.listenPort}`,
-      api.context
+      api.context,
+      state.output
     );
-    subscriptions.push(session);
+    state.subscriptions.push(session);
 
     const didConnect = waitConnectEvent(session);
 
@@ -65,21 +72,22 @@ describe('VNC session', () => {
 
     // Start a fake VNC server.
     const vncServer = new FakeVncServer();
-    subscriptions.push(vncServer);
+    state.subscriptions.push(vncServer);
     await vncServer.listen();
 
     // Start a fake SSH server.
     const sshServer = new FakeSshServer(vncServer.listenPort);
-    subscriptions.push(sshServer);
+    state.subscriptions.push(sshServer);
     await sshServer.listen();
 
     // Prepare a VNC session.
     const session = new vnc.VncSession(
       `localhost:${sshServer.listenPort}`,
       api.context,
+      state.output,
       vnc.ProxyProtocol.MESSAGE_PASSING // force message passing protocol
     );
-    subscriptions.push(session);
+    state.subscriptions.push(session);
 
     const didConnect = waitConnectEvent(session);
 

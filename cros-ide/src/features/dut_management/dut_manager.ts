@@ -13,12 +13,14 @@ import * as repository from './device_repository';
 import * as dutUtil from './dut_util';
 
 export async function activateDutManager(context: vscode.ExtensionContext) {
-  rsaKeyFixPermission(context);
+  rsaKeyFixPermission(context.extensionUri);
 
+  const output = vscode.window.createOutputChannel('CrOS IDE: DUT Manager');
   const staticDeviceRepository = new repository.StaticDeviceRepository();
   const leasedDeviceRepository = new repository.LeasedDeviceRepository();
   const commandsProvider = new commands.CommandsProvider(
     context,
+    output,
     staticDeviceRepository,
     leasedDeviceRepository
   );
@@ -42,8 +44,8 @@ export async function activateDutManager(context: vscode.ExtensionContext) {
 /**
  * Ensures that test_rsa key perms are 0600, otherwise cannot be used for ssh
  */
-async function rsaKeyFixPermission(context: vscode.ExtensionContext) {
-  const rsaKeyPath = dutUtil.getTestingRsaPath(context);
+async function rsaKeyFixPermission(extensionUri: vscode.Uri) {
+  const rsaKeyPath = dutUtil.getTestingRsaPath(extensionUri);
   await fs.promises.chmod(rsaKeyPath, '0600').catch(_err => {
     vscode.window.showErrorMessage(
       'Fatal: unable to update testing_rsa permission: ' + rsaKeyPath

@@ -33,14 +33,19 @@ export class FakeSshServer {
       });
 
       client.on('ready', () => {
-        // Provide a fake terminal that shows a greeting only.
+        // Respond to the kmsvnc command only.
         client.on('session', (accept, _reject) => {
           const session = accept();
-          session.on('shell', (accept, _reject) => {
-            const shell = accept();
-            shell.write('Welcome to mock host!\n');
-            shell.on('close', () => {
-              shell.destroy();
+          session.on('exec', (accept, _reject, info) => {
+            const channel = accept();
+            if (info.command !== 'fuser -k 5900/tcp; kmsvnc') {
+              channel.write(`Unknown command: ${info.command}\n`);
+              channel.exit(99);
+              return;
+            }
+            channel.write('Starting a fake VNC server\n');
+            channel.on('close', () => {
+              channel.destroy();
             });
           });
         });

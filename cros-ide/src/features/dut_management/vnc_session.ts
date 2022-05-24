@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
 import * as ws from 'ws';
+import * as commonUtil from '../../common/common_util';
 import * as dutUtil from './dut_util';
 import * as webviewShared from './webview_shared';
 
@@ -41,13 +42,13 @@ export enum ProxyProtocol {
  * the WebView panel.
  */
 export class VncSession {
-  private static readonly KMSVNC_PORT = 5900;
-
   // Tracks the next port number to use for SSH port forwarding.
   // TODO: Think of a better way to find an unused port.
   private static nextAvailablePort = 55900;
 
-  private readonly terminal: vscode.Terminal;
+  // This CancellationToken is cancelled on disposal of this session.
+  private readonly canceller = new vscode.CancellationTokenSource();
+
   private readonly panel: vscode.WebviewPanel;
   private readonly proxy: WebSocketProxy | MessagePassingProxy;
 
@@ -60,17 +61,18 @@ export class VncSession {
 
   private readonly subscriptions: vscode.Disposable[] = [
     // onDidDisposeEmitter is not listed here so we can fire it after disposing everything else.
+    this.canceller,
     this.onDidReceiveMessageEmitter,
   ];
 
   constructor(
     host: string,
     private readonly context: vscode.ExtensionContext,
+    output: vscode.OutputChannel,
     proxyProtocol?: ProxyProtocol
   ) {
     const forwardPort = VncSession.nextAvailablePort++;
 
-    this.terminal = VncSession.startVncServer(host, forwardPort, context);
     this.panel = VncSession.createWebview(host);
     switch (proxyProtocol ?? detectProxyProtocol()) {
       case ProxyProtocol.WEBSOCKET:
@@ -80,7 +82,7 @@ export class VncSession {
         this.proxy = new MessagePassingProxy(forwardPort, this.panel.webview);
         break;
     }
-    this.subscriptions.push(this.terminal, this.panel, this.proxy);
+    this.subscriptions.push(this.panel, this.proxy);
 
     this.subscriptions.push(
       this.panel.webview.onDidReceiveMessage(
@@ -88,6 +90,15 @@ export class VncSession {
           this.onDidReceiveMessageEmitter.fire(message);
         }
       )
+    );
+
+    void startAndWaitVncServer(
+      host,
+      forwardPort,
+      this.panel.webview,
+      output,
+      this.canceller.token,
+      context
     );
 
     // Dispose the session when the panel is closed.
@@ -103,6 +114,7 @@ export class VncSession {
   }
 
   dispose(): void {
+    this.canceller.cancel();
     vscode.Disposable.from(...this.subscriptions).dispose();
     this.onDidDisposeEmitter.fire();
     this.onDidDisposeEmitter.dispose();
@@ -110,22 +122,6 @@ export class VncSession {
 
   revealPanel(): void {
     this.panel.reveal();
-  }
-
-  private static startVncServer(
-    host: string,
-    forwardPort: number,
-    context: vscode.ExtensionContext
-  ): vscode.Terminal {
-    const terminal = dutUtil.createTerminalForHost(
-      host,
-      'CrOS: VNC Server',
-      context,
-      ['-L', `${forwardPort}:localhost:${VncSession.KMSVNC_PORT}`]
-    );
-    // Stop an existing server if any.
-    terminal.sendText(`fuser -k ${VncSession.KMSVNC_PORT}/tcp; kmsvnc`);
-    return terminal;
   }
 
   private static createWebview(host: string): vscode.WebviewPanel {
@@ -178,6 +174,139 @@ export class VncSession {
       {from: /%WEB_SOCKET_PROXY_URL%/g, to: proxyUrl},
     ]);
   }
+}
+
+/**
+ * Starts the VNC server on a remote DUT via SSH, and waits for its completion.
+ * Once the VNC server gets ready, it notifies the WebView with message passing.
+ */
+async function startAndWaitVncServer(
+  host: string,
+  forwardPort: number,
+  webview: vscode.Webview,
+  output: vscode.OutputChannel,
+  token: vscode.CancellationToken,
+  context: vscode.ExtensionContext
+): Promise<void> {
+  const serverStopped = startVncServer(
+    host,
+    forwardPort,
+    output,
+    token,
+    context
+  );
+  const serverStarted = waitVncServer(forwardPort, token);
+  const webViewReady = waitWebViewReady(webview);
+
+  // Wait until the server starts, or fails to start.
+  try {
+    await Promise.race([serverStarted, serverStopped]);
+  } catch (err: unknown) {
+    showErrorMessageWithLogButton(`VNC server failed: ${err}`, output);
+    return;
+  }
+
+  // Send a ready message once the WebView finishes to load scripts.
+  (async () => {
+    await webViewReady;
+    postServerMessage(webview, {
+      type: 'event',
+      subtype: 'ready',
+    });
+  })();
+
+  // Wait until the server stops.
+  try {
+    await serverStopped;
+  } catch (err: unknown) {
+    showErrorMessageWithLogButton(`VNC server failed: ${err}`, output);
+  }
+}
+
+/**
+ * Starts the VNC server on a remote DUT via SSH.
+ * The returned promise rejects if it fails to start the VNC server or the server exits
+ * unexpectedly. It resolves only if it is cancelled via CancellationToken.
+ */
+async function startVncServer(
+  host: string,
+  forwardPort: number,
+  output: vscode.OutputChannel,
+  token: vscode.CancellationToken,
+  context: vscode.ExtensionContext
+): Promise<void> {
+  const KMSVNC_PORT = 5900;
+  const args = dutUtil.buildSshCommand(
+    host,
+    context.extensionUri,
+    ['-L', `${forwardPort}:localhost:${KMSVNC_PORT}`],
+    `fuser -k ${KMSVNC_PORT}/tcp; kmsvnc`
+  );
+  const result = await commonUtil.exec(args[0], args.slice(1), output.append, {
+    logStdout: true,
+    cancellationToken: token,
+  });
+  if (result instanceof commonUtil.CancelledError) {
+    return;
+  }
+  if (result instanceof Error) {
+    throw result;
+  }
+  throw new Error('VNC server stopped unexpectedly');
+}
+
+// Connects to the specified port on localhost to see if a VNC server is running there.
+async function checkVncServer(vncPort: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const socket = net.createConnection(vncPort, 'localhost');
+    socket.on('data', () => {
+      socket.destroy();
+      resolve();
+    });
+    socket.on('error', () => {
+      // Ignore errors.
+    });
+    socket.on('close', () => {
+      socket.destroy();
+      reject();
+    });
+  });
+}
+
+// Waits until a VNC server starts on the specified port on localhost.
+// The returned promise never rejects.
+async function waitVncServer(
+  vncPort: number,
+  token: vscode.CancellationToken
+): Promise<void> {
+  const INTERVAL = 200; // minimum interval between attempts
+
+  while (!token.isCancellationRequested) {
+    const throttle = new Promise<void>(resolve => {
+      setTimeout(resolve, INTERVAL);
+    });
+    try {
+      return await checkVncServer(vncPort);
+    } catch (err: unknown) {
+      // Continue
+    }
+    await throttle;
+  }
+}
+
+// Waits until WebView finishes loading scripts.
+async function waitWebViewReady(webview: vscode.Webview): Promise<void> {
+  return new Promise(resolve => {
+    const subscription = webview.onDidReceiveMessage(
+      (message: webviewShared.ClientMessage) => {
+        const {type, subtype} = message;
+        if (type === 'event' && subtype === 'ready') {
+          subscription.dispose();
+          resolve();
+        }
+      }
+    );
+  });
 }
 
 // Represents a local WebSocket server which acts as a protocol proxy between the NoVNC client
@@ -344,4 +473,18 @@ function detectProxyProtocol(): ProxyProtocol {
   }
   // In other cases, fall back to the message passing protocol.
   return ProxyProtocol.MESSAGE_PASSING;
+}
+
+// Shows an error message with a button to open output logs.
+function showErrorMessageWithLogButton(
+  message: string,
+  output: vscode.OutputChannel
+): void {
+  void (async () => {
+    const button = 'Show logs';
+    const choice = await vscode.window.showErrorMessage(message, button);
+    if (choice === button) {
+      output.show();
+    }
+  })();
 }
