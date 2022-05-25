@@ -57,7 +57,7 @@ export class CompilationDatabase implements vscode.Disposable {
   // Packages for which compdb has been generated in this session.
   private readonly generated = new Set<Atom>();
   // Store errors to avoid showing the same error many times.
-  private readonly seenError: Set<CompdbErrorKind> = new Set();
+  private readonly ignoredError: Set<CompdbErrorKind> = new Set();
 
   // Indicates CompilationDatabase activated clangd
   // (it might have been already activated independently, in which case we will
@@ -169,10 +169,7 @@ export class CompilationDatabase implements vscode.Disposable {
         await vscode.commands.executeCommand('clangd.restart');
       } catch (e) {
         if (e instanceof CompdbError) {
-          if (!this.seenError.has(e.details.kind)) {
-            // TODO(oka): Run this line only when user explicitly disabled the error message.
-            this.seenError.add(e.details.kind);
-
+          if (!this.ignoredError.has(e.details.kind)) {
             this.showErrorMessageWithShowLogOption(board, e);
           }
         }
@@ -195,9 +192,13 @@ export class CompilationDatabase implements vscode.Disposable {
 
   showErrorMessageWithShowLogOption(board: string, e: CompdbError) {
     const SHOW_LOG = 'Show Log';
+    const IGNORE = 'Ignore';
 
     const {message, button} = uiItemsForError(board, e);
-    const buttons: string[] = (button ? [button.name] : []).concat(SHOW_LOG);
+    const buttons: string[] = (button ? [button.name] : []).concat(
+      SHOW_LOG,
+      IGNORE
+    );
 
     // `await` cannot be used, because it blocks forever if the
     // message is dismissed by timeout.
@@ -206,6 +207,8 @@ export class CompilationDatabase implements vscode.Disposable {
         button.action();
       } else if (value === SHOW_LOG) {
         this.log.show();
+      } else if (value === IGNORE) {
+        this.ignoredError.add(e.details.kind);
       }
     });
   }
