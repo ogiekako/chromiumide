@@ -52,6 +52,10 @@ export class ChrootService {
     this.sourceFs = sourceFs;
   }
 
+  /**
+   * Executes command in chroot. Returns InvalidPasswordError in case the user
+   * enters invalid password.
+   */
   readonly exec: typeof commonUtil.exec = async (name, args, log, opt) => {
     if (this.isInsideChroot()) {
       return commonUtil.exec(name, args, log, opt);
@@ -97,29 +101,75 @@ export class ChrootService {
 
 const SUDO = 'sudo';
 
-// Runs command as the root user. It asks the password on VSCode input box if needed,
-// hence a service.
+/**
+ * Runs command as the root user. It asks the password on VSCode input box if
+ * needed, hence a service.
+ *
+ * Returns InvalidPasswordError if the password user enters is invalid.
+ *
+ * opt.pipeStdin must be undefined.
+ */
 async function sudo([name, args, log, opt]: Parameters<
   typeof commonUtil.exec
 >): ReturnType<typeof commonUtil.exec> {
+  if (opt?.pipeStdin) {
+    throw new Error(
+      "BUG: pipeStdin is not supported for this function; it's used to pass password to sudo"
+    );
+  }
+
   const sudoArgs = [name, ...args];
 
-  const validityCheckResult = await commonUtil.exec(SUDO, ['true']);
+  // Check if the user can run sudo without password.
+  const validityCheckResult = await commonUtil.exec(SUDO, ['-nv']);
   if (!(validityCheckResult instanceof Error)) {
     return await commonUtil.exec(SUDO, sudoArgs, log, opt);
   }
 
-  // Ask password
+  // Ask password.
   const password = await vscode.window.showInputBox({
     password: true,
     title: 'password to run ' + path.basename(name),
   });
 
   if (!password) {
-    return new Error('password not given');
+    return new InvalidPasswordError('no password was provided');
   }
 
   const sudoOpt = Object.assign({}, opt);
   sudoOpt.pipeStdin = password;
-  return commonUtil.exec(SUDO, ['-S', ...sudoArgs], log, sudoOpt);
+
+  let logBuffer = '';
+  let invalidPassword = false;
+  const result = await commonUtil.exec(
+    SUDO,
+    ['-S', ...sudoArgs],
+    s => {
+      if (log) {
+        log(s);
+      }
+      logBuffer += s;
+      if (isInvalidPassword(logBuffer)) {
+        invalidPassword = true;
+      }
+      if (logBuffer.length > 50) {
+        logBuffer = logBuffer.substring(logBuffer.length - 50);
+      }
+    },
+    sudoOpt
+  );
+  if ((result instanceof Error || result.exitStatus === 1) && invalidPassword) {
+    return new InvalidPasswordError('invalid password');
+  }
+  return result;
+}
+
+export class InvalidPasswordError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+function isInvalidPassword(stderrLine: string): boolean {
+  return /sudo: \d+ incorrect password attempts/.test(stderrLine);
 }

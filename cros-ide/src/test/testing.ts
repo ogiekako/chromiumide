@@ -14,6 +14,8 @@ import {
 } from '../common/common_util';
 import * as extension from '../extension';
 
+type Logger = (s: string) => void;
+
 /**
  * Returns execution result or undefined if args is not handled.
  *
@@ -23,19 +25,23 @@ import * as extension from '../extension';
  */
 type Handler = (
   args: string[],
-  opt?: ExecOptions
+  opt?: ExecOptions,
+  log?: Logger
 ) => Promise<string | ExecResult | Error | undefined>;
 
 export function exactMatch(
   wantArgs: string[],
-  handle: (opt?: ExecOptions) => Promise<string | ExecResult | Error>
+  handle: (
+    opt?: ExecOptions,
+    log?: Logger
+  ) => Promise<string | ExecResult | Error>
 ): Handler {
-  return async (args, opt) => {
+  return async (args, opt, log) => {
     if (
       wantArgs.length === args.length &&
       wantArgs.every((x, i) => x === args[i])
     ) {
-      return await handle(opt);
+      return await handle(opt, log);
     }
     return undefined;
   };
@@ -43,22 +49,26 @@ export function exactMatch(
 
 export function prefixMatch(
   wantPrefix: string[],
-  handle: (restArgs: string[], opt?: ExecOptions) => Promise<string>
+  handle: (
+    restArgs: string[],
+    opt?: ExecOptions,
+    log?: Logger
+  ) => Promise<string>
 ): Handler {
-  return async (args, opt) => {
+  return async (args, opt, log) => {
     if (
       wantPrefix.length <= args.length &&
       wantPrefix.every((x, i) => x === args[i])
     ) {
-      return await handle(args.slice(wantPrefix.length), opt);
+      return await handle(args.slice(wantPrefix.length), opt, log);
     }
     return undefined;
   };
 }
 
 export function lazyHandler(f: () => Handler): Handler {
-  return async (args, opt) => {
-    return f()(args, opt);
+  return async (args, opt, log) => {
+    return f()(args, opt, log);
   };
 }
 
@@ -74,11 +84,11 @@ export class FakeExec {
   async exec(
     name: string,
     args: string[],
-    _log?: (line: string) => void,
+    log?: Logger,
     opt?: ExecOptions
   ): Promise<ExecResult | Error> {
     for (const handler of this.handlers.get(name) || []) {
-      const result = await handler(args, opt);
+      const result = await handler(args, opt, log);
       if (result === undefined) {
         continue;
       }

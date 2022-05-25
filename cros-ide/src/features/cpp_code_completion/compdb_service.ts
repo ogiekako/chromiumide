@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as commonUtil from '../../common/common_util';
 import {WrapFs} from '../../common/cros';
 import {Atom, PackageInfo} from '../../features/cpp_code_completion/packages';
-import {ChrootService} from '../../services/chroot';
+import {ChrootService, InvalidPasswordError} from '../../services/chroot';
 import {MNT_HOST_SOURCE} from './constants';
 
 /**
@@ -34,6 +34,10 @@ export type CompdbErrorDetails = {reason?: Error} & (
       cache: string;
     }
   | {
+      kind: CompdbErrorKind.InvalidPassword;
+      message: string;
+    }
+  | {
       kind: CompdbErrorKind.RunEbuild;
     }
   | {
@@ -47,6 +51,7 @@ export type CompdbErrorDetails = {reason?: Error} & (
 
 export enum CompdbErrorKind {
   RemoveCache = 'failed to remove cache files before running ebuild',
+  InvalidPassword = 'invalid password',
   RunEbuild = 'failed to run ebuild to generate compilation database',
   NotGenerated = 'compilation database was not generated',
   CopyFailed = 'failed to copy compilation database to the source directory',
@@ -142,7 +147,13 @@ class Ebuild {
     await this.removeCache();
     try {
       await this.runCompgen();
-    } catch (e) {
+    } catch (e: unknown) {
+      if (e instanceof InvalidPasswordError) {
+        throw new CompdbError({
+          kind: CompdbErrorKind.InvalidPassword,
+          message: e.message,
+        });
+      }
       throw new CompdbError({
         kind: CompdbErrorKind.RunEbuild,
         reason: e as Error,
