@@ -80,13 +80,14 @@ describe('Metrics util: get git repo name', () => {
 
   it('path with prefix /home/<username>/chromiumos/', async () => {
     await testing.putFiles(tempDir.path, {
-      '/home/foo/chromiumos/src/platform2/.git/HEAD': '',
-      '/home/foo/chromiumos/src/platform2/bar/baz.cc': '',
+      'src/platform2/.git/HEAD': '',
+      'src/platform2/bar/baz.cc': '',
     });
 
     assert.strictEqual(
       metricsUtil.getGitRepoName(
-        `${tempDir.path}/home/foo/chromiumos/src/platform2/bar/baz.cc`
+        `${tempDir.path}/src/platform2/bar/baz.cc`,
+        tempDir.path
       ),
       'src/platform2'
     );
@@ -94,13 +95,14 @@ describe('Metrics util: get git repo name', () => {
 
   it('path with prefix /mnt/host/source/', async () => {
     await testing.putFiles(tempDir.path, {
-      '/mnt/host/source/src/platform2/.git/HEAD': '',
-      '/mnt/host/source/src/platform2/bar/baz.cc': '',
+      'src/platform2/.git/HEAD': '',
+      'src/platform2/bar/baz.cc': '',
     });
 
     assert.strictEqual(
       metricsUtil.getGitRepoName(
-        `${tempDir.path}/mnt/host/source/src/platform2/bar/baz.cc`
+        `${tempDir.path}/src/platform2/bar/baz.cc`,
+        tempDir.path
       ),
       'src/platform2'
     );
@@ -109,12 +111,13 @@ describe('Metrics util: get git repo name', () => {
   it('invalid path', async () => {
     // Do not create .git/ directory anywhere.
     await testing.putFiles(tempDir.path, {
-      '/mnt/host/source/src/platform2/bar/baz.cc': '',
+      'src/platform2/bar/baz.cc': '',
     });
 
     assert.strictEqual(
       metricsUtil.getGitRepoName(
-        `${tempDir.path}/mnt/host/source/src/platform2/bar/baz.cc`
+        `${tempDir.path}/src/platform2/bar/baz.cc`,
+        tempDir.path
       ),
       undefined
     );

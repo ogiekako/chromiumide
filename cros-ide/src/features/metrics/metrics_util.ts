@@ -8,6 +8,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as uuid from 'uuid';
+import * as commonUtil from '../../common/common_util';
 
 // Rotate user ID every 180 days or less.
 const expirationInMs = 180 * 24 * 60 * 60 * 1000;
@@ -125,10 +126,24 @@ export function getUserAgent(): string {
   return [type, platform, release, version, appName].join('-');
 }
 
-const crOSPathRE = /(\/home\/\w+\/chromiumos|\/mnt\/host\/source)\/(.*)/;
+// Return path to CrOS checkout.
+function getCrOSPath(path: string): string | undefined {
+  const chroot = commonUtil.findChroot(path);
+  if (!chroot) {
+    return undefined;
+  }
+  return commonUtil.sourceDir(chroot);
+}
 
 // Return git repository name by looking for closest .git directory, undefined if none.
-export function getGitRepoName(filePath: string): string | undefined {
+export function getGitRepoName(
+  filePath: string,
+  crosPath: string | undefined = getCrOSPath(filePath)
+): string | undefined {
+  if (!crosPath) {
+    return undefined;
+  }
+
   let gitDir = path.dirname(filePath);
   while (!fs.existsSync(path.join(gitDir, '.git'))) {
     const parent = path.dirname(gitDir);
@@ -138,10 +153,11 @@ export function getGitRepoName(filePath: string): string | undefined {
     gitDir = parent;
   }
 
-  // Trim prefixes corresponding to path of chromium checkout.
+  // Trim prefixes corresponding to path of CrOS checkout.
+  const crOSPathRE = new RegExp(`${crosPath}/(.*)`);
   const match = crOSPathRE.exec(gitDir);
   if (match) {
-    return match[2];
+    return match[1];
   }
   return undefined;
 }
