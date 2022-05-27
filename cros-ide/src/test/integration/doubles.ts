@@ -22,6 +22,10 @@ type SpiableVscodeWindow = Omit<
   showWarningMessage: jasmine.Func;
 };
 
+type SpiableVscodeWorkspace = typeof vscode.workspace & {
+  openTextDocument: jasmine.Func;
+};
+
 /**
  * Creates a new VscodeSpy.
  * The fields should be substituted in installVscodeDouble().
@@ -43,11 +47,12 @@ function newVscodeSpy() {
       'showInformationMessage',
       'showInputBox',
       'showQuickPick',
+      'showTextDocument',
       'showWarningMessage',
     ]),
-    workspace: jasmine.createSpyObj<typeof vscode.workspace>(
+    workspace: jasmine.createSpyObj<SpiableVscodeWorkspace>(
       'vscode.workspace',
-      ['getConfiguration']
+      ['getConfiguration', 'openTextDocument']
     ),
     extensions: jasmine.createSpyObj<typeof vscode.extensions>(
       'vscode.extensions',

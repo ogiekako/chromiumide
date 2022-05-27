@@ -33,6 +33,7 @@
     "onCommand:cros-ide.selectBoard",
     "onCommand:cros-ide.fileIdeBug",
     "onCommand:cros-ide.resetUserID",
+    "onCommand:cros-ide.openEbuild",
     "onView:devices",
     "onView:boards-packages",
     "onView:cros-ide-status",
@@ -97,6 +98,12 @@
         "category": "CrOS",
         "title": "Stop Working On",
         "icon": "$(remove)"
+      },
+      {
+        "command": "cros-ide.openEbuild",
+        "category": "CrOS",
+        "title": "Open Ebuild",
+        "icon": "$(edit)"
       },
       {
         "command": "cros-ide.selectBoard",
@@ -183,6 +190,11 @@
         },
         {
           "command": "cros-ide.crosWorkonStop",
+          "when": "view == boards-packages && viewItem == package",
+          "group": "inline"
+        },
+        {
+          "command": "cros-ide.openEbuild",
           "when": "view == boards-packages && viewItem == package",
           "group": "inline"
         }

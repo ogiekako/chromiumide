@@ -10,7 +10,7 @@ import {Chroot} from './common_util';
 export class WrapFs<T extends string> {
   constructor(readonly root: T) {}
 
-  private realpath(p: string): string {
+  realpath(p: string): string {
     if (p.startsWith(this.root)) {
       return p;
     }

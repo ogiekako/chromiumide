@@ -4,11 +4,10 @@
 
 import 'jasmine';
 import * as vscode from 'vscode';
+import {Source} from '../../../common/common_util';
 import {WrapFs} from '../../../common/cros';
 import {TEST_ONLY} from '../../../features/boards_packages';
 import {ChrootService} from '../../../services/chroot';
-import {installVscodeDouble} from '../doubles';
-import {fakeGetConfiguration} from '../fakes/workspace_configuration';
 import {
   buildFakeChroot,
   exactMatch,
@@ -16,6 +15,8 @@ import {
   putFiles,
   tempDir,
 } from '../../testing';
+import {installVscodeDouble} from '../doubles';
+import {fakeGetConfiguration} from '../fakes/workspace_configuration';
 
 const {Board, Package, BoardPackageProvider, BoardsPackages} = TEST_ONLY;
 
@@ -161,5 +162,44 @@ chromeos-base/shill`;
 chromeos-base/shill`;
       })
     );
+  });
+
+  it('opens ebuild file', async () => {
+    vscodeSpy.workspace.getConfiguration.and.callFake(fakeGetConfiguration());
+    vscode.workspace
+      .getConfiguration('cros-ide')
+      .update('boardsAndPackages.showWelcomeMessage', false);
+
+    const chrootService = jasmine.createSpyObj<ChrootService>('chrootService', [
+      'exec',
+      'source',
+    ]);
+    chrootService.exec
+      .withArgs(
+        'equery-amd64-generic',
+        ['which', '-m', 'chromeos-base/shill'],
+        jasmine.any(Function),
+        jasmine.any(Object)
+      )
+      .and.returnValue(
+        Promise.resolve({
+          exitStatus: 0,
+          stdout:
+            '/mnt/host/source/src/third_party/chromiumos-overlay/chromeos-base/shill/shill-9999.ebuild\n',
+          stderr: '',
+        })
+      );
+    chrootService.source.and.returnValue(
+      new WrapFs('/path/to/chromeos' as Source)
+    );
+
+    const board = new Board('amd64-generic');
+    const pkg = new Package(board, 'chromeos-base/shill');
+    await new BoardsPackages(chrootService).openEbuild(pkg);
+
+    expect(vscodeSpy.workspace.openTextDocument).toHaveBeenCalledWith(
+      '/path/to/chromeos/src/third_party/chromiumos-overlay/chromeos-base/shill/shill-9999.ebuild'
+    );
+    expect(vscodeSpy.window.showTextDocument).toHaveBeenCalled();
   });
 });

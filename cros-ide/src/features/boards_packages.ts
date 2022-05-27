@@ -18,6 +18,9 @@ export async function activate(chrootService: ChrootService) {
   vscode.commands.registerCommand('cros-ide.crosWorkonStop', board =>
     boardsPackages.crosWorkonStop(board)
   );
+  vscode.commands.registerCommand('cros-ide.openEbuild', board =>
+    boardsPackages.openEbuild(board)
+  );
 
   vscode.commands.registerCommand('cros-ide.refreshBoardsPackages', () =>
     boardPackageProvider.refresh()
@@ -130,6 +133,30 @@ class BoardsPackages {
     if (exitStatus !== 0) {
       vscode.window.showErrorMessage(`cros_workon failed: ${stderr}`);
     }
+  }
+
+  async openEbuild(pkg: Package) {
+    const res = await this.chrootService.exec(
+      pkg.board.name === VIRTUAL_BOARDS_HOST
+        ? 'equery'
+        : `equery-${pkg.board.name}`,
+      ['which', '-m', pkg.name],
+      ideUtil.getUiLogger().append,
+      {logStdout: true, sudoReason: 'Querying ebuild path'}
+    );
+    if (res instanceof Error) {
+      vscode.window.showErrorMessage(res.message);
+      return;
+    }
+    const relFileName = res.stdout.trim().substring('/mnt/host/source/'.length);
+    const srcRoot = this.chrootService.source();
+    if (!srcRoot) {
+      vscode.window.showErrorMessage('Cannot find source directory');
+      return;
+    }
+    const fileName = srcRoot.realpath(relFileName);
+    const document = await vscode.workspace.openTextDocument(fileName);
+    await vscode.window.showTextDocument(document);
   }
 }
 
