@@ -9,6 +9,7 @@
 import * as vscode from 'vscode';
 import * as ideUtil from '../ide_util';
 import {ChrootService} from '../services/chroot';
+import * as metrics from './metrics/metrics';
 
 const BOARD_CONFIG = 'cros-ide.board';
 
@@ -46,6 +47,13 @@ export function activate(
     }
     // Type-check that errors are handled.
     ((_: string | null) => {})(board);
+    if (board) {
+      metrics.send({
+        category: 'target board',
+        action: 'select',
+        label: board,
+      });
+    }
   });
 }
 

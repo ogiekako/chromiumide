@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import * as cros from '../common/cros';
 import * as ideUtil from '../ide_util';
 import {ChrootService} from '../services/chroot';
+import * as metrics from './metrics/metrics';
 
 export async function activate(chrootService: ChrootService) {
   const boardPackageProvider = new BoardPackageProvider(chrootService);
@@ -89,10 +90,20 @@ class BoardsPackages {
       return;
     }
 
+    metrics.send({
+      category: 'cros-workon',
+      action: 'start',
+      label: `${board.name}: ${pkgName}`,
+    });
     await this.crosWorkon(board.name, 'start', pkgName);
   }
 
   async crosWorkonStop(pkg: Package) {
+    metrics.send({
+      category: 'cros-workon',
+      action: 'stop',
+      label: `${pkg.board.name}: ${pkg.name}`,
+    });
     await this.crosWorkon(pkg.board.name, 'stop', pkg.name);
   }
 
