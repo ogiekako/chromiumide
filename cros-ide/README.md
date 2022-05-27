@@ -20,4 +20,4 @@ See [QuickStart Guide] for setup instructions.
 [quickstart guide]: https://chromium.googlesource.com/chromiumos/chromite/+/HEAD/ide_tooling/docs/quickstart.md
 
 ## Contacting Us
-[go/cros-ide-users](go/cros-ide-users)
+[g/cros-ide-users](http://g/cros-ide-users)
