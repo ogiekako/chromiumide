@@ -4,8 +4,8 @@
 
 import 'jasmine';
 import * as vscode from 'vscode';
-import * as vnc from '../../../features/dut_management/vnc_session';
-import * as webviewShared from '../../../features/dut_management/webview_shared';
+import * as vnc from '../../../features/device_management/vnc_session';
+import * as webviewShared from '../../../features/device_management/webview_shared';
 import * as testing from '../../testing';
 import {FakeSshServer} from './fake_ssh_server';
 import {FakeVncServer} from './fake_vnc_server';
@@ -27,7 +27,7 @@ describe('VNC session', () => {
   const state = testing.cleanState(() => {
     const subscriptions: vscode.Disposable[] = [];
     const output = vscode.window.createOutputChannel(
-      'CrOS IDE: DUT Manager (testing)'
+      'CrOS IDE: Device Management (testing)'
     );
     subscriptions.push(output);
     return {subscriptions, output};

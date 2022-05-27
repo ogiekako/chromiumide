@@ -21,8 +21,8 @@ export class DeviceItem extends vscode.TreeItem {
     super(hostname, vscode.TreeItemCollapsibleState.None);
     this.iconPath = new vscode.ThemeIcon('device-desktop');
     this.contextValue =
-      category === deviceRepository.DeviceCategory.STATIC
-        ? 'device-static'
+      category === deviceRepository.DeviceCategory.OWNED
+        ? 'device-owned'
         : 'device-leased';
   }
 }
@@ -32,14 +32,14 @@ export class CategoryItem extends vscode.TreeItem {
 
   constructor(public readonly category: deviceRepository.DeviceCategory) {
     super(
-      category === deviceRepository.DeviceCategory.STATIC
+      category === deviceRepository.DeviceCategory.OWNED
         ? 'My Devices'
         : 'Leased Devices',
       vscode.TreeItemCollapsibleState.Expanded
     );
     this.contextValue =
-      category === deviceRepository.DeviceCategory.STATIC
-        ? 'category-static'
+      category === deviceRepository.DeviceCategory.OWNED
+        ? 'category-owned'
         : 'category-leased';
   }
 }
@@ -70,12 +70,12 @@ export class DeviceTreeDataProvider
   ];
 
   constructor(
-    private readonly staticDeviceRepository: deviceRepository.StaticDeviceRepository,
+    private readonly ownedDeviceRepository: deviceRepository.OwnedDeviceRepository,
     private readonly leasedDeviceRepository: deviceRepository.LeasedDeviceRepository
   ) {
     // Subscribe for device repository updates.
     this.subscriptions.push(
-      staticDeviceRepository.onDidChange(() => {
+      ownedDeviceRepository.onDidChange(() => {
         this.onDidChangeTreeDataEmitter.fire();
       }),
       leasedDeviceRepository.onDidChange(() => {
@@ -91,7 +91,7 @@ export class DeviceTreeDataProvider
   async getChildren(parent?: Item): Promise<Item[]> {
     if (parent === undefined) {
       return [
-        new CategoryItem(deviceRepository.DeviceCategory.STATIC),
+        new CategoryItem(deviceRepository.DeviceCategory.OWNED),
         // TODO(nya): Show this item once we start supporting leased devices.
         // new CategoryItem(deviceRepository.DeviceCategory.LEASED),
       ];
@@ -99,8 +99,8 @@ export class DeviceTreeDataProvider
     if (parent.kind === ItemKind.CATEGORY) {
       let devices: deviceRepository.Device[];
       switch (parent.category) {
-        case deviceRepository.DeviceCategory.STATIC:
-          devices = this.staticDeviceRepository.getDevices();
+        case deviceRepository.DeviceCategory.OWNED:
+          devices = this.ownedDeviceRepository.getDevices();
           break;
         case deviceRepository.DeviceCategory.LEASED:
           devices = await this.leasedDeviceRepository.getDevices();
@@ -112,7 +112,7 @@ export class DeviceTreeDataProvider
       if (items.length === 0) {
         items.push(
           new PlaceholderItem(
-            parent.category === deviceRepository.DeviceCategory.STATIC
+            parent.category === deviceRepository.DeviceCategory.OWNED
               ? 'No device configured yet'
               : 'No leased device'
           )

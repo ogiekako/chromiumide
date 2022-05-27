@@ -7,8 +7,8 @@ import * as ideUtil from '../../ide_util';
 
 // Represents the type of a device.
 export enum DeviceCategory {
-  // A static device is a device permanently assigned to the user.
-  STATIC,
+  // An owned device is a device owned by the user.
+  OWNED,
   // A leased device is a device temporarily leased to the user.
   LEASED,
 }
@@ -17,8 +17,8 @@ export interface Device {
   readonly hostname: string;
 }
 
-export interface StaticDevice extends Device {
-  readonly category: DeviceCategory.STATIC;
+export interface OwnedDevice extends Device {
+  readonly category: DeviceCategory.OWNED;
 }
 
 export interface LeasedDevice extends Device {
@@ -26,11 +26,11 @@ export interface LeasedDevice extends Device {
 }
 
 /**
- * Maintains a list of static devices available for the DUT manager.
+ * Maintains a list of owned devices available for the device management feature.
  * The list is backed by a user setting.
  */
-export class StaticDeviceRepository implements vscode.Disposable {
-  private static readonly CONFIG_HOSTS = 'dutManager.hosts';
+export class OwnedDeviceRepository implements vscode.Disposable {
+  private static readonly CONFIG_HOSTNAMES = 'deviceManagement.devices';
 
   private readonly onDidChangeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.onDidChangeEmitter.event;
@@ -51,45 +51,45 @@ export class StaticDeviceRepository implements vscode.Disposable {
     vscode.Disposable.from(...this.subscriptions).dispose();
   }
 
-  getDevices(): StaticDevice[] {
-    const hosts = this.getHosts();
-    return hosts.map(hostname => ({
-      category: DeviceCategory.STATIC,
+  getDevices(): OwnedDevice[] {
+    const hostnames = this.getHostnames();
+    return hostnames.map(hostname => ({
+      category: DeviceCategory.OWNED,
       hostname,
     }));
   }
 
-  async addHost(hostname: string): Promise<void> {
-    const hosts = this.getHosts();
-    if (hosts.includes(hostname)) {
+  async addDevice(hostname: string): Promise<void> {
+    const hostnames = this.getHostnames();
+    if (hostnames.includes(hostname)) {
       return;
     }
-    const newHosts = [...hosts, hostname];
-    await this.setHosts(newHosts);
+    const newHostnames = [...hostnames, hostname];
+    await this.setHostnames(newHostnames);
   }
 
-  async removeHost(hostname: string): Promise<void> {
-    const hosts = this.getHosts();
-    if (!hosts.includes(hostname)) {
-      throw new Error(`Unknown static host: ${hostname}`);
+  async removeDevice(hostname: string): Promise<void> {
+    const hostnames = this.getHostnames();
+    if (!hostnames.includes(hostname)) {
+      throw new Error(`Unknown owned host: ${hostname}`);
     }
-    const newHosts = hosts.filter(h => h !== hostname);
-    await this.setHosts(newHosts);
+    const newHostnames = hostnames.filter(h => h !== hostname);
+    await this.setHostnames(newHostnames);
   }
 
-  private getHosts(): string[] {
+  private getHostnames(): string[] {
     return (
       ideUtil
         .getConfigRoot()
-        .get<string[]>(StaticDeviceRepository.CONFIG_HOSTS) ?? []
+        .get<string[]>(OwnedDeviceRepository.CONFIG_HOSTNAMES) ?? []
     );
   }
 
-  private async setHosts(hosts: string[]): Promise<void> {
+  private async setHostnames(hosts: string[]): Promise<void> {
     await ideUtil
       .getConfigRoot()
       .update(
-        StaticDeviceRepository.CONFIG_HOSTS,
+        OwnedDeviceRepository.CONFIG_HOSTNAMES,
         hosts,
         vscode.ConfigurationTarget.Global
       );
@@ -97,7 +97,7 @@ export class StaticDeviceRepository implements vscode.Disposable {
 }
 
 /**
- * Maintains a list of leased devices available for the DUT manager.
+ * Maintains a list of leased devices available for the device management feature.
  * The list is backed by the crosfleet command.
  */
 export class LeasedDeviceRepository implements vscode.Disposable {

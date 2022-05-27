@@ -7,12 +7,12 @@ import * as shutil from '../../common/shutil';
 import * as metrics from '../metrics/metrics';
 import * as repository from './device_repository';
 import * as provider from './device_tree_data_provider';
-import * as dutUtil from './dut_util';
 import * as sshConfig from './ssh_config';
+import * as sshUtil from './ssh_util';
 import * as vnc from './vnc_session';
 
 /**
- * Registers and handles VSCode commands for DUT management features.
+ * Registers and handles VSCode commands for device management features.
  */
 export class CommandsProvider implements vscode.Disposable {
   private readonly subscriptions: vscode.Disposable[] = [];
@@ -21,24 +21,25 @@ export class CommandsProvider implements vscode.Disposable {
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly output: vscode.OutputChannel,
-    private readonly staticDeviceRepository: repository.StaticDeviceRepository,
+    private readonly ownedDeviceRepository: repository.OwnedDeviceRepository,
     private readonly leasedDeviceRepository: repository.LeasedDeviceRepository
   ) {
     this.subscriptions.push(
-      vscode.commands.registerCommand('cros-ide.dutManager.addHost', () =>
-        this.addHost()
+      vscode.commands.registerCommand(
+        'cros-ide.deviceManagement.addDevice',
+        () => this.addDevice()
       ),
       vscode.commands.registerCommand(
-        'cros-ide.dutManager.deleteHost',
-        (item?: provider.DeviceItem) => this.deleteHost(item)
+        'cros-ide.deviceManagement.deleteDevice',
+        (item?: provider.DeviceItem) => this.deleteDevice(item)
       ),
       vscode.commands.registerCommand(
-        'cros-ide.dutManager.connectToHostForScreen',
-        (item?: provider.DeviceItem) => this.connectToHostForScreen(item)
+        'cros-ide.deviceManagement.connectToDeviceForScreen',
+        (item?: provider.DeviceItem) => this.connectToDeviceForScreen(item)
       ),
       vscode.commands.registerCommand(
-        'cros-ide.dutManager.connectToHostForShell',
-        (item?: provider.DeviceItem) => this.connectToHostForShell(item)
+        'cros-ide.deviceManagement.connectToDeviceForShell',
+        (item?: provider.DeviceItem) => this.connectToDeviceForShell(item)
       )
     );
   }
@@ -47,46 +48,46 @@ export class CommandsProvider implements vscode.Disposable {
     vscode.Disposable.from(...this.subscriptions).dispose();
   }
 
-  async addHost(): Promise<void> {
-    metrics.send({category: 'dut', action: 'add host'});
+  async addDevice(): Promise<void> {
+    metrics.send({category: 'device', action: 'add device'});
 
     const hostname = await promptNewHostname(
-      'Add New Host',
-      this.staticDeviceRepository
+      'Add New Device',
+      this.ownedDeviceRepository
     );
     if (!hostname) {
       return;
     }
 
-    await this.staticDeviceRepository.addHost(hostname);
+    await this.ownedDeviceRepository.addDevice(hostname);
   }
 
-  async deleteHost(item?: provider.DeviceItem): Promise<void> {
-    metrics.send({category: 'dut', action: 'delete'});
+  async deleteDevice(item?: provider.DeviceItem): Promise<void> {
+    metrics.send({category: 'device', action: 'delete device'});
 
     const hostname = await promptKnownHostnameIfNeeded(
-      'Delete Host',
+      'Delete Device',
       item,
-      this.staticDeviceRepository
+      this.ownedDeviceRepository
     );
     if (!hostname) {
       return;
     }
 
-    await this.staticDeviceRepository.removeHost(hostname);
+    await this.ownedDeviceRepository.removeDevice(hostname);
   }
 
-  async connectToHostForScreen(item?: provider.DeviceItem): Promise<void> {
+  async connectToDeviceForScreen(item?: provider.DeviceItem): Promise<void> {
     metrics.send({
-      category: 'dut',
-      action: 'connect to host',
+      category: 'device',
+      action: 'connect to device',
       label: 'screen',
     });
 
     const hostname = await promptKnownHostnameIfNeeded(
-      'Connect to Host',
+      'Connect to Device',
       item,
-      this.staticDeviceRepository
+      this.ownedDeviceRepository
     );
     if (!hostname) {
       return;
@@ -113,17 +114,17 @@ export class CommandsProvider implements vscode.Disposable {
     newSession.start();
   }
 
-  async connectToHostForShell(item?: provider.DeviceItem): Promise<void> {
+  async connectToDeviceForShell(item?: provider.DeviceItem): Promise<void> {
     metrics.send({
-      category: 'dut',
-      action: 'connect to host',
+      category: 'device',
+      action: 'connect to device',
       label: 'shell',
     });
 
     const hostname = await promptKnownHostnameIfNeeded(
-      'Connect to Host',
+      'Connect to Device',
       item,
-      this.staticDeviceRepository
+      this.ownedDeviceRepository
     );
     if (!hostname) {
       return;
@@ -134,7 +135,7 @@ export class CommandsProvider implements vscode.Disposable {
     terminal.sendText(
       'exec ' +
         shutil.escapeArray(
-          dutUtil.buildSshCommand(hostname, this.context.extensionUri)
+          sshUtil.buildSshCommand(hostname, this.context.extensionUri)
         )
     );
     terminal.show();
@@ -143,11 +144,11 @@ export class CommandsProvider implements vscode.Disposable {
 
 async function promptNewHostname(
   title: string,
-  staticDeviceRepository: repository.StaticDeviceRepository
+  ownedDeviceRepository: repository.OwnedDeviceRepository
 ): Promise<string | undefined> {
   // Suggest hosts in ~/.ssh/config not added yet.
   const sshHosts = await sshConfig.readConfiguredSshHosts();
-  const knownHosts = staticDeviceRepository
+  const knownHosts = ownedDeviceRepository
     .getDevices()
     .map(device => device.hostname);
   const knownHostSet = new Set(knownHosts);
@@ -164,13 +165,13 @@ async function promptNewHostname(
 async function promptKnownHostnameIfNeeded(
   title: string,
   item: provider.DeviceItem | undefined,
-  staticDeviceRepository: repository.StaticDeviceRepository
+  ownedDeviceRepository: repository.OwnedDeviceRepository
 ): Promise<string | undefined> {
   if (item) {
     return item.hostname;
   }
 
-  const hostnames = staticDeviceRepository
+  const hostnames = ownedDeviceRepository
     .getDevices()
     .map(device => device.hostname);
   return await vscode.window.showQuickPick(hostnames, {

@@ -5,8 +5,12 @@
 import * as vscode from 'vscode';
 import * as ideUtil from '../../../ide_util';
 
-export async function setStaticHosts(hosts: string[]): Promise<void> {
+export async function setOwnedDevices(hosts: string[]): Promise<void> {
   return await ideUtil
     .getConfigRoot()
-    .update('dutManager.hosts', hosts, vscode.ConfigurationTarget.Global);
+    .update(
+      'deviceManagement.devices',
+      hosts,
+      vscode.ConfigurationTarget.Global
+    );
 }

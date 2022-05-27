@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 /**
  * Returns the path to the testing_rsa file bundled in the extension.
  *
- * The activation function of the DUT management feature ensures that the file
+ * The activation function of the device management feature ensures that the file
  * has a safe permission (0600).
  */
 export function getTestingRsaPath(extensionUri: vscode.Uri): string {

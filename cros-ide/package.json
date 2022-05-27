@@ -21,10 +21,10 @@
     "Testing"
   ],
   "activationEvents": [
-    "onCommand:cros-ide.dutManager.addHost",
-    "onCommand:cros-ide.dutManager.deleteHost",
-    "onCommand:cros-ide.dutManager.connectToHostForScreen",
-    "onCommand:cros-ide.dutManager.connectToHostForShell",
+    "onCommand:cros-ide.deviceManagement.addDevice",
+    "onCommand:cros-ide.deviceManagement.deleteDevice",
+    "onCommand:cros-ide.deviceManagement.connectToDeviceForScreen",
+    "onCommand:cros-ide.deviceManagement.connectToDeviceForShell",
     "onCommand:cros-ide.codeSearchOpenCurrentFile",
     "onCommand:cros-ide.codeSearchSearchForSelection",
     "onCommand:cros-ide.fileIdeBug",
@@ -41,28 +41,28 @@
   "contributes": {
     "commands": [
       {
-        "command": "cros-ide.dutManager.connectToHostForScreen",
-        "title": "CrOS: Connect to Host (VNC)",
+        "command": "cros-ide.deviceManagement.connectToDeviceForScreen",
+        "title": "CrOS: Connect to Device (VNC)",
         "icon": "$(window)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
+        "enablement": "config.cros-ide.underDevelopment.deviceManagement"
       },
       {
-        "command": "cros-ide.dutManager.connectToHostForShell",
-        "title": "CrOS: Connect to Host (Shell)",
+        "command": "cros-ide.deviceManagement.connectToDeviceForShell",
+        "title": "CrOS: Connect to Device (Shell)",
         "icon": "$(terminal)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
+        "enablement": "config.cros-ide.underDevelopment.deviceManagement"
       },
       {
-        "command": "cros-ide.dutManager.addHost",
-        "title": "CrOS: Add New Host",
+        "command": "cros-ide.deviceManagement.addDevice",
+        "title": "CrOS: Add New Device",
         "icon": "$(add)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
+        "enablement": "config.cros-ide.underDevelopment.deviceManagement"
       },
       {
-        "command": "cros-ide.dutManager.deleteHost",
-        "title": "CrOS: Delete Host",
+        "command": "cros-ide.deviceManagement.deleteDevice",
+        "title": "CrOS: Delete Device",
         "icon": "$(remove)",
-        "enablement": "config.cros-ide.underDevelopment.dutManager"
+        "enablement": "config.cros-ide.underDevelopment.deviceManagement"
       },
       {
         "command": "cros-ide.refreshBoardsPackages",
@@ -114,7 +114,7 @@
         {
           "id": "devices",
           "name": "Devices",
-          "when": "config.cros-ide.underDevelopment.dutManager"
+          "when": "config.cros-ide.underDevelopment.deviceManagement"
         },
         {
           "id": "boards-packages",
@@ -144,23 +144,23 @@
       ],
       "view/item/context": [
         {
-          "command": "cros-ide.dutManager.addHost",
-          "when": "view == devices && viewItem == category-static",
+          "command": "cros-ide.deviceManagement.addDevice",
+          "when": "view == devices && viewItem == category-owned",
           "group": "inline"
         },
         {
-          "command": "cros-ide.dutManager.connectToHostForScreen",
-          "when": "view == devices && viewItem == device-static",
+          "command": "cros-ide.deviceManagement.connectToDeviceForScreen",
+          "when": "view == devices && viewItem == device-owned",
           "group": "inline@1"
         },
         {
-          "command": "cros-ide.dutManager.connectToHostForShell",
-          "when": "view == devices && viewItem == device-static",
+          "command": "cros-ide.deviceManagement.connectToDeviceForShell",
+          "when": "view == devices && viewItem == device-owned",
           "group": "inline@2"
         },
         {
-          "command": "cros-ide.dutManager.deleteHost",
-          "when": "view == devices && viewItem == device-static",
+          "command": "cros-ide.deviceManagement.deleteDevice",
+          "when": "view == devices && viewItem == device-owned",
           "group": "inline@3"
         },
         {
@@ -214,9 +214,9 @@
           "description": "Format files with 'cros format' (under development)",
           "default": false
         },
-        "cros-ide.underDevelopment.dutManager": {
+        "cros-ide.underDevelopment.deviceManagement": {
           "type": "boolean",
-          "description": "Enable DUT Manager (incomplete)",
+          "description": "Enable Device Management feature to access test devices via VNC and SSH (incomplete)",
           "default": false
         },
         "cros-ide.underDevelopment.testCoverage": {
@@ -229,10 +229,10 @@
           "description": "Switch back to legacy compilation database generation for C++ xrefs (deprecated)",
           "default": false
         },
-        "cros-ide.dutManager.hosts": {
+        "cros-ide.deviceManagement.devices": {
           "type": "array",
           "scope": "machine-overridable",
-          "description": "List of devices under testing",
+          "description": "List of developer-owned device hostnames",
           "items": {
             "type": "string"
           }

@@ -15,7 +15,7 @@ import * as coverage from './features/coverage';
 import * as cppCodeCompletion from './features/cpp_code_completion/cpp_code_completion';
 import * as crosFormat from './features/cros_format';
 import * as crosLint from './features/cros_lint';
-import * as dutManager from './features/dut_management/dut_manager';
+import * as deviceManagement from './features/device_management';
 import * as feedback from './features/metrics/feedback';
 import * as metrics from './features/metrics/metrics';
 import * as shortLinkProvider from './features/short_link_provider';
@@ -62,8 +62,10 @@ export async function activate(
   feedback.activate(context);
   upstart.activate(context);
 
-  if (ideUtil.getConfigRoot().get<boolean>('underDevelopment.dutManager')) {
-    dutManager.activateDutManager(context);
+  if (
+    ideUtil.getConfigRoot().get<boolean>('underDevelopment.deviceManagement')
+  ) {
+    deviceManagement.activate(context);
   }
 
   if (ideUtil.getConfigRoot().get<boolean>('underDevelopment.testCoverage')) {

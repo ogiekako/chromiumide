@@ -4,8 +4,8 @@
 
 import 'jasmine';
 import * as vscode from 'vscode';
-import * as repository from '../../../features/dut_management/device_repository';
-import * as provider from '../../../features/dut_management/device_tree_data_provider';
+import * as repository from '../../../features/device_management/device_repository';
+import * as provider from '../../../features/device_management/device_tree_data_provider';
 import * as testing from '../../testing';
 import * as repositoryUtil from './device_repository_util';
 
@@ -33,14 +33,14 @@ async function renderTree(
 
 describe('Device tree data provider', () => {
   const state = testing.cleanState(() => {
-    const staticDeviceRepository = new repository.StaticDeviceRepository();
+    const ownedDeviceRepository = new repository.OwnedDeviceRepository();
     const leasedDeviceRepository = new repository.LeasedDeviceRepository();
     const deviceTreeDataProvider = new provider.DeviceTreeDataProvider(
-      staticDeviceRepository,
+      ownedDeviceRepository,
       leasedDeviceRepository
     );
     return {
-      staticDeviceRepository,
+      ownedDeviceRepository,
       leasedDeviceRepository,
       deviceTreeDataProvider,
     };
@@ -48,28 +48,28 @@ describe('Device tree data provider', () => {
 
   afterEach(() => {
     state.deviceTreeDataProvider.dispose();
-    state.staticDeviceRepository.dispose();
+    state.ownedDeviceRepository.dispose();
     state.leasedDeviceRepository.dispose();
   });
 
   it('builds a correct tree', async () => {
-    await repositoryUtil.setStaticHosts(['localhost:1111', 'localhost:2222']);
+    await repositoryUtil.setOwnedDevices(['localhost:1111', 'localhost:2222']);
     const rendered = await renderTree(state.deviceTreeDataProvider);
     expect(rendered).toEqual([
       {
-        item: new provider.CategoryItem(repository.DeviceCategory.STATIC),
+        item: new provider.CategoryItem(repository.DeviceCategory.OWNED),
         children: [
           {
             item: new provider.DeviceItem(
               'localhost:1111',
-              repository.DeviceCategory.STATIC
+              repository.DeviceCategory.OWNED
             ),
             children: [],
           },
           {
             item: new provider.DeviceItem(
               'localhost:2222',
-              repository.DeviceCategory.STATIC
+              repository.DeviceCategory.OWNED
             ),
             children: [],
           },
@@ -79,11 +79,11 @@ describe('Device tree data provider', () => {
   });
 
   it('builds a correct tree for initial state', async () => {
-    await repositoryUtil.setStaticHosts([]);
+    await repositoryUtil.setOwnedDevices([]);
     const rendered = await renderTree(state.deviceTreeDataProvider);
     expect(rendered).toEqual([
       {
-        item: new provider.CategoryItem(repository.DeviceCategory.STATIC),
+        item: new provider.CategoryItem(repository.DeviceCategory.OWNED),
         children: [
           {
             item: new provider.PlaceholderItem('No device configured yet'),

@@ -3,34 +3,36 @@
 // found in the LICENSE file.
 
 /**
- * This contains the GUI and functionality for managing DUTs
+ * This contains the GUI and functionality for managing devices
  */
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as commands from './commands_provider';
-import * as provider from './device_tree_data_provider';
 import * as repository from './device_repository';
-import * as dutUtil from './dut_util';
+import * as provider from './device_tree_data_provider';
+import * as sshUtil from './ssh_util';
 
-export async function activateDutManager(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   rsaKeyFixPermission(context.extensionUri);
 
-  const output = vscode.window.createOutputChannel('CrOS IDE: DUT Manager');
-  const staticDeviceRepository = new repository.StaticDeviceRepository();
+  const output = vscode.window.createOutputChannel(
+    'CrOS IDE: Device Management'
+  );
+  const ownedDeviceRepository = new repository.OwnedDeviceRepository();
   const leasedDeviceRepository = new repository.LeasedDeviceRepository();
   const commandsProvider = new commands.CommandsProvider(
     context,
     output,
-    staticDeviceRepository,
+    ownedDeviceRepository,
     leasedDeviceRepository
   );
   const deviceTreeDataProvider = new provider.DeviceTreeDataProvider(
-    staticDeviceRepository,
+    ownedDeviceRepository,
     leasedDeviceRepository
   );
 
   context.subscriptions.push(
-    staticDeviceRepository,
+    ownedDeviceRepository,
     leasedDeviceRepository,
     commandsProvider,
     deviceTreeDataProvider
@@ -45,7 +47,7 @@ export async function activateDutManager(context: vscode.ExtensionContext) {
  * Ensures that test_rsa key perms are 0600, otherwise cannot be used for ssh
  */
 async function rsaKeyFixPermission(extensionUri: vscode.Uri) {
-  const rsaKeyPath = dutUtil.getTestingRsaPath(extensionUri);
+  const rsaKeyPath = sshUtil.getTestingRsaPath(extensionUri);
   await fs.promises.chmod(rsaKeyPath, '0600').catch(_err => {
     vscode.window.showErrorMessage(
       'Fatal: unable to update testing_rsa permission: ' + rsaKeyPath

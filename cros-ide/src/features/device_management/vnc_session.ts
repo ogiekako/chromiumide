@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import * as ws from 'ws';
 import * as commonUtil from '../../common/common_util';
-import * as dutUtil from './dut_util';
+import * as sshUtil from './ssh_util';
 import * as webviewShared from './webview_shared';
 
 /**
@@ -20,10 +20,10 @@ export enum ProxyProtocol {
 }
 
 /**
- * Represents an active VNC session of a DUT.
+ * Represents an active VNC session of a device.
  *
  * It manages UI resources associated to a VNC session, such as a vscode.Terminal used to start and
- * forward KMSVNC server on the DUT, and a vscode.WebViewPanel to render NoVNC UI on.
+ * forward KMSVNC server on the device, and a vscode.WebViewPanel to render NoVNC UI on.
  *
  * It also manages a proxy to allow the WebView to connect to the VNC server. There are two kinds
  * of proxies used:
@@ -62,23 +62,29 @@ export class VncSession {
   ];
 
   static async create(
-    host: string,
+    hostname: string,
     context: vscode.ExtensionContext,
     output: vscode.OutputChannel,
     proxyProtocol?: ProxyProtocol
   ): Promise<VncSession> {
     const forwardPort = await findUnusedPort();
-    return new VncSession(host, context, output, proxyProtocol, forwardPort);
+    return new VncSession(
+      hostname,
+      context,
+      output,
+      proxyProtocol,
+      forwardPort
+    );
   }
 
   private constructor(
-    host: string,
+    hostname: string,
     private readonly context: vscode.ExtensionContext,
     output: vscode.OutputChannel,
     proxyProtocol: ProxyProtocol | undefined,
     forwardPort: number
   ) {
-    this.panel = VncSession.createWebview(host);
+    this.panel = VncSession.createWebview(hostname);
     switch (proxyProtocol ?? detectProxyProtocol()) {
       case ProxyProtocol.WEBSOCKET:
         this.proxy = new WebSocketProxy(forwardPort);
@@ -98,7 +104,7 @@ export class VncSession {
     );
 
     void startAndWaitVncServer(
-      host,
+      hostname,
       forwardPort,
       this.panel.webview,
       output,
@@ -129,10 +135,10 @@ export class VncSession {
     this.panel.reveal();
   }
 
-  private static createWebview(host: string): vscode.WebviewPanel {
+  private static createWebview(hostname: string): vscode.WebviewPanel {
     return vscode.window.createWebviewPanel(
       'vncclient',
-      `VNC: ${host}`,
+      `VNC: ${hostname}`,
       vscode.ViewColumn.One,
       {
         // Scripting is needed to run NoVNC.
@@ -182,11 +188,11 @@ export class VncSession {
 }
 
 /**
- * Starts the VNC server on a remote DUT via SSH, and waits for its completion.
+ * Starts the VNC server on a remote device via SSH, and waits for its completion.
  * Once the VNC server gets ready, it notifies the WebView with message passing.
  */
 async function startAndWaitVncServer(
-  host: string,
+  hostname: string,
   forwardPort: number,
   webview: vscode.Webview,
   output: vscode.OutputChannel,
@@ -194,7 +200,7 @@ async function startAndWaitVncServer(
   context: vscode.ExtensionContext
 ): Promise<void> {
   const serverStopped = startVncServer(
-    host,
+    hostname,
     forwardPort,
     output,
     token,
@@ -229,20 +235,20 @@ async function startAndWaitVncServer(
 }
 
 /**
- * Starts the VNC server on a remote DUT via SSH.
+ * Starts the VNC server on a remote device via SSH.
  * The returned promise rejects if it fails to start the VNC server or the server exits
  * unexpectedly. It resolves only if it is cancelled via CancellationToken.
  */
 async function startVncServer(
-  host: string,
+  hostname: string,
   forwardPort: number,
   output: vscode.OutputChannel,
   token: vscode.CancellationToken,
   context: vscode.ExtensionContext
 ): Promise<void> {
   const KMSVNC_PORT = 5900;
-  const args = dutUtil.buildSshCommand(
-    host,
+  const args = sshUtil.buildSshCommand(
+    hostname,
     context.extensionUri,
     ['-L', `${forwardPort}:localhost:${KMSVNC_PORT}`],
     `fuser -k ${KMSVNC_PORT}/tcp; kmsvnc`
