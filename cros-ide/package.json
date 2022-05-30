@@ -295,7 +295,7 @@
     "build-release": "rm -rf dist && webpack --mode production --devtool hidden-source-map",
     "build-tests": "rm -rf out && tsc -p . --outDir out",
     "build-all": "npm run build && npm run build-tests",
-    "test": "npm run build-all && xvfb-run -a node ./out/test/runTest.js",
+    "test": "npm run build-all && xvfb-run -a node ./out/test/integration/runTest.js",
     "lint": "npm run lint-code && npm run lint-license",
     "lint-code": "gts lint",
     "lint-license": "jsgl --local .",
