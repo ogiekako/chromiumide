@@ -106,6 +106,13 @@ Go to Implementation, and so on.
 
 [go to definition]: https://code.visualstudio.com/docs/editor/editingevolved#_go-to-definition
 
+### Device Management
+
+CrOS IDE provides a view to manage your test devices. With the built-in VNC
+client, you can control a device remotely.
+
+![Connecting to device with VNC](https://storage.googleapis.com/chromeos-velocity/ide/img/vnc-viewer.gif)
+
 ### Linter Integration
 
 CrOS IDE exposes lint errors found by `cros lint` and similar tools in C++,
