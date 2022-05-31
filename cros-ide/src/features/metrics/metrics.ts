@@ -15,15 +15,15 @@ const informationMessageTitle =
 const informationMessageDetail =
   'This includes data on install, uninstall, and invocation events of extension features, to ' +
   'obtain insights on how users are using our extension and their satisfaction level.\n' +
-  'Working directories of these events will be recorded to help us identifying repositories / ' +
+  'Working directories of these events will be recorded to help us to identify repositories / ' +
   'projects that the extension is less popular and/or helpful so we can improve on user ' +
   'experience for the teams specifically.\n' +
-  'The data is pseudonymous. i.e. it is associated to a randomly generated unique user ID ' +
+  'The data is pseudonymous. i.e. it is associated with a randomly generated unique user ID ' +
   'which resets every 180 days automatically, and you can also reset it from the Command ' +
   'Palette.\n' +
   'Raw data is only accessible by the modern IDE team. However, aggregated data (e.g. trend ' +
-  'of number of users against time) might be shared with broader audience for retrospective or ' +
-  'advertising purpose.\n' +
+  'of number of users against time) might be shared with a broader audience for retrospective or ' +
+  'advertising purposes.\n' +
   'You can opt-in or out of metrics collection anytime in settings (> extension > CrOS IDE).\n' +
   'Metrics from external (non-googler) users will not be collected.' +
   '\n' +
