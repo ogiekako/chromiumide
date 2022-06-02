@@ -5,6 +5,9 @@ This VSCode IDE extension is designed to make ChromiumOS development easier and 
 ## User Scope
 This is intended for Googlers only.
 
+## Project Status
+Beta testing stage.
+
 ## Features
 
 Initial release has been tested for `platform2` development and offers the following features:
