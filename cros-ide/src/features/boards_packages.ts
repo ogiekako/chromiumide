@@ -200,13 +200,17 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
 
 class ChrootItem extends vscode.TreeItem {}
 
+// TODO(ttylenda): extract classes for actual boards and host.
 class Board extends ChrootItem {
   constructor(readonly name: string) {
     super(name, vscode.TreeItemCollapsibleState.Collapsed);
+    this.iconPath =
+      name === VIRTUAL_BOARDS_HOST
+        ? new vscode.ThemeIcon('device-desktop')
+        : new vscode.ThemeIcon('circuit-board');
   }
 
   contextValue = 'board';
-  iconPath = new vscode.ThemeIcon('circuit-board');
 }
 
 class Package extends ChrootItem {
