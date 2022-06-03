@@ -10,14 +10,20 @@ legacy support will be removed after global dogfood release.
 
 ## Prerequisites
 
-All you need is a ChromiumOS chroot, which most developers already have.
-If you don't have it, please follow the [ChromiumOS Developer Guide] and set up
-your development environment, so you can [enter the chroot via cros_sdk].
+You need a ChromiumOS chroot. If you are a new member and don't have it, please
+follow the [ChromiumOS Developer Guide] and set up your development environment,
+so you can [enter the chroot via cros_sdk].
+
+You also need `npm` and gsutil authentication, because the install script needs them.
+
+- Follow http://go/nodejs/installing-node to install npm.
+- Follow [Configure authentication (.boto)] to set up the `~/.boto` file.
 
 In this document, we assume ChromiumOS source code is in `~/chromiumos`.
 
 [chromiumos developer guide]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md
 [enter the chroot via cros_sdk]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/developer_guide.md#Enter-the-chroot
+[configure authentication (.boto)]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/gsutil.md#setup
 
 ## 1. Install Visual Studio Code
 
