@@ -18,7 +18,7 @@ describe('Install script', () => {
 
   it('fails outside chroot for v0.0.10', async () => {
     fakeExec.on(
-      'gsutil',
+      '../../scripts/gsutil',
       exactMatch(['ls', 'gs://chromeos-velocity/ide/cros-ide'], async () => {
         return `gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.9.vsix
 gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.10.vsix@abcdef10
@@ -36,7 +36,7 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.10.vsix@abcdef10
     let installed = false;
     fakeExec
       .on(
-        'gsutil',
+        '../../scripts/gsutil',
         exactMatch(['ls', 'gs://chromeos-velocity/ide/cros-ide'], async () => {
           return `gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.11.vsix
 gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.12.vsix@abcdef12
@@ -44,7 +44,7 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.12.vsix@abcdef12
         })
       )
       .on(
-        'gsutil',
+        '../../scripts/gsutil',
         prefixMatch(
           [
             'cp',
@@ -78,7 +78,7 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.12.vsix@abcdef12
     let installed = false;
     fakeExec
       .on(
-        'gsutil',
+        '../../scripts/gsutil',
         exactMatch(['ls', 'gs://chromeos-velocity/ide/cros-ide'], async () => {
           return `gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.11.vsix
 gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.12.vsix@abcdef12
@@ -86,7 +86,7 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.12.vsix@abcdef12
         })
       )
       .on(
-        'gsutil',
+        '../../scripts/gsutil',
         prefixMatch(
           ['cp', 'gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.11.vsix'],
           async args => {
@@ -233,7 +233,7 @@ index ee8697e11..877d91ddd 100644
           )
         )
         .on(
-          'gsutil',
+          '../../scripts/gsutil',
           exactMatch(
             ['ls', 'gs://chromeos-velocity/ide/cros-ide'],
             async () => {
@@ -253,7 +253,7 @@ gs://chromeos-velocity/ide/cros-ide/cros-ide-0.0.12.vsix@abcdef12
           })
         )
         .on(
-          'gsutil',
+          '../../scripts/gsutil',
           lazyHandler(() =>
             exactMatch(
               [

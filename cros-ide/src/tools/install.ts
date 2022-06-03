@@ -23,6 +23,7 @@ function assertOutsideChroot() {
   }
 }
 
+const GSUTIL = '../../scripts/gsutil';
 const GS_PREFIX = 'gs://chromeos-velocity/ide/cros-ide';
 
 async function execute(
@@ -49,7 +50,7 @@ async function execute(
  */
 export async function findArchive(version?: semver.SemVer): Promise<Archive> {
   // The result of `gsutil ls` is lexicographically sorted.
-  const stdout = await execute('gsutil', ['ls', GS_PREFIX]);
+  const stdout = await execute(GSUTIL, ['ls', GS_PREFIX]);
   const archives = stdout
     .trim()
     .split('\n')
@@ -155,7 +156,7 @@ export async function buildAndUpload() {
           `${latestInGs.name}. Update the version and rerun the program.`
       );
     }
-    await execute('gsutil', ['cp', path.join(td, built.name), built.url()]);
+    await execute(GSUTIL, ['cp', path.join(td, built.name), built.url()]);
   });
 }
 
@@ -188,7 +189,7 @@ export async function install(exe: string, forceVersion?: semver.SemVer) {
   await commonUtil.withTempDir(async td => {
     const dst = path.join(td, src.name);
 
-    await execute('gsutil', ['cp', src.url(), dst]);
+    await execute(GSUTIL, ['cp', src.url(), dst]);
     const args = ['--install-extension', dst];
     if (forceVersion) {
       args.push('--force');
