@@ -178,7 +178,6 @@ chromeos-base/shill`;
       .withArgs(
         'equery-amd64-generic',
         ['which', '-m', 'chromeos-base/shill'],
-        jasmine.any(Function),
         jasmine.any(Object)
       )
       .and.returnValue(

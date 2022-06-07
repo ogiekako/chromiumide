@@ -31,12 +31,14 @@ async function execute(
   args: string[],
   showStdout?: boolean
 ): Promise<string> {
-  const res = await commonUtil.exec(
-    name,
-    args,
-    log => process.stderr.write(log),
-    {logStdout: showStdout}
-  );
+  const res = await commonUtil.exec(name, args, {
+    logger: new (class {
+      append(s: string): void {
+        process.stderr.write(s);
+      }
+    })(),
+    logStdout: showStdout,
+  });
   if (res instanceof Error) {
     throw res;
   }

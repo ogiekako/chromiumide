@@ -48,12 +48,14 @@ async function main(commitHash: string | undefined) {
     );
   }
 
-  const npmRunPreupload = await commonUtil.exec(
-    'npm',
-    ['run', 'preupload'],
-    console.error,
-    {logStdout: true}
-  );
+  const npmRunPreupload = await commonUtil.exec('npm', ['run', 'preupload'], {
+    logger: new (class {
+      append(s: string): void {
+        console.error(s);
+      }
+    })(),
+    logStdout: true,
+  });
   if (npmRunPreupload instanceof Error) {
     throw npmRunPreupload;
   }

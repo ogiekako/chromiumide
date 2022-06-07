@@ -144,7 +144,8 @@ async function updateCrosLintDiagnostics(
       return;
     }
     const args = lintConfig.arguments(realpath);
-    const res = await commonUtil.exec(name, args, log.append, {
+    const res = await commonUtil.exec(name, args, {
+      logger: log,
       ignoreNonZeroExit: true,
       logStdout: true,
     });

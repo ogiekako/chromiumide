@@ -232,8 +232,11 @@ class Ebuild {
         this.ebuild9999(),
         'compile',
       ],
-      this.output.appendLine,
-      {logStdout: true, sudoReason: 'Generating C++ cross reference'}
+      {
+        logger: this.output,
+        logStdout: true,
+        sudoReason: 'Generating C++ cross reference',
+      }
     );
     if (res instanceof Error) {
       throw res;

@@ -26,7 +26,7 @@ describe('chroot service', () => {
       'echo',
       exactMatch(['1'], async () => '1\n')
     );
-    const res = (await cros.exec('echo', ['1'], undefined, {
+    const res = (await cros.exec('echo', ['1'], {
       sudoReason: '',
     })) as ExecResult;
     expect(res.stdout).toBe('1\n');
@@ -52,7 +52,7 @@ describe('chroot service', () => {
           async () => '1\n'
         )
       );
-    const res = (await cros.exec('echo', ['1'], undefined, {
+    const res = (await cros.exec('echo', ['1'], {
       sudoReason: '',
     })) as ExecResult;
     expect(res.stdout).toBe('1\n');
@@ -75,8 +75,8 @@ describe('chroot service', () => {
         'sudo',
         exactMatch(
           ['-S', path.join(source, 'chromite/bin/cros_sdk'), '--', 'echo', '1'],
-          async opt => {
-            expect(opt?.pipeStdin).toBe('password');
+          async options => {
+            expect(options.pipeStdin).toBe('password');
             return '1\n';
           }
         )
@@ -84,7 +84,7 @@ describe('chroot service', () => {
 
     vscodeSpy.window.showInputBox.and.returnValue(Promise.resolve('password'));
 
-    const res = (await cros.exec('echo', ['1'], undefined, {
+    const res = (await cros.exec('echo', ['1'], {
       sudoReason: '',
     })) as ExecResult;
     expect(res.stdout).toBe('1\n');
@@ -107,8 +107,8 @@ describe('chroot service', () => {
         'sudo',
         exactMatch(
           ['-S', path.join(source, 'chromite/bin/cros_sdk'), '--', 'false'],
-          async opt => {
-            expect(opt?.pipeStdin).toBe('password');
+          async options => {
+            expect(options.pipeStdin).toBe('password');
             return new Error('failed');
           }
         )
@@ -116,7 +116,7 @@ describe('chroot service', () => {
 
     vscodeSpy.window.showInputBox.and.returnValue(Promise.resolve('password'));
 
-    expect(await cros.exec('false', [], undefined, {sudoReason: ''})).toEqual(
+    expect(await cros.exec('false', [], {sudoReason: ''})).toEqual(
       new Error('failed')
     );
   });
@@ -136,7 +136,7 @@ describe('chroot service', () => {
 
     vscodeSpy.window.showInputBox.and.returnValue(Promise.resolve(''));
 
-    expect(await cros.exec('false', [], undefined, {sudoReason: ''})).toEqual(
+    expect(await cros.exec('false', [], {sudoReason: ''})).toEqual(
       new InvalidPasswordError('no password was provided')
     );
   });
@@ -158,12 +158,12 @@ describe('chroot service', () => {
         'sudo',
         exactMatch(
           ['-S', path.join(source, 'chromite/bin/cros_sdk'), '--', 'false'],
-          async (opt, log) => {
-            log!(
+          async options => {
+            options.logger!.append(
               'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
             );
-            log!('sudo: 1 incorrect pass');
-            log!('word attempts');
+            options.logger!.append('sudo: 1 incorrect pass');
+            options.logger!.append('word attempts');
             return new Error('failed');
           }
         )
@@ -173,7 +173,7 @@ describe('chroot service', () => {
       Promise.resolve('wrong password')
     );
 
-    expect(await cros.exec('false', [], undefined, {sudoReason: ''})).toEqual(
+    expect(await cros.exec('false', [], {sudoReason: ''})).toEqual(
       new InvalidPasswordError('invalid password')
     );
   });

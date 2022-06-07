@@ -55,8 +55,8 @@ async function openCurrentFile(textEditor: vscode.TextEditor) {
   const res = await commonUtil.exec(
     executable,
     ['--show', `--${csInstance}`, `--line=${line}`, fullpath],
-    ideUtil.getUiLogger().append,
     {
+      logger: ideUtil.getUiLogger(),
       logStdout: true,
       ignoreNonZeroExit: true,
       cwd: cwd,

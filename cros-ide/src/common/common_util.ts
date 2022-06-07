@@ -131,6 +131,12 @@ export interface ExecResult {
 }
 
 export interface ExecOptions {
+  /**
+   * When set, outputs are logged with this function.
+   * Usually this is a vscode.OutputChannel object, but only append() is required.
+   */
+  logger?: Pick<vscode.OutputChannel, 'append'>;
+
   /** If true, stdout should be logged in addition to stderr, which is always logged. */
   logStdout?: boolean;
 
@@ -190,8 +196,6 @@ export class CancelledError extends Error {
   }
 }
 
-export type Log = (line: string) => void;
-
 /**
  * Executes command with optionally logging its output. The promise will be
  * resolved with outputs of the command or an Error. It's guaranteed that
@@ -202,16 +206,14 @@ export type Log = (line: string) => void;
  * If the command terminates with non-zero exit status then we return `ExecutionError`
  * unless `ignoreNonZeroExit` was set.
  *
- * @param log Optional logging function.
- * @param opt Optional parameters. See `ExecOptions` for the description.
+ * @param options Optional parameters. See `ExecOptions` for the description.
  */
 export function exec(
   name: string,
   args: string[],
-  log?: Log,
-  opt?: ExecOptions
+  options: ExecOptions = {}
 ): Promise<ExecResult | Error> {
-  return execPtr(name, args, log, opt);
+  return execPtr(name, args, options);
 }
 
 let execPtr = realExec;
@@ -230,22 +232,21 @@ export function setExecForTesting(fakeExec: typeof exec): () => void {
 function realExec(
   name: string,
   args: string[],
-  log?: (line: string) => void,
-  opt?: ExecOptions
+  options: ExecOptions = {}
 ): Promise<ExecResult | Error> {
   return new Promise((resolve, _reject) => {
-    if (log) {
-      log(shutil.escapeArray([name, ...args]) + '\n');
+    if (options.logger) {
+      options.logger.append(shutil.escapeArray([name, ...args]) + '\n');
     }
 
     const spawnOpts: childProcess.SpawnOptionsWithoutStdio = {};
-    if (opt?.cwd) {
-      spawnOpts.cwd = opt.cwd;
+    if (options.cwd) {
+      spawnOpts.cwd = options.cwd;
     }
 
     const command = childProcess.spawn(name, args, spawnOpts);
-    if (opt?.pipeStdin) {
-      command.stdin.write(opt.pipeStdin);
+    if (options.pipeStdin) {
+      command.stdin.write(options.pipeStdin);
       command.stdin.end();
     }
 
@@ -254,33 +255,33 @@ function realExec(
     let stdout = '';
     let stderr = '';
     command.stdout.on('data', data => {
-      if (log && opt && opt.logStdout) {
+      if (options.logger && options.logStdout) {
         remainingStdout += data;
         const i = remainingStdout.lastIndexOf('\n');
-        log(remainingStdout.substring(0, i + 1));
+        options.logger.append(remainingStdout.substring(0, i + 1));
         remainingStdout = remainingStdout.substring(i + 1);
       }
       stdout += data;
     });
 
     command.stderr.on('data', data => {
-      if (log) {
+      if (options.logger) {
         remainingStderr += data;
         const i = remainingStderr.lastIndexOf('\n');
-        log(remainingStderr.substring(0, i + 1));
+        options.logger.append(remainingStderr.substring(0, i + 1));
         remainingStderr = remainingStderr.substring(i + 1);
       }
       stderr += data;
     });
 
     command.on('close', exitStatus => {
-      if (log && opt && opt.logStdout && remainingStdout) {
-        log(remainingStdout + '\n');
+      if (options.logger && options.logStdout && remainingStdout) {
+        options.logger.append(remainingStdout + '\n');
       }
-      if (log && remainingStderr) {
-        log(remainingStderr + '\n');
+      if (options.logger && remainingStderr) {
+        options.logger.append(remainingStderr + '\n');
       }
-      if (!(opt && opt.ignoreNonZeroExit) && exitStatus !== 0) {
+      if (!options.ignoreNonZeroExit && exitStatus !== 0) {
         resolve(new AbnormalExitError(name, args, exitStatus));
       }
 
@@ -292,15 +293,15 @@ function realExec(
       resolve(new ProcessError(name, args, err));
     });
 
-    if (opt?.cancellationToken !== undefined) {
+    if (options.cancellationToken !== undefined) {
       const cancel = () => {
         command.kill();
         resolve(new CancelledError(name, args));
       };
-      if (opt.cancellationToken.isCancellationRequested) {
+      if (options.cancellationToken.isCancellationRequested) {
         cancel();
       } else {
-        opt.cancellationToken.onCancellationRequested(cancel);
+        options.cancellationToken.onCancellationRequested(cancel);
       }
     }
   });

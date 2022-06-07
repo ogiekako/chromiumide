@@ -118,8 +118,8 @@ class BoardsPackages {
         cmd,
         pkgName,
       ],
-      ideUtil.getUiLogger().append,
       {
+        logger: ideUtil.getUiLogger(),
         logStdout: true,
         ignoreNonZeroExit: true,
         sudoReason: 'Running cros_workon in chroot',
@@ -141,8 +141,11 @@ class BoardsPackages {
         ? 'equery'
         : `equery-${pkg.board.name}`,
       ['which', '-m', pkg.name],
-      ideUtil.getUiLogger().append,
-      {logStdout: true, sudoReason: 'Querying ebuild path'}
+      {
+        logger: ideUtil.getUiLogger(),
+        logStdout: true,
+        sudoReason: 'Querying ebuild path',
+      }
     );
     if (res instanceof Error) {
       vscode.window.showErrorMessage(res.message);
@@ -215,8 +218,11 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
     const res = await chrootService.exec(
       'cros_workon',
       [board === VIRTUAL_BOARDS_HOST ? '--host' : `--board=${board}`, 'list'],
-      ideUtil.getUiLogger().append,
-      {logStdout: true, sudoReason: 'Getting worked on packages in chroot'}
+      {
+        logger: ideUtil.getUiLogger(),
+        logStdout: true,
+        sudoReason: 'Getting worked on packages in chroot',
+      }
     );
     if (res instanceof Error) {
       throw res;

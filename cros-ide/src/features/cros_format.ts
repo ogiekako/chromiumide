@@ -50,8 +50,10 @@ class CrosFormat implements vscode.DocumentFormattingEditProvider {
     const formatterOutput = await commonUtil.exec(
       'cros',
       ['format', '--stdout', document.uri.fsPath],
-      ideUtil.getUiLogger().append,
-      {ignoreNonZeroExit: true}
+      {
+        logger: ideUtil.getUiLogger(),
+        ignoreNonZeroExit: true,
+      }
     );
 
     if (formatterOutput instanceof Error) {

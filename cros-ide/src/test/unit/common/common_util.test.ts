@@ -24,6 +24,14 @@ class BlockingPromise<T> {
   }
 }
 
+class SimpleLogger {
+  constructor(private readonly f: (s: string) => void) {}
+
+  append(s: string): void {
+    this.f(s);
+  }
+}
+
 describe('Job manager', () => {
   it('throttles jobs', async () => {
     const manager = new commonUtil.JobManager();
@@ -92,13 +100,11 @@ describe('Logging exec', () => {
 
   it('returns stdout and logs stderr', async () => {
     let logs = '';
-    const res = await commonUtil.exec(
-      'sh',
-      ['-c', 'echo foo; echo bar 1>&2'],
-      log => {
+    const res = await commonUtil.exec('sh', ['-c', 'echo foo; echo bar 1>&2'], {
+      logger: new SimpleLogger(log => {
         logs += log;
-      }
-    );
+      }),
+    });
     assert(!(res instanceof Error));
     assert.strictEqual(res.stdout, 'foo\n');
     assert.strictEqual(logs, "sh -c 'echo foo; echo bar 1>&2'\nbar\n");
@@ -106,14 +112,12 @@ describe('Logging exec', () => {
 
   it('mixes stdout and stderr if logStdout flag is true', async () => {
     let logs = '';
-    await commonUtil.exec(
-      'sh',
-      ['-c', 'echo foo; echo bar 1>&2'],
-      log => {
+    await commonUtil.exec('sh', ['-c', 'echo foo; echo bar 1>&2'], {
+      logger: new SimpleLogger(log => {
         logs += log;
-      },
-      {logStdout: true}
-    );
+      }),
+      logStdout: true,
+    });
     assert.strictEqual(
       logs.length,
       "sh -c 'echo foo; echo bar 1>&2'\nfoo\nbar\n".length
@@ -122,14 +126,12 @@ describe('Logging exec', () => {
 
   it('returns error on non-zero exit status when unrelated flags are set', async () => {
     let logs = '';
-    const res = await commonUtil.exec(
-      'sh',
-      ['-c', 'echo foo 1>&2; exit 1'],
-      log => {
+    const res = await commonUtil.exec('sh', ['-c', 'echo foo 1>&2; exit 1'], {
+      logger: new SimpleLogger(log => {
         logs += log;
-      },
-      {logStdout: true}
-    );
+      }),
+      logStdout: true,
+    });
     assert(res instanceof commonUtil.AbnormalExitError);
     assert(
       res.message.includes("sh -c 'echo foo 1>&2; exit 1'"),
@@ -140,13 +142,11 @@ describe('Logging exec', () => {
 
   it('returns error on non-zero exit status when no flags are specified', async () => {
     let logs = '';
-    const res = await commonUtil.exec(
-      'sh',
-      ['-c', 'echo foo 1>&2; exit 1'],
-      log => {
+    const res = await commonUtil.exec('sh', ['-c', 'echo foo 1>&2; exit 1'], {
+      logger: new SimpleLogger(log => {
         logs += log;
-      }
-    );
+      }),
+    });
     assert(res instanceof commonUtil.AbnormalExitError);
     assert(
       res.message.includes("sh -c 'echo foo 1>&2; exit 1'"),
@@ -160,10 +160,12 @@ describe('Logging exec', () => {
     const res = await commonUtil.exec(
       'sh',
       ['-c', 'echo foo 1>&2; echo bar; exit 1'],
-      log => {
-        logs += log;
-      },
-      {ignoreNonZeroExit: true}
+      {
+        logger: new SimpleLogger(log => {
+          logs += log;
+        }),
+        ignoreNonZeroExit: true,
+      }
     );
     assert(!(res instanceof Error));
     const {exitStatus, stdout, stderr} = res;
@@ -178,10 +180,12 @@ describe('Logging exec', () => {
     const res = await commonUtil.exec(
       'sh',
       ['-c', 'echo -n foo; echo -n bar 1>&2;'],
-      log => {
-        logs += log;
-      },
-      {logStdout: true}
+      {
+        logger: new SimpleLogger(log => {
+          logs += log;
+        }),
+        logStdout: true,
+      }
     );
     assert(!(res instanceof Error));
     assert.strictEqual(res.stdout, 'foo');
@@ -194,7 +198,7 @@ describe('Logging exec', () => {
   });
 
   it('can supply stdin', async () => {
-    const res = await commonUtil.exec('cat', [], undefined, {pipeStdin: 'foo'});
+    const res = await commonUtil.exec('cat', [], {pipeStdin: 'foo'});
     assert(!(res instanceof Error));
     assert.strictEqual(res.stdout, 'foo');
   });
@@ -210,7 +214,7 @@ describe('Logging exec', () => {
 
   it('can abort command execution', async () => {
     const canceller = new vscode.CancellationTokenSource();
-    const process = commonUtil.exec('sleep', ['100'], undefined, {
+    const process = commonUtil.exec('sleep', ['100'], {
       cancellationToken: canceller.token,
     });
     canceller.cancel();
@@ -219,7 +223,7 @@ describe('Logging exec', () => {
   });
 
   it('changes the directory if cwd is specified', async () => {
-    const res = await commonUtil.exec('pwd', [], undefined, {cwd: temp.path});
+    const res = await commonUtil.exec('pwd', [], {cwd: temp.path});
     assert(!(res instanceof Error));
     expect(res.stdout).toContain(temp.path);
   });

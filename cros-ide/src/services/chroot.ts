@@ -24,6 +24,9 @@ export interface SudoExecOptions extends commonUtil.ExecOptions {
    * Example: 'Generating C++ cross reference'
    */
   sudoReason: string;
+
+  // pipeStdin must not be set.
+  pipeStdin?: undefined;
 }
 
 /**
@@ -67,11 +70,10 @@ export class ChrootService {
   async exec(
     name: string,
     args: string[],
-    log: commonUtil.Log | undefined,
-    opt: SudoExecOptions
-  ) {
+    options: SudoExecOptions
+  ): ReturnType<typeof commonUtil.exec> {
     if (this.isInsideChroot()) {
-      return commonUtil.exec(name, args, log, opt);
+      return commonUtil.exec(name, args, options);
     }
     const source = this.source();
     if (source === undefined) {
@@ -81,7 +83,7 @@ export class ChrootService {
     }
     const crosSdk = path.join(source.root, 'chromite/bin/cros_sdk');
     const crosSdkArgs = ['--', name, ...args];
-    return sudo(crosSdk, crosSdkArgs, log, opt);
+    return sudo(crosSdk, crosSdkArgs, options);
   }
 
   onUpdate() {
@@ -120,15 +122,14 @@ const SUDO = 'sudo';
  *
  * Returns InvalidPasswordError if the password user enters is invalid.
  *
- * opt.pipeStdin must be undefined.
+ * options.pipeStdin must be undefined.
  */
 async function sudo(
   name: string,
   args: string[],
-  log: commonUtil.Log | undefined,
-  opt: SudoExecOptions
+  options: SudoExecOptions
 ): ReturnType<typeof commonUtil.exec> {
-  if (opt?.pipeStdin) {
+  if (options.pipeStdin) {
     throw new Error(
       "BUG: pipeStdin is not supported for this function; it's used to pass password to sudo"
     );
@@ -139,42 +140,42 @@ async function sudo(
   // Check if the user can run sudo without password.
   const validityCheckResult = await commonUtil.exec(SUDO, ['-nv']);
   if (!(validityCheckResult instanceof Error)) {
-    return await commonUtil.exec(SUDO, sudoArgs, log, opt);
+    return await commonUtil.exec(SUDO, sudoArgs, options);
   }
 
   // Ask password.
   const password = await vscode.window.showInputBox({
     password: true,
     title: 'password to run ' + path.basename(name),
-    prompt: opt.sudoReason,
+    prompt: options.sudoReason,
   });
 
   if (!password) {
     return new InvalidPasswordError('no password was provided');
   }
 
-  const sudoOpt = Object.assign({}, opt);
-  sudoOpt.pipeStdin = password;
-
   let logBuffer = '';
   let invalidPassword = false;
-  const result = await commonUtil.exec(
-    SUDO,
-    ['-S', ...sudoArgs],
-    s => {
-      if (log) {
-        log(s);
+  const sudoOptions = {
+    ...options,
+    pipeStdin: password,
+    logger: new (class {
+      append(s: string): void {
+        if (options.logger) {
+          options.logger.append(s);
+        }
+        logBuffer += s;
+        if (isInvalidPassword(logBuffer)) {
+          invalidPassword = true;
+        }
+        if (logBuffer.length > 50) {
+          logBuffer = logBuffer.substring(logBuffer.length - 50);
+        }
       }
-      logBuffer += s;
-      if (isInvalidPassword(logBuffer)) {
-        invalidPassword = true;
-      }
-      if (logBuffer.length > 50) {
-        logBuffer = logBuffer.substring(logBuffer.length - 50);
-      }
-    },
-    sudoOpt
-  );
+    })(),
+  };
+
+  const result = await commonUtil.exec(SUDO, ['-S', ...sudoArgs], sudoOptions);
   if ((result instanceof Error || result.exitStatus === 1) && invalidPassword) {
     return new InvalidPasswordError('invalid password');
   }

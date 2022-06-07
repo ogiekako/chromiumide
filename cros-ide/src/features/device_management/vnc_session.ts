@@ -253,7 +253,8 @@ async function startVncServer(
     ['-L', `${forwardPort}:localhost:${KMSVNC_PORT}`],
     `fuser -k ${KMSVNC_PORT}/tcp; kmsvnc`
   );
-  const result = await commonUtil.exec(args[0], args.slice(1), output.append, {
+  const result = await commonUtil.exec(args[0], args.slice(1), {
+    logger: output,
     logStdout: true,
     cancellationToken: token,
   });
