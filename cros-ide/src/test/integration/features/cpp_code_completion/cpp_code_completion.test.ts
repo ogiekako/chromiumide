@@ -15,7 +15,7 @@ import {ChrootService} from '../../../../services/chroot';
 import * as bgTaskStatus from '../../../../ui/bg_task_status';
 import {buildFakeChroot, cleanState, tempDir} from '../../../testing';
 import {installVscodeDouble} from '../../doubles';
-import {FakeOutputChannel} from '../../fakes/output_channel';
+import {ConsoleOutputChannel} from '../../../testing/fakes';
 import {fakeGetConfiguration} from '../../fakes/workspace_configuration';
 import {SpiedFakeCompdbService} from './spied_fake_compdb_service';
 
@@ -43,7 +43,7 @@ describe('C++ code completion', () => {
     const compilationDatabase = new CompilationDatabase(
       new bgTaskStatus.TEST_ONLY.StatusManagerImpl(),
       new Packages(),
-      new FakeOutputChannel(),
+      new ConsoleOutputChannel(),
       spiedFakeCompdbService,
       new ChrootService(new WrapFs(chroot), new WrapFs(source))
     );

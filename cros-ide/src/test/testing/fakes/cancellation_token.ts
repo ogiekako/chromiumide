@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 
 /**
- * CancellationToken to satisfy required parameters.
+ * A CancellationToken that is never cancelled.
  */
 export class FakeCancellationToken implements vscode.CancellationToken {
   constructor(

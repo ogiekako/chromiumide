@@ -5,7 +5,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as shortLinkProvider from '../../../features/short_link_provider';
-import {FakeCancellationToken} from '../fakes/fake_cancellation_token';
+import {FakeCancellationToken} from '../../testing/fakes';
 import * as extensionTesting from '../extension_testing';
 
 // Create vscode.TextDocument from text and run ShortLinkProvider on it.

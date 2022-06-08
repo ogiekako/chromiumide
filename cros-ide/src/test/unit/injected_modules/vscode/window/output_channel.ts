@@ -3,18 +3,7 @@
 // found in the LICENSE file.
 
 import type * as vscode from 'vscode'; // import types only
-
-class VoidOutputChannel implements vscode.OutputChannel {
-  constructor(public readonly name: string) {}
-
-  append(): void {}
-  appendLine(): void {}
-  replace(): void {}
-  clear(): void {}
-  show(): void {}
-  hide(): void {}
-  dispose(): void {}
-}
+import {VoidOutputChannel} from '../../../../testing/fakes';
 
 export function createOutputChannel(name: string): vscode.OutputChannel {
   return new VoidOutputChannel(name);

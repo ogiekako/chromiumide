@@ -5,7 +5,7 @@
 import 'jasmine';
 import * as vscode from 'vscode';
 import {TEST_ONLY} from '../../../features/upstart';
-import {FakeCancellationToken} from '../fakes/fake_cancellation_token';
+import {FakeCancellationToken} from '../../testing/fakes';
 import {closeDocument} from '../extension_testing';
 
 const {UpstartSymbolProvider} = TEST_ONLY;
