@@ -6,7 +6,7 @@ import 'jasmine';
 import * as vscode from 'vscode';
 import {Source} from '../../../common/common_util';
 import {WrapFs} from '../../../common/cros';
-import {Package, TEST_ONLY} from '../../../features/boards_packages';
+import {TEST_ONLY} from '../../../features/boards_packages';
 import {ChrootService} from '../../../services/chroot';
 import {
   buildFakeChroot,
@@ -18,7 +18,8 @@ import {
 import {installVscodeDouble} from '../doubles';
 import {fakeGetConfiguration} from '../fakes/workspace_configuration';
 
-const {Board, BoardPackageProvider, BoardsPackages} = TEST_ONLY;
+const {BoardItem, PackageItem, BoardPackageProvider, BoardsPackages} =
+  TEST_ONLY;
 
 describe('Boards and Packages view', () => {
   const {vscodeSpy} = installVscodeDouble();
@@ -44,7 +45,7 @@ describe('Boards and Packages view', () => {
       /* isInsideChroot = */ () => true
     );
 
-    const board = new Board('eve');
+    const board = new BoardItem('eve');
     await new BoardsPackages(chrootService).crosWorkonStart(board);
     expect(vscodeSpy.window.showErrorMessage.calls.argsFor(0)).toEqual([
       'cros_workon failed: could not find the package',
@@ -64,8 +65,8 @@ describe('Boards and Packages view', () => {
       /* isInsideChroot = */ () => true
     );
 
-    const board = new Board('eve');
-    const pkg = new Package(board, 'shill');
+    const board = new BoardItem('eve');
+    const pkg = new PackageItem(board, 'shill');
     await new BoardsPackages(chrootService).crosWorkonStop(pkg);
     expect(vscodeSpy.window.showErrorMessage.calls.argsFor(0)).toEqual([
       'cros_workon not found',
@@ -192,8 +193,8 @@ chromeos-base/shill`;
       new WrapFs('/path/to/chromeos' as Source)
     );
 
-    const board = new Board('amd64-generic');
-    const pkg = new Package(board, 'chromeos-base/shill');
+    const board = new BoardItem('amd64-generic');
+    const pkg = new PackageItem(board, 'chromeos-base/shill');
     await new BoardsPackages(chrootService).openEbuild(pkg);
 
     expect(vscodeSpy.workspace.openTextDocument).toHaveBeenCalledWith(

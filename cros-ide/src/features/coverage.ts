@@ -38,11 +38,7 @@ export class Coverage {
       ),
       vscode.commands.registerCommand(
         'cros-ide.coverage.showReport',
-        (pkg: Package) => {
-          vscode.window.showInformationMessage(
-            `TODO: show coverage report for ${pkg.name} (${pkg.board.name})`
-          );
-        }
+        (pkg: Package) => this.showReport(pkg)
       )
     );
 
@@ -55,6 +51,16 @@ export class Coverage {
         this.updateDecorations();
       })
     );
+  }
+
+  private async showReport(pkg: Package) {
+    const index = await this.findCoverageFile(pkg, 'index.html');
+    if (!index) {
+      vscode.window.showInformationMessage('Report not found');
+      return;
+    }
+    // TODO(ttylenda): This will not work on code-server running over SSH tunnel.
+    await vscode.env.openExternal(vscode.Uri.file(index));
   }
 
   private async updateDecorations() {
@@ -110,17 +116,20 @@ export class Coverage {
     return {covered: coveredRanges, uncovered: uncoveredRanges};
   }
 
-  /** Read coverage.json of a package. */
-  private async readPkgCoverage(
-    pkg: string
-  ): Promise<CoverageJson | undefined> {
+  private async findCoverageFile(
+    pkg: Package,
+    fileName: string
+  ): Promise<string | undefined> {
     const chroot = this.chrootService.chroot();
     if (!chroot) {
       return undefined;
     }
 
+    // TODO(ttylenda): find a cleaner way of normalizing the package name.
+    const pkgPart = pkg.name.indexOf('/') === -1 ? `*/${pkg.name}` : pkg.name;
+
     const globPattern = chroot.realpath(
-      `${coverageDir}*/${pkg}*/*/coverage.json`
+      `${coverageDir}/${pkgPart}*/*/${fileName}`
     );
 
     let matches: string[];
@@ -130,7 +139,17 @@ export class Coverage {
       console.log(e);
       return undefined;
     }
-    const [coverageJson] = matches;
+
+    return matches[0];
+  }
+
+  /** Read coverage.json of a package. */
+  private async readPkgCoverage(
+    pkgName: string
+  ): Promise<CoverageJson | undefined> {
+    // TODO(ttylenda): do not hardcode amd64-generic
+    const pkg = {name: pkgName, board: {name: 'amd64-generic'}};
+    const coverageJson = await this.findCoverageFile(pkg, 'coverage.json');
     if (!coverageJson) {
       return undefined;
     }

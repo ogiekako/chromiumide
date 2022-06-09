@@ -88,7 +88,7 @@ class BoardsPackages {
     });
   }
 
-  async crosWorkonStart(board: Board) {
+  async crosWorkonStart(board: BoardItem) {
     const pkgName = await vscode.window.showInputBox({
       title: 'Package',
       placeHolder: 'package, e.g. chromeos-base/shill',
@@ -107,7 +107,7 @@ class BoardsPackages {
     await this.crosWorkon(board.name, 'start', pkgName);
   }
 
-  async crosWorkonStop(pkg: Package) {
+  async crosWorkonStop(pkg: PackageItem) {
     metrics.send({
       category: 'interactive',
       group: 'package',
@@ -142,7 +142,7 @@ class BoardsPackages {
     }
   }
 
-  async openEbuild(pkg: Package) {
+  async openEbuild(pkg: PackageItem) {
     const res = await this.chrootService.exec(
       pkg.board.name === VIRTUAL_BOARDS_HOST
         ? 'equery'
@@ -196,13 +196,13 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
         return [];
       }
       return (await cros.getSetupBoardsAlphabetic(chroot))
-        .map(x => new Board(x))
-        .concat([new Board(VIRTUAL_BOARDS_HOST)]);
+        .map(x => new BoardItem(x))
+        .concat([new BoardItem(VIRTUAL_BOARDS_HOST)]);
     }
-    if (element && element instanceof Board) {
+    if (element && element instanceof BoardItem) {
       return (
         await this.getWorkedOnPackages(this.chrootService, element.name)
-      ).map(x => new Package(element, x));
+      ).map(x => new PackageItem(element, x));
     }
     return [];
   }
@@ -238,10 +238,21 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
   }
 }
 
+/** Board in "Boards and Packages" view. */
+export interface Board {
+  name: string;
+}
+
+/** Package in "Boards and Packages" view. */
+export interface Package {
+  board: Board;
+  name: string;
+}
+
 class ChrootItem extends vscode.TreeItem {}
 
 // TODO(ttylenda): extract classes for actual boards and host.
-class Board extends ChrootItem {
+class BoardItem extends ChrootItem implements Board {
   constructor(readonly name: string) {
     super(name, vscode.TreeItemCollapsibleState.Collapsed);
     this.iconPath =
@@ -253,8 +264,8 @@ class Board extends ChrootItem {
   contextValue = 'board';
 }
 
-export class Package extends ChrootItem {
-  constructor(readonly board: Board, readonly name: string) {
+class PackageItem extends ChrootItem implements Package {
+  constructor(readonly board: BoardItem, readonly name: string) {
     super(name, vscode.TreeItemCollapsibleState.None);
   }
 
@@ -263,7 +274,8 @@ export class Package extends ChrootItem {
 }
 
 export const TEST_ONLY = {
-  Board,
+  BoardItem,
+  PackageItem,
   BoardPackageProvider,
   BoardsPackages,
 };
