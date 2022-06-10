@@ -14,7 +14,9 @@ export function activate(
   statusManager: bgTaskStatus.StatusManager
 ) {
   const log = vscode.window.createOutputChannel('CrOS IDE: Liner');
-  vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => log.show());
+  context.subscriptions.push(
+    vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => log.show())
+  );
 
   const collection = vscode.languages.createDiagnosticCollection('cros-lint');
   if (vscode.window.activeTextEditor) {

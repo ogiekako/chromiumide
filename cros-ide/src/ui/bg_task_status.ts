@@ -11,16 +11,19 @@ import * as ideUtil from '../ide_util';
  *
  * @returns `StatusManager` which allows other packages to create tasks with a status.
  */
-export function activate(_context: vscode.ExtensionContext): StatusManager {
-  vscode.commands.registerCommand('cros-ide.showIdeLog', () => {
-    ideUtil.getUiLogger().show();
-  });
+export function activate(context: vscode.ExtensionContext): StatusManager {
+  context.subscriptions.push(
+    vscode.commands.registerCommand('cros-ide.showIdeLog', () => {
+      ideUtil.getUiLogger().show();
+    })
+  );
 
   const statusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right
   );
   statusBarItem.command = 'cros-ide-status.focus';
   statusBarItem.show();
+  context.subscriptions.push(statusBarItem);
 
   const statusManager = new StatusManagerImpl();
 
@@ -29,7 +32,9 @@ export function activate(_context: vscode.ExtensionContext): StatusManager {
 
   const statusTreeData = new StatusTreeData();
   statusManager.onChange(statusTreeData.refresh.bind(statusTreeData));
-  vscode.window.registerTreeDataProvider('cros-ide-status', statusTreeData);
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider('cros-ide-status', statusTreeData)
+  );
 
   return statusManager;
 }

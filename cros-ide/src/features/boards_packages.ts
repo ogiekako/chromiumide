@@ -8,41 +8,46 @@ import * as ideUtil from '../ide_util';
 import {ChrootService} from '../services/chroot';
 import * as metrics from './metrics/metrics';
 
-export async function activate(chrootService: ChrootService) {
+export async function activate(
+  context: vscode.ExtensionContext,
+  chrootService: ChrootService
+) {
   const boardPackageProvider = new BoardPackageProvider(chrootService);
   const boardsPackages = new BoardsPackages(chrootService);
 
-  vscode.commands.registerCommand('cros-ide.crosWorkonStart', board =>
-    boardsPackages.crosWorkonStart(board)
-  );
-  vscode.commands.registerCommand('cros-ide.crosWorkonStop', board =>
-    boardsPackages.crosWorkonStop(board)
-  );
-  vscode.commands.registerCommand('cros-ide.openEbuild', board =>
-    boardsPackages.openEbuild(board)
-  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('cros-ide.crosWorkonStart', board =>
+      boardsPackages.crosWorkonStart(board)
+    ),
+    vscode.commands.registerCommand('cros-ide.crosWorkonStop', board =>
+      boardsPackages.crosWorkonStop(board)
+    ),
+    vscode.commands.registerCommand('cros-ide.openEbuild', board =>
+      boardsPackages.openEbuild(board)
+    ),
 
-  vscode.commands.registerCommand('cros-ide.refreshBoardsPackages', () =>
-    boardPackageProvider.refresh()
-  );
+    vscode.commands.registerCommand('cros-ide.refreshBoardsPackages', () =>
+      boardPackageProvider.refresh()
+    ),
 
-  vscode.commands.registerCommand(
-    'cros-ide.dismissBoardsPkgsWelcome',
-    async () => {
-      await ideUtil
-        .getConfigRoot()
-        .update(
-          CONFIG_SHOW_WELCOME_MESSAGE,
-          false,
-          vscode.ConfigurationTarget.Global
-        );
-      boardPackageProvider.refresh();
-    }
-  );
+    vscode.commands.registerCommand(
+      'cros-ide.dismissBoardsPkgsWelcome',
+      async () => {
+        await ideUtil
+          .getConfigRoot()
+          .update(
+            CONFIG_SHOW_WELCOME_MESSAGE,
+            false,
+            vscode.ConfigurationTarget.Global
+          );
+        boardPackageProvider.refresh();
+      }
+    ),
 
-  vscode.window.registerTreeDataProvider(
-    'boards-packages',
-    boardPackageProvider
+    vscode.window.registerTreeDataProvider(
+      'boards-packages',
+      boardPackageProvider
+    )
   );
 
   await boardsPackages.createPackageWatches();

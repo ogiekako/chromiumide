@@ -71,7 +71,7 @@ export async function activate(
   });
 
   crosLint.activate(context, statusManager);
-  boardsPackages.activate(chrootService);
+  boardsPackages.activate(context, chrootService);
   shortLinkProvider.activate(context);
   codesearch.activate(context);
   cppCodeCompletion.activate(context, statusManager, chrootService);
