@@ -4,6 +4,8 @@
 
 import * as vscode from 'vscode';
 import * as ideUtil from '../../ide_util';
+import * as crosfleet from './crosfleet';
+import {isExperimentsEnabled} from './experiments';
 
 // Represents the type of a device.
 export enum DeviceCategory {
@@ -23,6 +25,8 @@ export interface OwnedDevice extends Device {
 
 export interface LeasedDevice extends Device {
   readonly category: DeviceCategory.LEASED;
+  readonly board: string | undefined;
+  readonly model: string | undefined;
 }
 
 /**
@@ -108,14 +112,43 @@ export class LeasedDeviceRepository implements vscode.Disposable {
     this.onDidChangeEmitter,
   ];
 
-  constructor() {}
+  constructor(private readonly crosfleetRunner: crosfleet.CrosfleetRunner) {
+    this.subscriptions.push(
+      crosfleetRunner.onDidChange(() => {
+        this.onDidChangeEmitter.fire();
+      })
+    );
+  }
 
-  dispose() {
+  dispose(): void {
     vscode.Disposable.from(...this.subscriptions).dispose();
   }
 
+  refresh(): void {
+    this.onDidChangeEmitter.fire();
+  }
+
+  async checkLogin(): Promise<boolean> {
+    if (!isExperimentsEnabled()) {
+      return false;
+    }
+    return await this.crosfleetRunner.checkLogin();
+  }
+
   async getDevices(): Promise<LeasedDevice[]> {
-    // TODO: Implement leasing.
-    return [];
+    if (!isExperimentsEnabled()) {
+      return [];
+    }
+    if (!(await this.checkLogin())) {
+      return [];
+    }
+
+    const leases = await this.crosfleetRunner.listLeases();
+    return leases.map(l => ({
+      category: DeviceCategory.LEASED,
+      hostname: l.hostname,
+      board: l.board,
+      model: l.model,
+    }));
   }
 }

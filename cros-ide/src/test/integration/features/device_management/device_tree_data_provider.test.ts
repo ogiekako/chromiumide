@@ -4,9 +4,11 @@
 
 import 'jasmine';
 import * as vscode from 'vscode';
+import * as crosfleet from '../../../../features/device_management/crosfleet';
 import * as repository from '../../../../features/device_management/device_repository';
 import * as provider from '../../../../features/device_management/device_tree_data_provider';
 import * as testing from '../../../testing';
+import * as fakes from '../../../testing/fakes';
 import * as repositoryUtil from './device_repository_util';
 
 interface RenderedTreeNode {
@@ -32,9 +34,17 @@ async function renderTree(
 }
 
 describe('Device tree data provider', () => {
+  const {fakeExec} = testing.installFakeExec();
+  const cipdRepository = fakes.installFakeCipd(fakeExec);
+
   const state = testing.cleanState(() => {
     const ownedDeviceRepository = new repository.OwnedDeviceRepository();
-    const leasedDeviceRepository = new repository.LeasedDeviceRepository();
+    const leasedDeviceRepository = new repository.LeasedDeviceRepository(
+      new crosfleet.CrosfleetRunner(
+        cipdRepository,
+        new fakes.VoidOutputChannel()
+      )
+    );
     const deviceTreeDataProvider = new provider.DeviceTreeDataProvider(
       ownedDeviceRepository,
       leasedDeviceRepository

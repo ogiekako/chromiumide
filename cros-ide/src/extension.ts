@@ -9,6 +9,7 @@
  */
 import * as vscode from 'vscode';
 import * as checkUpdates from './check_updates';
+import * as cipd from './common/cipd';
 import * as commonUtil from './common/common_util';
 import * as boardsPackages from './features/boards_packages';
 import * as codesearch from './features/codesearch';
@@ -58,6 +59,7 @@ export async function activate(
 
   const statusManager = bgTaskStatus.activate(context);
   const chrootService = chroot.activate(context);
+  const cipdRepository = new cipd.CipdRepository();
 
   // Activate metrics first so that other components can emit metrics on activation.
   metrics.activate(context);
@@ -86,7 +88,12 @@ export async function activate(
   targetBoard.activate(context, chrootService);
   feedback.activate(context);
   upstart.activate(context);
-  deviceManagement.activate(context, statusManager, chrootService);
+  deviceManagement.activate(
+    context,
+    statusManager,
+    chrootService,
+    cipdRepository
+  );
   hints.activate(context);
 
   if (ideUtil.getConfigRoot().get<boolean>('underDevelopment.testCoverage')) {
