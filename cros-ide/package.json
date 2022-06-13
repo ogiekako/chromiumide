@@ -26,6 +26,8 @@
     "onCommand:cros-ide.deviceManagement.connectToDeviceForScreen",
     "onCommand:cros-ide.deviceManagement.connectToDeviceForShell",
     "onCommand:cros-ide.deviceManagement.flashPrebuiltImage",
+    "onCommand:cros-ide.deviceManagement.crosfleetLogin",
+    "onCommand:cros-ide.deviceManagement.refreshLeases",
     "onCommand:cros-ide.refreshBoardsPackages",
     "onCommand:cros-ide.codeSearchOpenCurrentFile",
     "onCommand:cros-ide.codeSearchCopyCurrentFile",
@@ -78,6 +80,19 @@
         "category": "CrOS",
         "title": "Flash Image to Device",
         "icon": "$(cloud-download)",
+        "enablement": "config.cros-ide.underDevelopment.deviceManagement"
+      },
+      {
+        "command": "cros-ide.deviceManagement.crosfleetLogin",
+        "category": "CrOS",
+        "title": "Log in to crosfleet",
+        "enablement": "config.cros-ide.underDevelopment.deviceManagement"
+      },
+      {
+        "command": "cros-ide.deviceManagement.refreshLeases",
+        "category": "CrOS",
+        "title": "Refresh Leased Device List",
+        "icon": "$(refresh)",
         "enablement": "config.cros-ide.underDevelopment.deviceManagement"
       },
       {
@@ -216,6 +231,11 @@
           "command": "cros-ide.deviceManagement.deleteDevice",
           "when": "view == devices && viewItem == device-owned",
           "group": "inline@9"
+        },
+        {
+          "command": "cros-ide.deviceManagement.refreshLeases",
+          "when": "view == devices && viewItem == category-leased",
+          "group": "inline"
         },
         {
           "command": "cros-ide.crosWorkonStart",

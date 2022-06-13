@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import * as chroot from '../../../services/chroot';
+import * as crosfleet from '../crosfleet';
 import * as repository from '../device_repository';
 import * as provider from '../device_tree_data_provider';
 import * as sshConfig from '../ssh_config';
@@ -18,6 +19,7 @@ export interface CommandContext {
   readonly output: vscode.OutputChannel;
   readonly ownedDeviceRepository: repository.OwnedDeviceRepository;
   readonly leasedDeviceRepository: repository.LeasedDeviceRepository;
+  readonly crosfleetRunner: crosfleet.CrosfleetRunner;
   readonly sessions: Map<string, vnc.VncSession>;
 }
 

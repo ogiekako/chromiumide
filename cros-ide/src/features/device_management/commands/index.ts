@@ -4,15 +4,18 @@
 
 import * as vscode from 'vscode';
 import * as chroot from '../../../services/chroot';
+import * as crosfleet from '../crosfleet';
 import * as repository from '../device_repository';
 import * as provider from '../device_tree_data_provider';
 import * as vnc from '../vnc_session';
 import {CommandContext} from './common';
 import {connectToDeviceForShell} from './connect_ssh';
 import {connectToDeviceForScreen} from './connect_vnc';
+import {crosfleetLogin} from './crosfleet_login';
 import {addDevice} from './device_add';
 import {deleteDevice} from './device_delete';
 import {flashPrebuiltImage} from './flash_prebuilt_image';
+import {refreshLeases} from './lease_refresh';
 
 /**
  * Registers VSCode commands for device management features.
@@ -22,7 +25,8 @@ export function registerCommands(
   chrootService: chroot.ChrootService,
   output: vscode.OutputChannel,
   ownedDeviceRepository: repository.OwnedDeviceRepository,
-  leasedDeviceRepository: repository.LeasedDeviceRepository
+  leasedDeviceRepository: repository.LeasedDeviceRepository,
+  crosfleetRunner: crosfleet.CrosfleetRunner
 ): vscode.Disposable {
   const sessions = new Map<string, vnc.VncSession>();
 
@@ -32,6 +36,7 @@ export function registerCommands(
     output,
     ownedDeviceRepository,
     leasedDeviceRepository,
+    crosfleetRunner,
     sessions,
   };
 
@@ -54,6 +59,14 @@ export function registerCommands(
     vscode.commands.registerCommand(
       'cros-ide.deviceManagement.flashPrebuiltImage',
       (item?: provider.DeviceItem) => flashPrebuiltImage(context, item)
+    ),
+    vscode.commands.registerCommand(
+      'cros-ide.deviceManagement.crosfleetLogin',
+      () => crosfleetLogin(context)
+    ),
+    vscode.commands.registerCommand(
+      'cros-ide.deviceManagement.refreshLeases',
+      () => refreshLeases(context)
     ),
     vscode.commands.registerCommand(
       'cros-ide.deviceManagement.openLogs',

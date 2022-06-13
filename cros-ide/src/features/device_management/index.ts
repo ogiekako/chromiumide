@@ -37,7 +37,8 @@ export async function activate(
     chrootService,
     output,
     ownedDeviceRepository,
-    leasedDeviceRepository
+    leasedDeviceRepository,
+    crosfleetRunner
   );
   const deviceTreeDataProvider = new provider.DeviceTreeDataProvider(
     ownedDeviceRepository,
