@@ -22,7 +22,8 @@ export async function connectToDeviceForShell(
   const hostname = await promptKnownHostnameIfNeeded(
     'Connect to Device',
     item,
-    context.ownedDeviceRepository
+    context.ownedDeviceRepository,
+    context.leasedDeviceRepository
   );
   if (!hostname) {
     return;

@@ -46,16 +46,24 @@ export async function promptNewHostname(
 export async function promptKnownHostnameIfNeeded(
   title: string,
   item: provider.DeviceItem | undefined,
-  ownedDeviceRepository: repository.OwnedDeviceRepository
+  ownedDeviceRepository: repository.OwnedDeviceRepository,
+  leasedDeviceRepository: repository.LeasedDeviceRepository
 ): Promise<string | undefined> {
   if (item) {
     return item.hostname;
   }
 
-  const hostnames = ownedDeviceRepository
-    .getDevices()
-    .map(device => device.hostname);
-  return await vscode.window.showQuickPick(hostnames, {
+  const hostnamesPromise = (async () => {
+    const ownedHostnames = ownedDeviceRepository
+      .getDevices()
+      .map(device => device.hostname);
+    const leasedHostnames = (await leasedDeviceRepository.getDevices()).map(
+      device => device.hostname
+    );
+    return [...ownedHostnames, ...leasedHostnames];
+  })();
+
+  return await vscode.window.showQuickPick(hostnamesPromise, {
     title,
   });
 }

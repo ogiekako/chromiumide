@@ -37,7 +37,8 @@ export async function flashPrebuiltImage(
   const hostname = await promptKnownHostnameIfNeeded(
     'Device to Flash',
     item,
-    context.ownedDeviceRepository
+    context.ownedDeviceRepository,
+    context.leasedDeviceRepository
   );
   if (!hostname) {
     return;

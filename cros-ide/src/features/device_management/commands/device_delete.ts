@@ -19,7 +19,8 @@ export async function deleteDevice(
   const hostname = await promptKnownHostnameIfNeeded(
     'Delete Device',
     item,
-    context.ownedDeviceRepository
+    context.ownedDeviceRepository,
+    context.leasedDeviceRepository
   );
   if (!hostname) {
     return;
