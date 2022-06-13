@@ -9,6 +9,7 @@ import * as repository from '../../../../features/device_management/device_repos
 import * as provider from '../../../../features/device_management/device_tree_data_provider';
 import * as config from '../../../../services/config';
 import * as testing from '../../../testing';
+import * as doubles from '../../doubles';
 import * as fakes from '../../../testing/fakes';
 
 interface RenderedTreeNode {
@@ -34,8 +35,16 @@ async function renderTree(
 }
 
 describe('Device tree data provider', () => {
+  const {vscodeSpy, vscodeEmitters} = doubles.installVscodeDouble();
+  doubles.installFakeConfigs(vscodeSpy, vscodeEmitters);
   const {fakeExec} = testing.installFakeExec();
   const cipdRepository = fakes.installFakeCipd(fakeExec);
+  const fakeCrosfleet = fakes.installFakeCrosfleet(fakeExec, cipdRepository);
+
+  // Enable experimental features.
+  beforeEach(async () => {
+    await config.underDevelopment.deviceManagement.update(true);
+  });
 
   const state = testing.cleanState(() => {
     const ownedDeviceRepository = new repository.OwnedDeviceRepository();
@@ -67,23 +76,51 @@ describe('Device tree data provider', () => {
       'localhost:1111',
       'localhost:2222',
     ]);
+    fakeCrosfleet.setLeases([
+      {hostname: 'cros333', board: 'board3', model: 'model3'},
+      {hostname: 'cros444', board: 'board4', model: 'model4'},
+    ]);
+
     const rendered = await renderTree(state.deviceTreeDataProvider);
     expect(rendered).toEqual([
       {
         item: new provider.CategoryItem(repository.DeviceCategory.OWNED),
         children: [
           {
-            item: new provider.DeviceItem(
-              'localhost:1111',
-              repository.DeviceCategory.OWNED
-            ),
+            item: new provider.OwnedDeviceItem({
+              category: repository.DeviceCategory.OWNED,
+              hostname: 'localhost:1111',
+            }),
             children: [],
           },
           {
-            item: new provider.DeviceItem(
-              'localhost:2222',
-              repository.DeviceCategory.OWNED
-            ),
+            item: new provider.OwnedDeviceItem({
+              category: repository.DeviceCategory.OWNED,
+              hostname: 'localhost:2222',
+            }),
+            children: [],
+          },
+        ],
+      },
+      {
+        item: new provider.CategoryItem(repository.DeviceCategory.LEASED),
+        children: [
+          {
+            item: new provider.LeasedDeviceItem({
+              category: repository.DeviceCategory.LEASED,
+              hostname: 'cros333',
+              board: 'board3',
+              model: 'model3',
+            }),
+            children: [],
+          },
+          {
+            item: new provider.LeasedDeviceItem({
+              category: repository.DeviceCategory.LEASED,
+              hostname: 'cros444',
+              board: 'board4',
+              model: 'model4',
+            }),
             children: [],
           },
         ],
@@ -93,6 +130,8 @@ describe('Device tree data provider', () => {
 
   it('builds a correct tree for initial state', async () => {
     await config.deviceManagement.devices.update([]);
+    fakeCrosfleet.setLeases([]);
+
     const rendered = await renderTree(state.deviceTreeDataProvider);
     expect(rendered).toEqual([
       {
@@ -100,6 +139,43 @@ describe('Device tree data provider', () => {
         children: [
           {
             item: new provider.PlaceholderItem('No device configured yet'),
+            children: [],
+          },
+        ],
+      },
+      {
+        item: new provider.CategoryItem(repository.DeviceCategory.LEASED),
+        children: [
+          {
+            item: new provider.PlaceholderItem('No leased device'),
+            children: [],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('shows login button if logged out', async () => {
+    await config.deviceManagement.devices.update([]);
+    fakeCrosfleet.setLeases([]);
+    fakeCrosfleet.setLoggedIn(false);
+
+    const rendered = await renderTree(state.deviceTreeDataProvider);
+    expect(rendered).toEqual([
+      {
+        item: new provider.CategoryItem(repository.DeviceCategory.OWNED),
+        children: [
+          {
+            item: new provider.PlaceholderItem('No device configured yet'),
+            children: [],
+          },
+        ],
+      },
+      {
+        item: new provider.CategoryItem(repository.DeviceCategory.LEASED),
+        children: [
+          {
+            item: new provider.LoginItem(),
             children: [],
           },
         ],

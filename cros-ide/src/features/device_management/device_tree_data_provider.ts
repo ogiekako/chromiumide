@@ -3,27 +3,41 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import * as config from '../../services/config';
 import * as deviceRepository from './device_repository';
 
 export enum ItemKind {
   DEVICE,
   CATEGORY,
   PLACEHOLDER,
+  LOGIN,
 }
 
 export class DeviceItem extends vscode.TreeItem {
   readonly kind = ItemKind.DEVICE;
+  readonly hostname: string;
+  readonly iconPath = new vscode.ThemeIcon('device-desktop');
 
-  constructor(
-    public readonly hostname: string,
-    public readonly category: deviceRepository.DeviceCategory
-  ) {
-    super(hostname, vscode.TreeItemCollapsibleState.None);
-    this.iconPath = new vscode.ThemeIcon('device-desktop');
-    this.contextValue =
-      category === deviceRepository.DeviceCategory.OWNED
-        ? 'device-owned'
-        : 'device-leased';
+  constructor(device: deviceRepository.Device) {
+    super(device.hostname, vscode.TreeItemCollapsibleState.None);
+    this.hostname = device.hostname;
+  }
+}
+
+export class OwnedDeviceItem extends DeviceItem {
+  readonly contextValue = 'device-owned';
+
+  constructor(public readonly device: deviceRepository.OwnedDevice) {
+    super(device);
+  }
+}
+
+export class LeasedDeviceItem extends DeviceItem {
+  readonly contextValue = 'device-leased';
+
+  constructor(public readonly device: deviceRepository.LeasedDevice) {
+    super(device);
+    this.description = `${device.board ?? '???'}/${device.model ?? '???'}`;
   }
 }
 
@@ -52,7 +66,24 @@ export class PlaceholderItem extends vscode.TreeItem {
   }
 }
 
-type Item = DeviceItem | CategoryItem | PlaceholderItem;
+export class LoginItem extends vscode.TreeItem {
+  readonly kind = ItemKind.LOGIN;
+  readonly command: vscode.Command = {
+    title: 'Log in to Crosfleet',
+    command: 'cros-ide.deviceManagement.crosfleetLogin',
+  };
+
+  constructor() {
+    super('Click here to log in...', vscode.TreeItemCollapsibleState.None);
+  }
+}
+
+type Item =
+  | OwnedDeviceItem
+  | LeasedDeviceItem
+  | CategoryItem
+  | PlaceholderItem
+  | LoginItem;
 
 /**
  * Provides data for the device tree view.
@@ -90,26 +121,40 @@ export class DeviceTreeDataProvider
 
   async getChildren(parent?: Item): Promise<Item[]> {
     if (parent === undefined) {
-      return [
-        new CategoryItem(deviceRepository.DeviceCategory.OWNED),
-        // TODO(nya): Show this item once we start supporting leased devices.
-        // new CategoryItem(deviceRepository.DeviceCategory.LEASED),
-      ];
+      const items = [new CategoryItem(deviceRepository.DeviceCategory.OWNED)];
+      if (config.underDevelopment.deviceManagement.get()) {
+        items.push(new CategoryItem(deviceRepository.DeviceCategory.LEASED));
+      }
+      return items;
     }
+
     if (parent.kind === ItemKind.CATEGORY) {
-      let devices: deviceRepository.Device[];
+      const items: Item[] = [];
+      let needLogin = false;
       switch (parent.category) {
         case deviceRepository.DeviceCategory.OWNED:
-          devices = this.ownedDeviceRepository.getDevices();
+          items.push(
+            ...this.ownedDeviceRepository
+              .getDevices()
+              .map(d => new OwnedDeviceItem(d))
+          );
           break;
         case deviceRepository.DeviceCategory.LEASED:
-          devices = await this.leasedDeviceRepository.getDevices();
+          if (!(await this.leasedDeviceRepository.checkLogin())) {
+            needLogin = true;
+          } else {
+            items.push(
+              ...(await this.leasedDeviceRepository.getDevices()).map(
+                d => new LeasedDeviceItem(d)
+              )
+            );
+          }
           break;
       }
-      const items: Item[] = devices.map(
-        d => new DeviceItem(d.hostname, parent.category)
-      );
-      if (items.length === 0) {
+
+      if (needLogin) {
+        items.push(new LoginItem());
+      } else if (items.length === 0) {
         items.push(
           new PlaceholderItem(
             parent.category === deviceRepository.DeviceCategory.OWNED
