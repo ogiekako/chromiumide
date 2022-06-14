@@ -88,6 +88,8 @@ export class ChrootService {
 
   onUpdate() {
     const chroot = this.findChroot();
+    // Context for the custom `when` clause in boards and packages view.
+    vscode.commands.executeCommand('setContext', 'cros-ide.chrootPath', chroot);
     if (chroot === undefined) {
       this.setChroot(undefined);
       this.setSource(undefined);
