@@ -5,12 +5,18 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
+import * as bgTaskStatus from '../ui/bg_task_status';
 import * as commonUtil from '../common/common_util';
+import * as logs from '../logs';
 
 // The gn executable file path in chroot.
 const GN_PATH = '/usr/bin/gn';
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(
+  context: vscode.ExtensionContext,
+  statusManager: bgTaskStatus.StatusManager,
+  log: logs.LoggingBundle
+) {
   // Format a GN file under platform2 on save
   // because cros lint requires formatting upon upload.
   context.subscriptions.push(
@@ -24,17 +30,27 @@ export function activate(context: vscode.ExtensionContext) {
       fs.promises.realpath(document.uri.fsPath).then(realpath => {
         const chroot = commonUtil.findChroot(realpath);
         if (chroot === undefined) {
-          console.warn('chroot not found');
+          log.channel.appendLine(
+            'ERROR: chroot not found when attempting `gn format`'
+          );
           return;
         }
         const args = ['format', realpath];
         commonUtil
           .exec(path.join(chroot, GN_PATH), args, {
+            logger: log.channel,
             ignoreNonZeroExit: true,
+            logStdout: true,
           })
           .then(res => {
             if (res instanceof Error) {
-              console.warn('failed to run `gn format`: ' + res.message);
+              log.channel.appendLine(
+                'ERROR: failed to run `gn format`: ' + res.message
+              );
+              statusManager.setTask(log.taskId, {
+                status: bgTaskStatus.TaskStatus.ERROR,
+                command: log.showLogCommand,
+              });
               return;
             }
             // Exit status is 1 for all of these cases:
@@ -46,8 +62,8 @@ export function activate(context: vscode.ExtensionContext) {
               res.exitStatus === 1 &&
               res.stdout.includes("ERROR Couldn't read")
             ) {
-              console.warn(
-                '`gn format` command exited with error: ' + res.stdout
+              log.channel.appendLine(
+                'ERROR: `gn format` command exited with error: ' + res.stdout
               );
             }
           });

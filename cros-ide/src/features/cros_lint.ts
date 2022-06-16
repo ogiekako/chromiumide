@@ -8,16 +8,13 @@ import * as vscode from 'vscode';
 import * as commonUtil from '../common/common_util';
 import * as metrics from '../features/metrics/metrics';
 import * as bgTaskStatus from '../ui/bg_task_status';
+import * as logs from '../logs';
 
 export function activate(
   context: vscode.ExtensionContext,
-  statusManager: bgTaskStatus.StatusManager
+  statusManager: bgTaskStatus.StatusManager,
+  log: logs.LoggingBundle
 ) {
-  const log = vscode.window.createOutputChannel('CrOS IDE: Linter');
-  context.subscriptions.push(
-    vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => log.show())
-  );
-
   const collection = vscode.languages.createDiagnosticCollection('cros-lint');
   if (vscode.window.activeTextEditor) {
     updateCrosLintDiagnostics(
@@ -114,19 +111,12 @@ const lintConfigs = new Map<string, LintConfig>([
   ],
 ]);
 
-const LINTER_TASK_ID = 'Linter';
-
-const SHOW_LOG_COMMAND: vscode.Command = {
-  command: 'cros-ide.showLintLog',
-  title: '',
-};
-
 // TODO(ttylenda): Consider making it a class and move statusManager and log to the constructor.
 async function updateCrosLintDiagnostics(
   document: vscode.TextDocument,
   collection: vscode.DiagnosticCollection,
   statusManager: bgTaskStatus.StatusManager,
-  log: vscode.OutputChannel
+  log: logs.LoggingBundle
 ): Promise<void> {
   if (document && document.uri.scheme === 'file') {
     const lintConfig = lintConfigs.get(document.languageId);
@@ -143,20 +133,22 @@ async function updateCrosLintDiagnostics(
     const realpath = await fs.promises.realpath(document.uri.fsPath);
     const name = lintConfig.executable(realpath);
     if (!name) {
-      log.append(`Could not find lint executable for ${document.uri.fsPath}\n`);
+      log.channel.append(
+        `Could not find lint executable for ${document.uri.fsPath}\n`
+      );
       return;
     }
     const args = lintConfig.arguments(realpath);
     const res = await commonUtil.exec(name, args, {
-      logger: log,
+      logger: log.channel,
       ignoreNonZeroExit: true,
       logStdout: true,
     });
     if (res instanceof Error) {
-      log.append(res.message);
-      statusManager.setTask(LINTER_TASK_ID, {
+      log.channel.append(res.message);
+      statusManager.setTask(log.taskId, {
         status: bgTaskStatus.TaskStatus.ERROR,
-        command: SHOW_LOG_COMMAND,
+        command: log.showLogCommand,
       });
       return;
     }
@@ -164,12 +156,12 @@ async function updateCrosLintDiagnostics(
     const diagnostics = lintConfig.parse(stdout, stderr, document);
     collection.set(document.uri, diagnostics);
     if (res.exitStatus !== 0 && diagnostics.length === 0) {
-      log.append(
+      log.channel.append(
         `lint command returned ${res.exitStatus}, but no diagnostics were parsed by CrOS IDE\n`
       );
-      statusManager.setTask(LINTER_TASK_ID, {
+      statusManager.setTask(log.taskId, {
         status: bgTaskStatus.TaskStatus.ERROR,
-        command: SHOW_LOG_COMMAND,
+        command: log.showLogCommand,
       });
       metrics.send({
         category: 'error',
@@ -178,9 +170,9 @@ async function updateCrosLintDiagnostics(
       });
       return;
     }
-    statusManager.setTask(LINTER_TASK_ID, {
+    statusManager.setTask(log.taskId, {
       status: bgTaskStatus.TaskStatus.OK,
-      command: SHOW_LOG_COMMAND,
+      command: log.showLogCommand,
     });
     metrics.send({
       category: 'background',

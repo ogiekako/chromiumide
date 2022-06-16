@@ -28,6 +28,7 @@ import * as upstart from './features/upstart';
 import * as ideUtil from './ide_util';
 import * as chroot from './services/chroot';
 import * as bgTaskStatus from './ui/bg_task_status';
+import * as logs from './logs';
 
 export interface ExtensionApi {
   // ExtensionContext passed to the activation function.
@@ -65,6 +66,9 @@ export async function activate(
     ideUtil.getUiLogger().show()
   );
 
+  // The logger that should be used by linters/code-formatters.
+  const linterLogger = logs.createLinterLoggingBundle(context);
+
   // We need an item in the IDE status, which lets users discover the UI log. Since UI actions
   // which result in an error should show a popup, we will not be changing the status
   statusManager.setTask('UI Actions', {
@@ -72,7 +76,8 @@ export async function activate(
     command: ideUtil.SHOW_UI_LOG,
   });
 
-  crosLint.activate(context, statusManager);
+  crosLint.activate(context, statusManager, linterLogger);
+  gn.activate(context, statusManager, linterLogger);
   boardsPackages.activate(context, chrootService);
   shortLinkProvider.activate(context);
   codesearch.activate(context);
@@ -81,7 +86,6 @@ export async function activate(
   targetBoard.activate(context, chrootService);
   feedback.activate(context);
   upstart.activate(context);
-  gn.activate(context);
   deviceManagement.activate(context, statusManager, chrootService);
   hints.activate(context);
 
