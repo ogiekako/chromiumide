@@ -53,7 +53,7 @@ describe('Sudo service', () => {
     );
 
     const result = await sudo.execSudo('hello', ['world'], {
-      sudoReason: 'Greeting',
+      sudoReason: 'to greet',
     });
     expect(result).toEqual({
       exitStatus: 0,
@@ -70,7 +70,7 @@ describe('Sudo service', () => {
     );
 
     const result = await sudo.execSudo('hello', ['world'], {
-      sudoReason: 'Greeting',
+      sudoReason: 'to greet',
     });
     expect(result).toEqual({
       exitStatus: 0,
@@ -88,7 +88,7 @@ describe('Sudo service', () => {
     );
 
     const result = await sudo.execSudo('hello', ['world'], {
-      sudoReason: 'Greeting',
+      sudoReason: 'to greet',
     });
     expect(result).toBeInstanceOf(Error);
   });

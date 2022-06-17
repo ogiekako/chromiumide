@@ -231,7 +231,7 @@ class Ebuild {
       {
         logger: this.output,
         logStdout: true,
-        sudoReason: 'Generating C++ cross reference',
+        sudoReason: 'to generate C++ cross references',
       }
     );
     if (res instanceof Error) {

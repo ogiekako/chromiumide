@@ -129,7 +129,7 @@ class BoardsPackages {
         logger: ideUtil.getUiLogger(),
         logStdout: true,
         ignoreNonZeroExit: true,
-        sudoReason: 'Running cros_workon in chroot',
+        sudoReason: 'to run cros_workon in chroot',
       }
     );
     if (res instanceof Error) {
@@ -151,7 +151,7 @@ class BoardsPackages {
       {
         logger: ideUtil.getUiLogger(),
         logStdout: true,
-        sudoReason: 'Querying ebuild path',
+        sudoReason: 'to query ebuild path',
       }
     );
     if (res instanceof Error) {
@@ -228,7 +228,7 @@ class BoardPackageProvider implements vscode.TreeDataProvider<ChrootItem> {
       {
         logger: ideUtil.getUiLogger(),
         logStdout: true,
-        sudoReason: 'Getting worked on packages in chroot',
+        sudoReason: 'to get worked on packages in chroot',
       }
     );
     if (res instanceof Error) {

@@ -19,8 +19,8 @@ export const onDidRunSudoWithPassword = onDidRunSudoWithPasswordEmitter.event;
 
 export interface SudoExecOptions extends commonUtil.ExecOptions {
   /**
-   * String that tells the user why password is required.
-   * Example: 'Generating C++ cross reference'
+   * String that tells the user why sudo is required. It must start with "to ".
+   * Example: 'to generate C++ cross references'
    */
   sudoReason: string;
 }
@@ -35,7 +35,7 @@ export async function execSudo(
   args: string[],
   options: SudoExecOptions
 ): ReturnType<typeof commonUtil.exec> {
-  const askpass = await AskpassServer.start(name, options);
+  const askpass = await AskpassServer.start(options);
   try {
     const result = await commonUtil.exec(
       'sudo',
@@ -69,7 +69,6 @@ class AskpassServer {
   public attempts = 0;
 
   private constructor(
-    private readonly name: string,
     private readonly options: SudoExecOptions,
     private readonly server: net.Server,
     private readonly tempDir: string
@@ -78,10 +77,7 @@ class AskpassServer {
     server.on('error', () => {}); // ignore errors
   }
 
-  static async start(
-    name: string,
-    options: SudoExecOptions
-  ): Promise<AskpassServer> {
+  static async start(options: SudoExecOptions): Promise<AskpassServer> {
     const tempDir = await fs.promises.mkdtemp(
       path.join(os.tmpdir(), 'cros-ide-askpass.')
     );
@@ -107,7 +103,7 @@ sys.stdout.write(sock.makefile().read())
       server.listen(socketPath, resolve);
     });
 
-    return new AskpassServer(name, options, server, tempDir);
+    return new AskpassServer(options, server, tempDir);
   }
 
   async stop(): Promise<void> {
@@ -125,8 +121,8 @@ sys.stdout.write(sock.makefile().read())
     (async () => {
       const password = await vscode.window.showInputBox({
         password: true,
-        title: 'Password to run ' + path.basename(this.name),
-        prompt: this.options.sudoReason,
+        title: `sudo password for ${os.userInfo().username}`,
+        prompt: `CrOS IDE needs your password ${this.options.sudoReason}`,
         ignoreFocusOut: true,
       });
 

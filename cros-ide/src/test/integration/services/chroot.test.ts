@@ -36,7 +36,7 @@ describe('chroot service', () => {
       exactMatch(['1'], async () => '1\n')
     );
     const res = (await cros.exec('echo', ['1'], {
-      sudoReason: '',
+      sudoReason: 'to echo',
     })) as ExecResult;
     expect(res.stdout).toBe('1\n');
   });
@@ -54,7 +54,7 @@ describe('chroot service', () => {
       exactMatch(['--', 'echo', '1'], async () => '1\n')
     );
     const res = (await cros.exec('echo', ['1'], {
-      sudoReason: '',
+      sudoReason: 'to echo',
     })) as ExecResult;
     expect(res.stdout).toBe('1\n');
   });
@@ -72,7 +72,7 @@ describe('chroot service', () => {
       exactMatch(['--', 'false'], async () => new Error('failed'))
     );
 
-    expect(await cros.exec('false', [], {sudoReason: ''})).toEqual(
+    expect(await cros.exec('false', [], {sudoReason: 'to false'})).toEqual(
       new Error('failed')
     );
   });

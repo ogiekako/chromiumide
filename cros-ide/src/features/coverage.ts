@@ -92,7 +92,7 @@ export class Coverage {
       {
         logger: this.output,
         logStdout: true,
-        sudoReason: 'Generating test coverage',
+        sudoReason: 'to generate test coverage',
       }
     );
     const statusOk = !(res instanceof Error) && res.exitStatus === 0;

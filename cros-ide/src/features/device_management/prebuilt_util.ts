@@ -21,7 +21,7 @@ export async function listPrebuiltVersions(
     ['ls', `gs://chromeos-image-archive/${board}-release/`],
     {
       logger: logger,
-      sudoReason: 'Listing available prebuilt images',
+      sudoReason: 'to list available prebuilt images',
     }
   );
   if (result instanceof Error) {
