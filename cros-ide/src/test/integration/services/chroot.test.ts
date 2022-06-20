@@ -211,4 +211,127 @@ describe('chroot detection', () => {
     );
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
   });
+
+  it('rejects updates that would change a defined chroot (two chroots)', async () => {
+    // Build two chroots.
+    const crosCheckout1 = path.join(temp.path, 'cros-1');
+    await fs.promises.mkdir(crosCheckout1);
+    await buildFakeChroot(crosCheckout1);
+
+    const crosCheckout2 = path.join(temp.path, 'cros-2');
+    await fs.promises.mkdir(crosCheckout2);
+    await buildFakeChroot(crosCheckout2);
+
+    // Start working in one of them.
+    (vscode.workspace as Mutable<typeof vscode.workspace>).workspaceFolders = [
+      {
+        uri: vscode.Uri.file('/some/path/'),
+        name: 'path',
+        index: 1,
+      },
+      {
+        uri: vscode.Uri.file(path.join(crosCheckout1, 'one/source/folder')),
+        name: 'folder',
+        index: 2,
+      },
+    ];
+    const cros = new ChrootService(
+      undefined,
+      undefined,
+      /* isInsideChroot = */ () => false
+    );
+    cros.onUpdate();
+
+    expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
+    expect(cros.chroot()?.root).toEqual(
+      path.join(crosCheckout1, 'chroot') as Chroot
+    );
+
+    // Then change it (this is somewhat unrealistic,
+    // as we would go through a step of having two chroots first).
+    (vscode.workspace as Mutable<typeof vscode.workspace>).workspaceFolders = [
+      {
+        uri: vscode.Uri.file('/some/path/'),
+        name: 'path',
+        index: 1,
+      },
+      {
+        uri: vscode.Uri.file(path.join(crosCheckout2, 'source/folder/two')),
+        name: 'two',
+        index: 2,
+      },
+    ];
+    cros.onUpdate();
+
+    expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalled();
+    expect(cros.chroot()?.root).toEqual(
+      // unchanged
+      path.join(crosCheckout1, 'chroot') as Chroot
+    );
+  });
+
+  it('rejects updates that would change a defined chroot (mutiple chroots)', async () => {
+    const crosCheckout1 = path.join(temp.path, 'cros-1');
+    await fs.promises.mkdir(crosCheckout1);
+    await buildFakeChroot(crosCheckout1);
+
+    const crosCheckout2 = path.join(temp.path, 'cros-2');
+    await fs.promises.mkdir(crosCheckout2);
+    await buildFakeChroot(crosCheckout2);
+
+    const crosCheckout3 = path.join(temp.path, 'cros-3');
+    await fs.promises.mkdir(crosCheckout3);
+    await buildFakeChroot(crosCheckout3);
+
+    (vscode.workspace as Mutable<typeof vscode.workspace>).workspaceFolders = [
+      {
+        uri: vscode.Uri.file('/some/path/'),
+        name: 'path',
+        index: 1,
+      },
+      {
+        uri: vscode.Uri.file(path.join(crosCheckout1, 'one/source/folder')),
+        name: 'folder',
+        index: 2,
+      },
+    ];
+    const cros = new ChrootService(
+      undefined,
+      undefined,
+      /* isInsideChroot = */ () => false
+    );
+    cros.onUpdate();
+
+    expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
+    expect(cros.chroot()?.root).toEqual(
+      path.join(crosCheckout1, 'chroot') as Chroot
+    );
+
+    // Then change it (this is somewhat unrealistic,
+    // as we would go through a step of having two chroots first).
+    (vscode.workspace as Mutable<typeof vscode.workspace>).workspaceFolders = [
+      {
+        uri: vscode.Uri.file('/some/path/'),
+        name: 'path',
+        index: 1,
+      },
+      {
+        uri: vscode.Uri.file(path.join(crosCheckout2, 'source/folder/two')),
+        name: 'two',
+        index: 2,
+      },
+      {
+        uri: vscode.Uri.file(path.join(crosCheckout3, 'source/folder/three')),
+        name: 'three',
+        index: 3,
+      },
+    ];
+    cros.onUpdate();
+
+    expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalled();
+    expect(cros.chroot()?.root).toEqual(
+      // unchanged
+      path.join(crosCheckout1, 'chroot') as Chroot
+    );
+  });
 });
