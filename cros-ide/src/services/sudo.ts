@@ -22,7 +22,7 @@ export interface SudoExecOptions extends commonUtil.ExecOptions {
    * String that tells the user why sudo is required. It must start with "to ".
    * Example: 'to generate C++ cross references'
    */
-  sudoReason: string;
+  sudoReason: `to ${string}`;
 }
 
 /**
