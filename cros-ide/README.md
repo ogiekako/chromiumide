@@ -12,11 +12,12 @@ Beta testing stage.
 
 Initial release has been tested for `platform2` development and offers the following features:
 
-- Autocompletion, x-ref searching, and symbol definition for C++.
-- Linting (C++, Python, Shell, GN).
+- Autocompletion, x-ref searching, and symbol definition for C++
+- Linting (C++, Python, Shell, GN)
+- Device management (SSH, VNC)
 - Boards and packages viewer
 - Code Search integration
-- Integrated short links support (Click to open).
+- Integrated short links support (Click to open)
 
 See [QuickStart Guide] for setup instructions.
 
