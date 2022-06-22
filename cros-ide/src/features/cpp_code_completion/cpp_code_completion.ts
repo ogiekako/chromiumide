@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
 import * as ideUtil from '../../ide_util';
@@ -54,6 +55,9 @@ export class CompilationDatabase implements vscode.Disposable {
   // (it might have been already activated independently, in which case we will
   // activate it again - not ideal, but not a problem either).
   private clangdActivated = false;
+
+  // Ensures that error message about no chroot is shown only once.
+  private noChrootHandled = false;
 
   // Callbacks called after an event has been handled.
   readonly onEventHandledForTesting = new Array<() => void>();
@@ -114,6 +118,10 @@ export class CompilationDatabase implements vscode.Disposable {
     if (!this.shouldGenerate(packageInfo, skipIfAlreadyGenerated)) {
       return;
     }
+    if (!this.chrootService.chroot()) {
+      this.handleNoChroot(document.fileName);
+      return;
+    }
     const board = await this.board();
     if (!board) {
       return;
@@ -153,6 +161,52 @@ export class CompilationDatabase implements vscode.Disposable {
       return true;
     }
     return false;
+  }
+
+  private async handleNoChroot(fileName: string) {
+    if (this.noChrootHandled) {
+      return;
+    }
+    this.noChrootHandled = true;
+
+    // platform2 user may prefer subdirectories
+    const gitFolder = await this.getGitTopLevelDirectory(fileName);
+
+    const openGitFolder = gitFolder ? `Open ${gitFolder}` : undefined;
+    const openOtherFolder = gitFolder ? 'Open Other' : 'Open Folder';
+
+    const buttons = openGitFolder ? [openGitFolder] : [];
+    buttons.push(openOtherFolder);
+
+    const selection = await vscode.window.showErrorMessage(
+      'Generating C++ xrefs requires opening a folder with CrOS sources.',
+      ...buttons
+    );
+
+    if (selection === openOtherFolder) {
+      vscode.commands.executeCommand('vscode.openFolder');
+    } else if (gitFolder && selection === openGitFolder) {
+      vscode.commands.executeCommand(
+        'vscode.openFolder',
+        vscode.Uri.file(gitFolder)
+      );
+    }
+  }
+
+  /** Get top directory of the repo for the `fileName`. Errors are ignored. */
+  private async getGitTopLevelDirectory(
+    fileName: string
+  ): Promise<string | undefined> {
+    const fileDir = path.dirname(fileName);
+    const result = await commonUtil.exec(
+      'git',
+      ['rev-parse', '--show-toplevel'],
+      {cwd: fileDir}
+    );
+    if (result instanceof Error) {
+      return undefined;
+    }
+    return result.stdout.trim();
   }
 
   private async board(): Promise<string | undefined> {
