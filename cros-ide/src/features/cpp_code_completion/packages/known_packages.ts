@@ -2,70 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as fs from 'fs';
-import * as path from 'path';
-import {findChroot, sourceDir} from '../../common/common_util';
-
-export type SourceDir = string; // directory containing source code relative to chromiumos/
-export type Atom = string; // category/packagename e.g. chromeos-base/codelab
-
-export interface PackageInfo {
-  sourceDir: SourceDir;
-  atom: Atom;
-}
-
-// TODO(oka): Make this a singleton if this is used from multiple places.
-export class Packages {
-  private mapping = new Map<SourceDir, PackageInfo>();
-  constructor() {
-    for (const packageInfo of KNOWN_PACKAGES) {
-      this.mapping.set(packageInfo.sourceDir, packageInfo);
-    }
-  }
-
-  /**
-   * Get information of the package that would compile the file and generates
-   * compilation database, or null if no such package is known.
-   */
-  async fromFilepath(filepath: string): Promise<PackageInfo | null> {
-    let realpath = '';
-    try {
-      realpath = await fs.promises.realpath(filepath);
-    } catch (_e) {
-      // If filepath is an absolute path, assume it's a realpath. This is
-      // convenient for testing, where the file may not exist.
-      if (path.isAbsolute(filepath)) {
-        realpath = filepath;
-      } else {
-        return null;
-      }
-    }
-
-    const chroot = findChroot(realpath);
-    if (chroot === undefined) {
-      return null;
-    }
-    const sourcePath = sourceDir(chroot);
-
-    let relPath = path.relative(sourcePath, realpath);
-    if (relPath.startsWith('..') || path.isAbsolute(relPath)) {
-      return null;
-    }
-    while (relPath !== '.') {
-      const info = this.mapping.get(relPath);
-      if (info !== undefined) {
-        return info;
-      }
-      relPath = path.dirname(relPath);
-    }
-    return null;
-  }
-}
+import {PackageInfo} from './types';
 
 // Known source code location to package name mapping which supports
 // compilation database generation.
 // TODO(oka): automatically generate this list when the extension is activated.
-const KNOWN_PACKAGES: Array<PackageInfo> = [
+export const KNOWN_PACKAGES: Array<PackageInfo> = [
   ['src/aosp/frameworks/ml', 'chromeos-base/aosp-frameworks-ml-nn'],
   [
     'src/aosp/frameworks/ml/chromeos/tests',
