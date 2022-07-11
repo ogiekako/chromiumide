@@ -39,10 +39,11 @@ There are several ways of testing.
 Here is the steps to release a new version of a package file, to be installed by all users by
 `./install.sh`.
 
-1. Upload a patch that updates the version in `package.json`, have it reviewed, approved and merged
-   to `cros/main` (for example, http://crrev.com/c/3474259)
-2. Check out that commit in the local git checkout.
-3. Inside chroot, run `./install.sh --upload`. It will build the extension and upload it to Cloud
+1. Run `npm version patch` to increment the version in `package.json` and `package-lock.json`.
+2. Upload a patch, have it reviewed, approved and merged to `cros/main` (for example,
+   http://crrev.com/c/3474259)
+3. Check out that commit in the local git checkout.
+4. Inside chroot, run `./install.sh --upload`. It will build the extension and upload it to Cloud
    Storage under [chromeos-velocity].
 
 [chromeos-velocity]: https://pantheon.corp.google.com/storage/browser?project=google.com:chromeos-velocity
