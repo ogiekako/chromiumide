@@ -99,10 +99,12 @@ export class LeasedDeviceRepository implements vscode.Disposable {
     this.onDidChangeEmitter,
   ];
 
+  private cachedDevices: Promise<LeasedDevice[]> | undefined = undefined;
+
   constructor(private readonly crosfleetRunner: crosfleet.CrosfleetRunner) {
     this.subscriptions.push(
       crosfleetRunner.onDidChange(() => {
-        this.onDidChangeEmitter.fire();
+        this.refresh();
       })
     );
   }
@@ -112,6 +114,7 @@ export class LeasedDeviceRepository implements vscode.Disposable {
   }
 
   refresh(): void {
+    this.cachedDevices = undefined;
     this.onDidChangeEmitter.fire();
   }
 
@@ -123,6 +126,13 @@ export class LeasedDeviceRepository implements vscode.Disposable {
   }
 
   async getDevices(): Promise<LeasedDevice[]> {
+    if (this.cachedDevices === undefined) {
+      this.cachedDevices = this.getDevicesUncached();
+    }
+    return await this.cachedDevices;
+  }
+
+  private async getDevicesUncached(): Promise<LeasedDevice[]> {
     if (!config.underDevelopment.deviceManagement.get()) {
       return [];
     }

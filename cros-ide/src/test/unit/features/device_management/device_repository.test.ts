@@ -108,6 +108,12 @@ describe('Leased device repository', () => {
       {hostname: 'cros444', board: 'board4', model: 'model4'},
     ]);
 
+    // getDevices still returns an empty list since it's cached.
+    expect(await state.leasedDeviceRepository.getDevices()).toEqual([]);
+
+    // Request to clear the cache.
+    state.leasedDeviceRepository.refresh();
+
     // getDevices returns two devices.
     expect(await state.leasedDeviceRepository.getDevices()).toEqual([
       {
