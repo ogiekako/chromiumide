@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as path from 'path';
+import * as dateFns from 'date-fns';
 import * as cipd from '../../../common/cipd';
 import * as commonUtil from '../../../common/common_util';
 import * as crosfleet from '../../../features/device_management/crosfleet';
@@ -75,6 +76,12 @@ export class FakeCrosfleet {
             Hostname: l.hostname,
           },
           Build: {
+            startTime: l.deadline?.toISOString(),
+            input: {
+              properties: {
+                lease_length_minutes: 0,
+              },
+            },
             infra: {
               swarming: {
                 botDimensions,
@@ -132,6 +139,7 @@ export class FakeCrosfleet {
       hostname: 'host1',
       board: 'board1',
       model: 'model1',
+      deadline: dateFns.addMinutes(new Date(), 60),
     });
 
     return {exitStatus: 0, stdout: '', stderr: ''};

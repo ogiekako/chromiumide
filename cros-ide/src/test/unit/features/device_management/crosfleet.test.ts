@@ -7,6 +7,15 @@ import * as testing from '../../../testing';
 import * as fakes from '../../../testing/fakes';
 
 describe('Crosfleet runner', () => {
+  const clock = jasmine.clock();
+  beforeEach(() => {
+    clock.install();
+    clock.mockDate(new Date('2000-01-01T00:00:00Z'));
+  });
+  afterEach(() => {
+    clock.uninstall();
+  });
+
   const {fakeExec} = testing.installFakeExec();
   const cipdRepository = fakes.installFakeCipd(fakeExec);
   const fakeCrosfleet = fakes.installFakeCrosfleet(fakeExec, cipdRepository);
@@ -27,11 +36,13 @@ describe('Crosfleet runner', () => {
         hostname: 'cros111',
         board: 'board1',
         model: 'model1',
+        deadline: new Date('2000-01-01T00:01:00Z'),
       },
       {
         hostname: 'cros222',
         board: 'board2',
         model: 'model2',
+        deadline: new Date('2000-01-01T00:02:00Z'),
       },
     ]);
     expect(await state.runner.listLeases()).toEqual([
@@ -39,11 +50,13 @@ describe('Crosfleet runner', () => {
         hostname: 'cros111',
         board: 'board1',
         model: 'model1',
+        deadline: new Date('2000-01-01T00:01:00Z'),
       },
       {
         hostname: 'cros222',
         board: 'board2',
         model: 'model2',
+        deadline: new Date('2000-01-01T00:02:00Z'),
       },
     ]);
   });
@@ -75,6 +88,7 @@ describe('Crosfleet runner', () => {
         hostname: 'host1',
         board: 'board1',
         model: 'model1',
+        deadline: new Date('2000-01-01T01:00:00Z'),
       },
     ]);
   });

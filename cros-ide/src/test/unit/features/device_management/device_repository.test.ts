@@ -78,6 +78,15 @@ describe('Leased device repository', () => {
     await config.underDevelopment.deviceManagement.update(true);
   });
 
+  const clock = jasmine.clock();
+  beforeEach(() => {
+    clock.install();
+    clock.mockDate(new Date('2000-01-01T00:00:00Z'));
+  });
+  afterEach(() => {
+    clock.uninstall();
+  });
+
   const {fakeExec} = testing.installFakeExec();
   const cipdRepository = fakes.installFakeCipd(fakeExec);
   const fakeCrosfleet = fakes.installFakeCrosfleet(fakeExec, cipdRepository);
@@ -104,8 +113,18 @@ describe('Leased device repository', () => {
 
     // Set fake leases.
     fakeCrosfleet.setLeases([
-      {hostname: 'cros333', board: 'board3', model: 'model3'},
-      {hostname: 'cros444', board: 'board4', model: 'model4'},
+      {
+        hostname: 'cros333',
+        board: 'board3',
+        model: 'model3',
+        deadline: new Date('2000-01-01T00:03:00Z'),
+      },
+      {
+        hostname: 'cros444',
+        board: 'board4',
+        model: 'model4',
+        deadline: new Date('2000-01-01T00:04:00Z'),
+      },
     ]);
 
     // getDevices still returns an empty list since it's cached.
@@ -121,12 +140,14 @@ describe('Leased device repository', () => {
         hostname: 'cros333',
         board: 'board3',
         model: 'model3',
+        deadline: new Date('2000-01-01T00:03:00Z'),
       },
       {
         category: repository.DeviceCategory.LEASED,
         hostname: 'cros444',
         board: 'board4',
         model: 'model4',
+        deadline: new Date('2000-01-01T00:04:00Z'),
       },
     ]);
   });

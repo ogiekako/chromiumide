@@ -26,6 +26,7 @@ export interface LeasedDevice extends Device {
   readonly category: DeviceCategory.LEASED;
   readonly board: string | undefined;
   readonly model: string | undefined;
+  readonly deadline: Date | undefined;
 }
 
 /**
@@ -146,6 +147,7 @@ export class LeasedDeviceRepository implements vscode.Disposable {
       hostname: l.hostname,
       board: l.board,
       model: l.model,
+      deadline: l.deadline,
     }));
   }
 }

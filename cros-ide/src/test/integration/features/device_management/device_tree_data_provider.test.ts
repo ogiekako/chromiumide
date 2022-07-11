@@ -35,6 +35,15 @@ async function renderTree(
 }
 
 describe('Device tree data provider', () => {
+  const clock = jasmine.clock();
+  beforeEach(() => {
+    clock.install();
+    clock.mockDate(new Date('2000-01-01T00:00:00Z'));
+  });
+  afterEach(() => {
+    clock.uninstall();
+  });
+
   const {vscodeSpy, vscodeEmitters} = doubles.installVscodeDouble();
   doubles.installFakeConfigs(vscodeSpy, vscodeEmitters);
   const {fakeExec} = testing.installFakeExec();
@@ -77,8 +86,18 @@ describe('Device tree data provider', () => {
       'localhost:2222',
     ]);
     fakeCrosfleet.setLeases([
-      {hostname: 'cros333', board: 'board3', model: 'model3'},
-      {hostname: 'cros444', board: 'board4', model: 'model4'},
+      {
+        hostname: 'cros333',
+        board: 'board3',
+        model: 'model3',
+        deadline: new Date('2000-01-01T00:03:00Z'),
+      },
+      {
+        hostname: 'cros444',
+        board: 'board4',
+        model: 'model4',
+        deadline: new Date('2000-01-01T00:04:00Z'),
+      },
     ]);
 
     const rendered = await renderTree(state.deviceTreeDataProvider);
@@ -111,6 +130,7 @@ describe('Device tree data provider', () => {
               hostname: 'cros333',
               board: 'board3',
               model: 'model3',
+              deadline: new Date('2000-01-01T00:03:00Z'),
             }),
             children: [],
           },
@@ -120,6 +140,7 @@ describe('Device tree data provider', () => {
               hostname: 'cros444',
               board: 'board4',
               model: 'model4',
+              deadline: new Date('2000-01-01T00:04:00Z'),
             }),
             children: [],
           },

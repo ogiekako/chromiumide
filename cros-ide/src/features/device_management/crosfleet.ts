@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import * as dateFns from 'date-fns';
 import * as cipd from '../../common/cipd';
 import * as commonUtil from '../../common/common_util';
 import * as shutil from '../../common/shutil';
@@ -14,6 +15,7 @@ export interface LeaseInfo {
   readonly hostname: string;
   readonly board: string | undefined;
   readonly model: string | undefined;
+  readonly deadline: Date | undefined;
 }
 
 /**
@@ -188,6 +190,12 @@ export interface CrosfleetLeasesOutput {
       Hostname?: string;
     };
     Build?: {
+      startTime?: string;
+      input?: {
+        properties?: {
+          lease_length_minutes?: number;
+        };
+      };
       infra?: {
         swarming?: {
           botDimensions?: {
@@ -213,13 +221,26 @@ function parseLeases(output: string): LeaseInfo[] {
     if (!hostname) {
       continue;
     }
+
+    let deadline: Date | undefined;
+    if (
+      l.Build?.startTime !== undefined &&
+      l.Build?.input?.properties?.lease_length_minutes !== undefined
+    ) {
+      deadline = dateFns.add(new Date(l.Build.startTime), {
+        minutes: l.Build.input.properties.lease_length_minutes,
+      });
+    }
+
     const botDimensions = new Map(
       (l.Build?.infra?.swarming?.botDimensions ?? []).map(d => [d.key, d.value])
     );
+
     leases.push({
       hostname,
       board: botDimensions.get('label-board'),
       model: botDimensions.get('label-model'),
+      deadline,
     });
   }
   return leases;

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import * as dateFns from 'date-fns';
 import * as config from '../../services/config';
 import * as deviceRepository from './device_repository';
 
@@ -38,6 +39,9 @@ export class LeasedDeviceItem extends DeviceItem {
   constructor(public readonly device: deviceRepository.LeasedDevice) {
     super(device);
     this.description = `${device.board ?? '???'}/${device.model ?? '???'}`;
+    if (device.deadline) {
+      this.description += ` (until ${dateFns.format(device.deadline, 'p')})`;
+    }
   }
 }
 
