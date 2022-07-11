@@ -61,6 +61,35 @@ describe('Crosfleet runner', () => {
     ]);
   });
 
+  it('does not return expired leases', async () => {
+    fakeCrosfleet.setLeases([]);
+    expect(await state.runner.listLeases()).toEqual([]);
+
+    fakeCrosfleet.setLeases([
+      {
+        hostname: 'cros111',
+        board: 'board1',
+        model: 'model1',
+        deadline: new Date('2000-01-01T00:01:00Z'),
+      },
+      {
+        hostname: 'cros222',
+        board: 'board2',
+        model: 'model2',
+        deadline: new Date('1999-12-31T23:59:59Z'),
+      },
+    ]);
+    expect(await state.runner.listLeases()).toEqual([
+      {
+        hostname: 'cros111',
+        board: 'board1',
+        model: 'model1',
+        deadline: new Date('2000-01-01T00:01:00Z'),
+      },
+      // The second lease is not returned as it's already expired.
+    ]);
+  });
+
   it('handles the logged-out case', async () => {
     fakeCrosfleet.setLeases([]);
 

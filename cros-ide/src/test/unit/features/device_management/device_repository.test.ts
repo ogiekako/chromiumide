@@ -175,4 +175,65 @@ describe('Leased device repository', () => {
     // Ensure that onDidChange event fired.
     await didChange;
   });
+
+  it('refreshes on the earliest deadline', async () => {
+    // Set fake leases.
+    fakeCrosfleet.setLeases([
+      {
+        hostname: 'cros444',
+        board: 'board4',
+        model: 'model4',
+        deadline: new Date('2000-01-01T00:04:00Z'), // 4 minutes later
+      },
+      {
+        hostname: 'cros333',
+        board: 'board3',
+        model: 'model3',
+        deadline: new Date('2000-01-01T00:03:00Z'), // 3 minutes later
+      },
+    ]);
+
+    // Get the device list once to schedule a refresh.
+    expect(await state.leasedDeviceRepository.getDevices()).toEqual([
+      {
+        category: repository.DeviceCategory.LEASED,
+        hostname: 'cros444',
+        board: 'board4',
+        model: 'model4',
+        deadline: new Date('2000-01-01T00:04:00Z'),
+      },
+      {
+        category: repository.DeviceCategory.LEASED,
+        hostname: 'cros333',
+        board: 'board3',
+        model: 'model3',
+        deadline: new Date('2000-01-01T00:03:00Z'),
+      },
+    ]);
+
+    // Subscribe to changes before advancing the clock.
+    const didChange = new Promise<void>(resolve => {
+      const subscription = state.leasedDeviceRepository.onDidChange(() => {
+        subscription.dispose();
+        resolve();
+      });
+    });
+
+    // Advance the clock, which should trigger a refresh.
+    clock.tick(210 * 1000); // 3m30s
+
+    // Ensure that onDidChange event fired.
+    await didChange;
+
+    // Expired leases don't appear.
+    expect(await state.leasedDeviceRepository.getDevices()).toEqual([
+      {
+        category: repository.DeviceCategory.LEASED,
+        hostname: 'cros444',
+        board: 'board4',
+        model: 'model4',
+        deadline: new Date('2000-01-01T00:04:00Z'),
+      },
+    ]);
+  });
 });

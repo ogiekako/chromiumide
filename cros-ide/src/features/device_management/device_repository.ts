@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import * as dateFns from 'date-fns';
 import * as config from '../../services/config';
 import * as crosfleet from './crosfleet';
 
@@ -101,6 +102,7 @@ export class LeasedDeviceRepository implements vscode.Disposable {
   ];
 
   private cachedDevices: Promise<LeasedDevice[]> | undefined = undefined;
+  private refreshTimer: vscode.Disposable | undefined = undefined;
 
   constructor(private readonly crosfleetRunner: crosfleet.CrosfleetRunner) {
     this.subscriptions.push(
@@ -111,11 +113,19 @@ export class LeasedDeviceRepository implements vscode.Disposable {
   }
 
   dispose(): void {
+    if (this.refreshTimer) {
+      this.refreshTimer.dispose();
+      this.refreshTimer = undefined;
+    }
     vscode.Disposable.from(...this.subscriptions).dispose();
   }
 
   refresh(): void {
     this.cachedDevices = undefined;
+    if (this.refreshTimer) {
+      this.refreshTimer.dispose();
+      this.refreshTimer = undefined;
+    }
     this.onDidChangeEmitter.fire();
   }
 
@@ -128,7 +138,9 @@ export class LeasedDeviceRepository implements vscode.Disposable {
 
   async getDevices(): Promise<LeasedDevice[]> {
     if (this.cachedDevices === undefined) {
-      this.cachedDevices = this.getDevicesUncached();
+      const devicesPromise = this.getDevicesUncached();
+      this.cachedDevices = devicesPromise;
+      void this.refreshOnEarliestDeadline(devicesPromise);
     }
     return await this.cachedDevices;
   }
@@ -149,5 +161,43 @@ export class LeasedDeviceRepository implements vscode.Disposable {
       model: l.model,
       deadline: l.deadline,
     }));
+  }
+
+  private async refreshOnEarliestDeadline(
+    devicesPromise: Promise<LeasedDevice[]>
+  ): Promise<void> {
+    const devices = await devicesPromise;
+
+    // Return if devicesPromise was already invalidated.
+    if (this.cachedDevices !== devicesPromise) {
+      return;
+    }
+
+    // Find the earliest deadline.
+    const deadlines = devices
+      .map(device => device.deadline)
+      .filter((deadline): deadline is Date => deadline !== undefined);
+    deadlines.sort(dateFns.compareAsc);
+    if (deadlines.length === 0) {
+      return;
+    }
+    const earliestDeadline = deadlines[0];
+
+    // Schedule a refresh() call.
+    const timeoutId = setTimeout(() => {
+      // Return if devicesPromise was already invalidated.
+      if (this.cachedDevices !== devicesPromise) {
+        return;
+      }
+      this.refresh();
+    }, dateFns.differenceInMilliseconds(earliestDeadline, new Date()));
+
+    // Store a Disposable so that the scheduled task can be canceled on
+    // refresh() or dispose().
+    // Note that this.refreshTimer is always undefined at this point because
+    // this.refreshTimer is set at most only once for a this.cachedDevices.
+    this.refreshTimer = new vscode.Disposable(() => {
+      clearTimeout(timeoutId);
+    });
   }
 }

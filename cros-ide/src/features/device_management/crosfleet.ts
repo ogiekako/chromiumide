@@ -230,6 +230,10 @@ function parseLeases(output: string): LeaseInfo[] {
       deadline = dateFns.add(new Date(l.Build.startTime), {
         minutes: l.Build.input.properties.lease_length_minutes,
       });
+      // Do not return expired leases.
+      if (dateFns.isBefore(deadline, new Date())) {
+        continue;
+      }
     }
 
     const botDimensions = new Map(
