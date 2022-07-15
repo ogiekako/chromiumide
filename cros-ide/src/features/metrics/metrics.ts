@@ -36,7 +36,9 @@ const informationMessageDetail =
 let extensionMode: vscode.ExtensionMode | undefined = undefined;
 let extensionVersion: string | undefined = undefined;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(
+  context: vscode.ExtensionContext
+): Promise<void> {
   extensionMode = context.extensionMode;
   extensionVersion = context.extension.packageJSON.version;
 
@@ -45,18 +47,17 @@ export function activate(context: vscode.ExtensionContext) {
   if (context.extensionMode !== vscode.ExtensionMode.Test) {
     const showMessage = config.metrics.showMessage.get();
     if (showMessage) {
-      vscode.window
-        .showInformationMessage(
+      void (async () => {
+        const selection = await vscode.window.showInformationMessage(
           informationMessageTitle,
           {detail: informationMessageDetail, modal: true},
           'Yes'
-        )
-        .then(selection => {
-          if (selection && selection === 'Yes') {
-            config.metrics.collectMetrics.update(true);
-          }
-        });
-      config.metrics.showMessage.update(false);
+        );
+        if (selection && selection === 'Yes') {
+          await config.metrics.collectMetrics.update(true);
+        }
+      })();
+      await config.metrics.showMessage.update(false);
     }
   }
 
@@ -266,5 +267,7 @@ export function send(event: Event) {
   if (!analytics) {
     analytics = Analytics.create();
   }
-  analytics.then(a => a.send(event));
+  void (async () => {
+    (await analytics).send(event);
+  })();
 }

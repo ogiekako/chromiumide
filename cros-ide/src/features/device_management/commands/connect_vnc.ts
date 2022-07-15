@@ -45,5 +45,5 @@ export async function connectToDeviceForScreen(
   });
   context.sessions.set(hostname, newSession);
 
-  newSession.start();
+  await newSession.start();
 }

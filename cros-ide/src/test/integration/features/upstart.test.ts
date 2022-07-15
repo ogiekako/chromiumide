@@ -55,7 +55,7 @@ describe('Upstart support', () => {
   });
 
   afterAll(async () => {
-    closeDocument(document);
+    await closeDocument(document);
   });
 
   it('extracts symbols for env stanzas', () => {

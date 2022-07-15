@@ -118,7 +118,7 @@ sys.stdout.write(sock.makefile().read())
   private handleConnection(socket: net.Socket): void {
     this.attempts++;
 
-    (async () => {
+    void (async () => {
       const password = await vscode.window.showInputBox({
         password: true,
         title: `sudo password for ${os.userInfo().username}`,

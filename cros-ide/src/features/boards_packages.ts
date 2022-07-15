@@ -77,7 +77,7 @@ class BoardsPackages {
     source.watchSync(crosWorkonDir, (_eventType, fileName) => {
       // Multiple files can be changed. This restrictions limits the number of refreshes to one.
       if (boards.includes(fileName) || fileName === VIRTUAL_BOARDS_HOST) {
-        vscode.commands.executeCommand('cros-ide.refreshBoardsPackages');
+        void vscode.commands.executeCommand('cros-ide.refreshBoardsPackages');
       }
     });
   }

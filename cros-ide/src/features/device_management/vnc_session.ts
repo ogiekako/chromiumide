@@ -120,8 +120,8 @@ export class VncSession {
     );
   }
 
-  start(): void {
-    VncSession.startWebview(this.panel.webview, this.proxy, this.context);
+  async start(): Promise<void> {
+    await VncSession.startWebview(this.panel.webview, this.proxy, this.context);
   }
 
   dispose(): void {
@@ -223,12 +223,18 @@ async function startAndWaitVncServer(
   }
 
   // Send a ready message once the WebView finishes to load scripts.
-  (async () => {
-    await webViewReady;
-    postServerMessage(webview, {
-      type: 'event',
-      subtype: 'ready',
-    });
+  void (async () => {
+    try {
+      await webViewReady;
+      await postServerMessage(webview, {
+        type: 'event',
+        subtype: 'ready',
+      });
+    } catch (err: unknown) {
+      void vscode.window.showErrorMessage(
+        `Failed to start VNC webview: ${err}`
+      );
+    }
   })();
 
   // Wait until the server stops.
@@ -409,14 +415,14 @@ class MessagePassingProxy implements vscode.Disposable {
         const socket = net.createConnection(this.vncPort, 'localhost');
         this.sockets.set(socketId, socket);
         socket.on('connect', () => {
-          postServerMessage(this.webview, {
+          void postServerMessage(this.webview, {
             type: 'socket',
             subtype: 'open',
             socketId,
           });
         });
         socket.on('error', (err: Error) => {
-          postServerMessage(this.webview, {
+          void postServerMessage(this.webview, {
             type: 'socket',
             subtype: 'error',
             socketId,
@@ -424,7 +430,7 @@ class MessagePassingProxy implements vscode.Disposable {
           });
         });
         socket.on('data', (data: Buffer) => {
-          postServerMessage(this.webview, {
+          void postServerMessage(this.webview, {
             type: 'socket',
             subtype: 'data',
             socketId,
@@ -432,7 +438,7 @@ class MessagePassingProxy implements vscode.Disposable {
           });
         });
         socket.on('close', () => {
-          postServerMessage(this.webview, {
+          void postServerMessage(this.webview, {
             type: 'socket',
             subtype: 'close',
             socketId,

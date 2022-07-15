@@ -62,7 +62,7 @@ describe('VNC session', () => {
     const didConnect = waitConnectEvent(session);
 
     // Start a VNC session.
-    session.start();
+    await session.start();
 
     // Ensure a successful connection event.
     await didConnect;
@@ -93,7 +93,7 @@ describe('VNC session', () => {
     const didConnect = waitConnectEvent(session);
 
     // Start a VNC session.
-    session.start();
+    await session.start();
 
     // Ensure a successful connection event.
     await didConnect;

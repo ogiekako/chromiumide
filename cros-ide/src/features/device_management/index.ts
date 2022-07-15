@@ -22,7 +22,7 @@ export async function activate(
   chrootService: chroot.ChrootService,
   cipdRepository: cipd.CipdRepository
 ) {
-  rsaKeyFixPermission(context.extensionUri);
+  await rsaKeyFixPermission(context.extensionUri);
 
   const output = vscode.window.createOutputChannel(
     'CrOS IDE: Device Management'
@@ -70,9 +70,11 @@ export async function activate(
  */
 async function rsaKeyFixPermission(extensionUri: vscode.Uri) {
   const rsaKeyPath = sshUtil.getTestingRsaPath(extensionUri);
-  await fs.promises.chmod(rsaKeyPath, '0600').catch(_err => {
-    vscode.window.showErrorMessage(
+  try {
+    await fs.promises.chmod(rsaKeyPath, '0600');
+  } catch {
+    void vscode.window.showErrorMessage(
       'Fatal: unable to update testing_rsa permission: ' + rsaKeyPath
     );
-  });
+  }
 }
