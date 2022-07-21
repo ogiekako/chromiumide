@@ -71,6 +71,23 @@ const gnLintOutput = `12:34:56.789: ERROR: **** example/BUILD.gn: found 3 issue(
 12:34:56.789: ERROR: 1 file(s) failed linting
 `;
 
+const goFileNameTast = 'tast/aaa.go';
+
+const goFileContentsTast = `// fooId implements api.DutServiceServer.DetectDeviceConfigId.
+func (s *Foo) FooId(
+\treq *api.req,
+\tstream api.stream) error {
+\treturn status.Error()
+}`;
+
+const goLintOutputTast = `Following errors should be modified by yourself:
+  tast/aaa.go:1:10: method FooId should be FooID
+  tast/aaa.go:1:3: comment on exported method FooId should be of the form "FooId ..."
+
+  Refer the following documents for details:
+   https://golang.org/wiki/CodeReviewComments#initialisms
+`;
+
 /** Provides virtual documents for testing. */
 class TestDocumentProvider implements vscode.TextDocumentContentProvider {
   constructor(readonly files: Map<string, string>) {}
@@ -87,6 +104,7 @@ const documentProvider = new TestDocumentProvider(
     [pythonAbsoluteFileName, pythonFileContents],
     [shellFileName, shellFileContents],
     [gnFileName, gnFileContents],
+    [goFileNameTast, goFileContentsTast],
   ])
 );
 const scheme = 'testing';
@@ -207,6 +225,33 @@ describe('Lint Integration', () => {
       ),
     ];
     assert.deepStrictEqual(expected, actual);
+  });
+
+  it('parses go errors in tast', async () => {
+    const uri = vscode.Uri.from({scheme: scheme, path: goFileNameTast});
+    const textDocument = await vscode.workspace.openTextDocument(uri);
+    const actual = crosLint.parseCrosLintGo(goLintOutputTast, '', textDocument);
+    await extensionTesting.closeDocument(textDocument);
+    assert.strictEqual(actual.length, 2);
+    const expected = [
+      new vscode.Diagnostic(
+        new vscode.Range(
+          new vscode.Position(0, 9),
+          new vscode.Position(0, Number.MAX_VALUE)
+        ),
+        'method FooId should be FooID',
+        vscode.DiagnosticSeverity.Warning
+      ),
+      new vscode.Diagnostic(
+        new vscode.Range(
+          new vscode.Position(0, 2),
+          new vscode.Position(0, Number.MAX_VALUE)
+        ),
+        'comment on exported method FooId should be of the form "FooId ..."',
+        vscode.DiagnosticSeverity.Warning
+      ),
+    ];
+    assert.deepStrictEqual(actual, expected);
   });
 
   it('handles absolute document paths when parsing Python errors', async () => {

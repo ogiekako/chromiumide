@@ -54,9 +54,15 @@ interface LintConfig {
     stderr: string,
     document: vscode.TextDocument
   ): vscode.Diagnostic[];
+  /**
+   * Returns the cwd to run the executable.
+   */
+  cwd?(exe: string): string | undefined;
 }
 
 const GNLINT_PATH = 'src/platform2/common-mk/gnlint.py';
+const TAST_LINT_PATH = 'src/platform/tast/tools/run_lint.sh';
+const TAST_PATH_RE = /^.*\/tast\/.*/;
 const CROS_PATH = 'chromite/bin/cros';
 
 function crosExeFor(realpath: string): string | undefined {
@@ -109,6 +115,27 @@ const lintConfigs = new Map<string, LintConfig>([
       parse: parseCrosLintShell,
     },
   ],
+  [
+    'go',
+    {
+      executable: realpath => {
+        const chroot = commonUtil.findChroot(realpath);
+        if (chroot === undefined) {
+          return undefined;
+        }
+        const source = commonUtil.sourceDir(chroot);
+        return TAST_PATH_RE.test(realpath)
+          ? path.join(source, TAST_LINT_PATH)
+          : undefined;
+      },
+      arguments: (path: string) => [path],
+      parse: parseCrosLintGo,
+      cwd: (exePath: string) =>
+        TAST_PATH_RE.test(exePath)
+          ? path.dirname(path.dirname(exePath))
+          : undefined,
+    },
+  ],
 ]);
 
 // TODO(ttylenda): Consider making it a class and move statusManager and log to the constructor.
@@ -139,10 +166,12 @@ async function updateCrosLintDiagnostics(
       return;
     }
     const args = lintConfig.arguments(realpath);
+    const cwd = lintConfig.cwd?.(name);
     const res = await commonUtil.exec(name, args, {
       logger: log.channel,
       ignoreNonZeroExit: true,
       logStdout: true,
+      cwd: cwd,
     });
     if (res instanceof Error) {
       log.channel.append(res.message);
@@ -273,6 +302,26 @@ export function parseCrosLintShell(
   document: vscode.TextDocument
 ): vscode.Diagnostic[] {
   const lineRE = /^([^ \n:]+):([0-9]+):([0-9]+): (.*)/gm;
+  const diagnostics: vscode.Diagnostic[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = lineRE.exec(stdout)) !== null) {
+    const file = match[1];
+    const line = Number(match[2]);
+    const startCol = Number(match[3]);
+    const message = match[4];
+    if (sameFile(document.uri.fsPath, file)) {
+      diagnostics.push(createDiagnostic(message, line, startCol));
+    }
+  }
+  return diagnostics;
+}
+
+export function parseCrosLintGo(
+  stdout: string,
+  _stderr: string,
+  document: vscode.TextDocument
+): vscode.Diagnostic[] {
+  const lineRE = /([^\s]+.go):(\d+):(\d+): (.*)/gm;
   const diagnostics: vscode.Diagnostic[] = [];
   let match: RegExpExecArray | null;
   while ((match = lineRE.exec(stdout)) !== null) {
