@@ -11,12 +11,12 @@ import * as metrics from './metrics/metrics';
 export function activate(context: vscode.ExtensionContext) {
   const openFileCmd = vscode.commands.registerTextEditorCommand(
     'cros-ide.codeSearchOpenCurrentFile',
-    (textEditor: vscode.TextEditor) => openCurrentFile(textEditor)
+    (textEditor: vscode.TextEditor) => void openCurrentFile(textEditor)
   );
 
   const copyFileCmd = vscode.commands.registerTextEditorCommand(
     'cros-ide.codeSearchCopyCurrentFile',
-    (textEditor: vscode.TextEditor) => copyCurrentFile(textEditor)
+    (textEditor: vscode.TextEditor) => void copyCurrentFile(textEditor)
   );
 
   const searchSelectionCmd = vscode.commands.registerTextEditorCommand(
@@ -56,7 +56,7 @@ async function openCurrentFile(textEditor: vscode.TextEditor) {
 async function copyCurrentFile(textEditor: vscode.TextEditor) {
   const result = await getCurrentFile(textEditor);
   if (result) {
-    vscode.env.clipboard.writeText(result);
+    void vscode.env.clipboard.writeText(result);
     metrics.send({
       category: 'interactive',
       group: 'codesearch',
