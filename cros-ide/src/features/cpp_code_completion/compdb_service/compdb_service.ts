@@ -6,11 +6,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as uuid from 'uuid';
-import * as commonUtil from '../../common/common_util';
-import {WrapFs} from '../../common/cros';
-import {Atom, PackageInfo} from '../../features/cpp_code_completion/packages';
-import {ChrootService} from '../../services/chroot';
-import {MNT_HOST_SOURCE} from './constants';
+import * as commonUtil from '../../../common/common_util';
+import {WrapFs} from '../../../common/cros';
+import {Atom, PackageInfo} from '../packages';
+import {ChrootService} from '../../../services/chroot';
+import {MNT_HOST_SOURCE} from '../constants';
 
 /**
  * Generates C++ compilation database, using the compdb tool.
