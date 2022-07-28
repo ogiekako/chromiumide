@@ -12,6 +12,8 @@ import {CompdbService} from './compdb_service';
 import {Ebuild} from './ebuild';
 import {CompdbError, CompdbErrorKind} from './error';
 import {destination} from './util';
+import {CompilationDatabase} from './compilation_database_type';
+import {checkCompilationDatabase} from './compdb_checker';
 
 export class CompdbServiceImpl implements CompdbService {
   constructor(
@@ -20,13 +22,29 @@ export class CompdbServiceImpl implements CompdbService {
   ) {}
 
   async generate(board: string, packageInfo: PackageInfo) {
-    await this.generateInner(board, packageInfo, 'compdb_only');
-    // TODO(oka): Check if necessary files are all generated and if not run generateInner
-    // again with compilation_database flag.
+    const compdbPath = await this.generateInner(
+      board,
+      packageInfo,
+      'compdb_only'
+    );
+    if (!compdbPath) {
+      return;
+    }
+    const content = JSON.parse(
+      await fs.promises.readFile(compdbPath, 'utf-8')
+    ) as CompilationDatabase;
+    if (checkCompilationDatabase(content)) {
+      return;
+    }
+    this.output.appendLine(
+      `Running compilation for ${packageInfo.atom} to create generated C++ files`
+    );
+    // Run compilation to generate C++ files (from mojom files, for example).
+    await this.generateInner(board, packageInfo, 'compilation_database');
   }
 
   /**
-   * Generates compilation database.
+   * Generates compilation database, and returns the filepath of compile_commands.json.
    *
    * @throws CompdbError on failure
    */
@@ -34,14 +52,14 @@ export class CompdbServiceImpl implements CompdbService {
     board: string,
     {sourceDir, atom}: PackageInfo,
     useFlag: string
-  ) {
+  ): Promise<string | undefined> {
     const sourceFs = this.chrootService.source();
     const chrootFs = this.chrootService.chroot();
     if (!sourceFs || !chrootFs) {
       this.output.appendLine(
         `Failed to generate compdb; source exists = ${!!sourceFs}, chroot exists = ${!!chrootFs}`
       );
-      return;
+      return undefined;
     }
 
     const ebuild = new Ebuild(
@@ -80,5 +98,6 @@ export class CompdbServiceImpl implements CompdbService {
     } finally {
       await fs.promises.rm(tempFile, {force: true});
     }
+    return dest;
   }
 }

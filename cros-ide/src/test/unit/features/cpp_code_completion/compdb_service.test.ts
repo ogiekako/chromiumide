@@ -41,7 +41,7 @@ describe('Compdb service', () => {
           // Generate compilation database
           await testing.putFiles(state.chroot, {
             '/build/amd64-generic/tmp/portage/chromeos-base/codelab-9999/work/build/out/Default/compile_commands_no_chroot.json':
-              'fake compile commands',
+              '[]',
           });
           return '';
         }
@@ -68,7 +68,7 @@ describe('Compdb service', () => {
         path.join(state.source, 'src/platform2/codelab/compile_commands.json'),
         'utf8'
       )
-    ).toBe('fake compile commands');
+    ).toBe('[]');
   });
 
   it('can update symlink to readonly file', async () => {
@@ -88,7 +88,7 @@ describe('Compdb service', () => {
           // Generate compilation database
           await testing.putFiles(state.chroot, {
             '/build/amd64-generic/tmp/portage/chromeos-base/codelab-9999/work/build/out/Default/compile_commands_no_chroot.json':
-              'fake compile commands',
+              '[]',
           });
           return '';
         }
@@ -121,6 +121,6 @@ describe('Compdb service', () => {
         path.join(state.source, 'src/platform2/codelab/compile_commands.json'),
         'utf8'
       )
-    ).toBe('fake compile commands');
+    ).toBe('[]');
   });
 });
