@@ -97,6 +97,9 @@ const lintConfigs = new Map<string, LintConfig>([
       },
       arguments: (path: string) => [path],
       parse: parseCrosLintGn,
+      // gnlint.py needs to be run inside ChromiumOS source tree,
+      // otherwise it complains about formatting.
+      cwd: (exePath: string) => path.dirname(exePath),
     },
   ],
   [
