@@ -3,11 +3,6 @@
 CrOS IDE is a VSCode Extension for ChromiumOS development. It is a new project
 and we currently support only internal developers at Google.
 
-If you are using CrOS IDE <= v0.0.10, follow [legacy quickstart]. Note that
-legacy support will be removed after global dogfood release.
-
-[legacy quickstart]: ./legacy-quickstart.md
-
 ## Prerequisites
 
 You need a ChromiumOS chroot. If you are a new member and don't have it, please
