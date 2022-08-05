@@ -54,8 +54,7 @@ describe('Boards and Packages view', () => {
     );
     const chrootService = new ChrootService(
       new WrapFs(state.chroot),
-      new WrapFs(state.source),
-      /* isInsideChroot = */ () => false
+      new WrapFs(state.source)
     );
 
     const board = new BoardItem('eve');
@@ -76,8 +75,7 @@ describe('Boards and Packages view', () => {
     );
     const chrootService = new ChrootService(
       new WrapFs(state.chroot),
-      new WrapFs(state.source),
-      /* isInsideChroot = */ () => false
+      new WrapFs(state.source)
     );
 
     const board = new BoardItem('eve');
@@ -117,11 +115,7 @@ chromeos-base/shill`;
     );
 
     const bpProvider = new BoardPackageProvider(
-      new ChrootService(
-        new WrapFs(state.chroot),
-        new WrapFs(state.source),
-        /* isInsideChroot = */ () => false
-      )
+      new ChrootService(new WrapFs(state.chroot), new WrapFs(state.source))
     );
 
     // List boards.

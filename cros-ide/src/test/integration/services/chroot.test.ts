@@ -5,7 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {Chroot, ExecResult, Source} from '../../../common/common_util';
+import * as commonUtil from '../../../common/common_util';
 import {WrapFs} from '../../../common/cros';
 import {ChrootService} from '../../../services/chroot';
 import {
@@ -24,30 +24,9 @@ describe('chroot service', () => {
   const {fakeExec} = installFakeExec();
   fakes.installFakeSudo(fakeExec);
 
-  it('exec passes through if inside chroot', async () => {
-    const cros = new ChrootService(
-      undefined,
-      new WrapFs(temp.path as Source),
-      /* isInsideChroot = */ () => true
-    );
-
-    fakeExec.on(
-      'echo',
-      exactMatch(['1'], async () => '1\n')
-    );
-    const res = (await cros.exec('echo', ['1'], {
-      sudoReason: 'to echo',
-    })) as ExecResult;
-    expect(res.stdout).toBe('1\n');
-  });
-
   it('exec calls cros_sdk if outside chroot', async () => {
-    const source = temp.path as Source;
-    const cros = new ChrootService(
-      undefined,
-      new WrapFs(source),
-      /* isInsideChroot = */ () => false
-    );
+    const source = temp.path as commonUtil.Source;
+    const cros = new ChrootService(undefined, new WrapFs(source));
 
     fakes.installChrootCommandHandler(
       fakeExec,
@@ -57,17 +36,13 @@ describe('chroot service', () => {
     );
     const res = (await cros.exec('echo', ['1'], {
       sudoReason: 'to echo',
-    })) as ExecResult;
+    })) as commonUtil.ExecResult;
     expect(res.stdout).toBe('1\n');
   });
 
   it('exec passes through error from cros_sdk command', async () => {
-    const source = temp.path as Source;
-    const cros = new ChrootService(
-      undefined,
-      new WrapFs(source),
-      /* isInsideChroot = */ () => false
-    );
+    const source = temp.path as commonUtil.Source;
+    const cros = new ChrootService(undefined, new WrapFs(source));
 
     fakes.installChrootCommandHandler(
       fakeExec,
@@ -97,14 +72,10 @@ describe('chroot detection', () => {
         index: 1,
       },
     ];
-    const cros = new ChrootService(
-      undefined,
-      undefined,
-      /* isInsideChroot = */ () => false
-    );
+    const cros = new ChrootService(undefined, undefined);
     cros.onUpdate();
     expect(cros.chroot()?.root).toEqual(
-      path.join(crosCheckout, 'chroot') as Chroot
+      path.join(crosCheckout, 'chroot') as commonUtil.Chroot
     );
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
   });
@@ -129,14 +100,10 @@ describe('chroot detection', () => {
         index: 2,
       },
     ];
-    const cros = new ChrootService(
-      undefined,
-      undefined,
-      /* isInsideChroot = */ () => false
-    );
+    const cros = new ChrootService(undefined, undefined);
     cros.onUpdate();
     expect(cros.chroot()?.root).toEqual(
-      path.join(crosCheckout, 'chroot') as Chroot
+      path.join(crosCheckout, 'chroot') as commonUtil.Chroot
     );
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
   });
@@ -144,11 +111,7 @@ describe('chroot detection', () => {
   it('does not find chromeos folder when there are no folders', async () => {
     (vscode.workspace as Mutable<typeof vscode.workspace>).workspaceFolders =
       [];
-    const cros = new ChrootService(
-      undefined,
-      undefined,
-      /* isInsideChroot = */ () => false
-    );
+    const cros = new ChrootService(undefined, undefined);
     cros.onUpdate();
     expect(cros.chroot()?.root).toBeUndefined();
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
@@ -175,15 +138,11 @@ describe('chroot detection', () => {
         index: 2,
       },
     ];
-    const cros = new ChrootService(
-      undefined,
-      undefined,
-      /* isInsideChroot = */ () => false
-    );
+    const cros = new ChrootService(undefined, undefined);
     cros.onUpdate();
     expect(cros.chroot()?.root).toEqual(
       // Either is fine, but the implementation will return the first one.
-      path.join(crosCheckout1, 'chroot') as Chroot
+      path.join(crosCheckout1, 'chroot') as commonUtil.Chroot
     );
     expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalled();
   });
@@ -204,14 +163,10 @@ describe('chroot detection', () => {
         index: 2,
       },
     ];
-    const cros = new ChrootService(
-      undefined,
-      undefined,
-      /* isInsideChroot = */ () => false
-    );
+    const cros = new ChrootService(undefined, undefined);
     cros.onUpdate();
     expect(cros.chroot()?.root).toEqual(
-      path.join(crosCheckout, 'chroot') as Chroot
+      path.join(crosCheckout, 'chroot') as commonUtil.Chroot
     );
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
   });
@@ -239,16 +194,12 @@ describe('chroot detection', () => {
         index: 2,
       },
     ];
-    const cros = new ChrootService(
-      undefined,
-      undefined,
-      /* isInsideChroot = */ () => false
-    );
+    const cros = new ChrootService(undefined, undefined);
     cros.onUpdate();
 
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
     expect(cros.chroot()?.root).toEqual(
-      path.join(crosCheckout1, 'chroot') as Chroot
+      path.join(crosCheckout1, 'chroot') as commonUtil.Chroot
     );
 
     // Then change it (this is somewhat unrealistic,
@@ -270,7 +221,7 @@ describe('chroot detection', () => {
     expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalled();
     expect(cros.chroot()?.root).toEqual(
       // unchanged
-      path.join(crosCheckout1, 'chroot') as Chroot
+      path.join(crosCheckout1, 'chroot') as commonUtil.Chroot
     );
   });
 
@@ -299,16 +250,12 @@ describe('chroot detection', () => {
         index: 2,
       },
     ];
-    const cros = new ChrootService(
-      undefined,
-      undefined,
-      /* isInsideChroot = */ () => false
-    );
+    const cros = new ChrootService(undefined, undefined);
     cros.onUpdate();
 
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
     expect(cros.chroot()?.root).toEqual(
-      path.join(crosCheckout1, 'chroot') as Chroot
+      path.join(crosCheckout1, 'chroot') as commonUtil.Chroot
     );
 
     // Then change it (this is somewhat unrealistic,
@@ -335,7 +282,7 @@ describe('chroot detection', () => {
     expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalled();
     expect(cros.chroot()?.root).toEqual(
       // unchanged
-      path.join(crosCheckout1, 'chroot') as Chroot
+      path.join(crosCheckout1, 'chroot') as commonUtil.Chroot
     );
   });
 
@@ -365,16 +312,12 @@ describe('chroot detection', () => {
         index: 3,
       },
     ];
-    const cros = new ChrootService(
-      undefined,
-      undefined,
-      /* isInsideChroot = */ () => false
-    );
+    const cros = new ChrootService(undefined, undefined);
     cros.onUpdate();
     expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalledTimes(1);
 
     expect(cros.chroot()?.root).toEqual(
-      path.join(crosCheckout1, 'chroot') as Chroot
+      path.join(crosCheckout1, 'chroot') as commonUtil.Chroot
     );
 
     (vscode.workspace as Mutable<typeof vscode.workspace>).workspaceFolders = [
@@ -398,7 +341,7 @@ describe('chroot detection', () => {
     cros.onUpdate();
 
     expect(cros.chroot()?.root).toEqual(
-      path.join(crosCheckout1, 'chroot') as Chroot
+      path.join(crosCheckout1, 'chroot') as commonUtil.Chroot
     );
     expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalledTimes(3);
   });

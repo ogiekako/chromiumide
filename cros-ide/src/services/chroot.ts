@@ -35,8 +35,7 @@ export function activate(context: vscode.ExtensionContext): ChrootService {
 export class ChrootService {
   constructor(
     private chrootFs: WrapFs<commonUtil.Chroot> | undefined,
-    private sourceFs: WrapFs<commonUtil.Source> | undefined,
-    private readonly isInsideChroot: () => boolean = commonUtil.isInsideChroot
+    private sourceFs: WrapFs<commonUtil.Source> | undefined
   ) {}
 
   /**
@@ -77,9 +76,6 @@ export class ChrootService {
     args: string[],
     options: sudo.SudoExecOptions
   ): ReturnType<typeof commonUtil.exec> {
-    if (this.isInsideChroot()) {
-      return commonUtil.exec(name, args, options);
-    }
     const source = this.source();
     if (source === undefined) {
       return new Error(
@@ -133,10 +129,6 @@ export class ChrootService {
   }
 
   private findChrootCandidates(): commonUtil.Chroot[] {
-    if (this.isInsideChroot()) {
-      return ['/' as commonUtil.Chroot];
-    }
-
     const candidates: commonUtil.Chroot[] = [];
     for (const folder of vscode.workspace.workspaceFolders || []) {
       const r = commonUtil.findChroot(folder.uri.fsPath);

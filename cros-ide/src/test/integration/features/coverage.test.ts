@@ -34,8 +34,7 @@ describe('Test coverage', () => {
     });
     const chrootService = new ChrootService(
       new WrapFs(tempdir.path as Chroot),
-      undefined,
-      /* isInsideChroot = */ () => false
+      undefined
     );
     return {
       coverage: new Coverage(

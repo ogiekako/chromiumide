@@ -38,8 +38,7 @@ gs://chromeos-image-archive/xyz-release/garbage.txt
       'xyz',
       new chroot.ChrootService(
         undefined,
-        new WrapFs(tempDir.path as commonUtil.Source),
-        () => false
+        new WrapFs(tempDir.path as commonUtil.Source)
       ),
       new fakes.VoidOutputChannel()
     );
