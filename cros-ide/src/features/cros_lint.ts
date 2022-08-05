@@ -63,8 +63,7 @@ interface LintConfig {
 }
 
 const GNLINT_PATH = 'src/platform2/common-mk/gnlint.py';
-const TAST_LINT_PATH = 'src/platform/tast/tools/run_lint.sh';
-const TAST_PATH_RE = /^.*\/tast\/.*/;
+const TAST_RE = /^.*\/platform\/(tast-tests-private|tast-tests|tast).*/;
 const CROS_PATH = 'chromite/bin/cros';
 
 function crosExeFor(realpath: string): string | undefined {
@@ -123,28 +122,32 @@ const lintConfigs = new Map<string, LintConfig>([
   [
     'go',
     {
-      executable: realpath => {
-        if (!TAST_PATH_RE.test(realpath)) {
-          return crosExeFor(realpath);
-        }
-        const chroot = commonUtil.findChroot(realpath);
-        if (chroot === undefined) {
-          return undefined;
-        }
-        const source = commonUtil.sourceDir(chroot);
-        return path.join(source, TAST_LINT_PATH);
-      },
+      executable: realpath =>
+        !TAST_RE.test(realpath) ? crosExeFor(realpath) : tastLintExe(realpath),
       arguments: (path: string) =>
-        TAST_PATH_RE.test(path) ? [path] : ['lint', path],
+        TAST_RE.test(path) ? [path] : ['lint', path],
       parse: parseCrosLintGo,
       cwd: (exePath: string) =>
-        TAST_PATH_RE.test(exePath)
-          ? path.dirname(path.dirname(exePath))
-          : undefined,
+        TAST_RE.test(exePath) ? path.dirname(path.dirname(exePath)) : undefined,
       env: (execPath: string) => goLintEnv(execPath),
     },
   ],
 ]);
+
+function tastLintExe(realPath: string): string | undefined {
+  // Return the right linting exe for the tast repo.
+  const match = TAST_RE.exec(realPath);
+  if (!match) {
+    return undefined;
+  }
+  const linterPath = `src/platform/${match[1]}/tools/run_lint.sh`;
+  const chroot = commonUtil.findChroot(realPath);
+  if (chroot === undefined) {
+    return undefined;
+  }
+  const source = commonUtil.sourceDir(chroot);
+  return path.join(source, linterPath);
+}
 
 // TODO(b/241434614): Remove goLintEnv function once cros lint bug is resolved.
 /**
