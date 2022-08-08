@@ -3,9 +3,11 @@
 This VSCode IDE extension is designed to make ChromiumOS development easier and faster by anchoring core tools in one place, and making them discoverable and easy to use.
 
 ## User Scope
+
 This is intended for Googlers only.
 
 ## Project Status
+
 Beta testing stage.
 
 ## Features
@@ -24,4 +26,5 @@ See [QuickStart Guide] for setup instructions.
 [quickstart guide]: https://chromium.googlesource.com/chromiumos/chromite/+/HEAD/ide_tooling/docs/quickstart.md
 
 ## Contacting Us
+
 [g/cros-ide-users](http://g/cros-ide-users)
