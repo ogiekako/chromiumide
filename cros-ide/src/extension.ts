@@ -18,6 +18,7 @@ import * as cppCodeCompletion from './features/cpp_code_completion/cpp_code_comp
 import * as crosFormat from './features/cros_format';
 import * as crosLint from './features/cros_lint';
 import * as deviceManagement from './features/device_management';
+import * as gerrit from './features/gerrit';
 import * as gn from './features/gn';
 import * as hints from './features/hints';
 import * as feedback from './features/metrics/feedback';
@@ -88,6 +89,10 @@ export async function activate(
 
   if (config.underDevelopment.crosFormat.get()) {
     crosFormat.activate(context);
+  }
+
+  if (config.underDevelopment.gerrit.get()) {
+    gerrit.activate(context);
   }
 
   // Avoid network operations in tests.

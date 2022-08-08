@@ -367,6 +367,11 @@
           "description": "Enable Test Coverage (incomplete)",
           "default": false
         },
+        "cros-ide.underDevelopment.gerrit": {
+          "type": "boolean",
+          "description": "Enable Gerrit support (incomplete)",
+          "default": false
+        },
         "cros-ide.deviceManagement.devices": {
           "type": "array",
           "scope": "machine-overridable",
