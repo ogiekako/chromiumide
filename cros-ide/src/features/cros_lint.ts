@@ -48,7 +48,7 @@ interface LintConfig {
   /**
    * Returns the executable name to lint the realpath. It returns undefined in case linter is not found.
    */
-  executable(realpath: string): string | undefined;
+  executable(realpath: string): Promise<string | undefined>;
   arguments(path: string): string[];
   parse(
     stdout: string,
@@ -66,7 +66,7 @@ const GNLINT_PATH = 'src/platform2/common-mk/gnlint.py';
 const TAST_RE = /^.*\/platform\/(tast-tests-private|tast-tests|tast).*/;
 const CROS_PATH = 'chromite/bin/cros';
 
-function crosExeFor(realpath: string): string | undefined {
+async function crosExeFor(realpath: string): Promise<string | undefined> {
   const chroot = commonUtil.findChroot(realpath);
   if (chroot === undefined) {
     return undefined;
@@ -88,7 +88,7 @@ const lintConfigs = new Map<string, LintConfig>([
   [
     'gn',
     {
-      executable: realpath => {
+      executable: async realpath => {
         const chroot = commonUtil.findChroot(realpath);
         if (chroot === undefined) {
           return undefined;
@@ -134,7 +134,11 @@ const lintConfigs = new Map<string, LintConfig>([
   ],
 ]);
 
-function tastLintExe(realPath: string): string | undefined {
+async function tastLintExe(realPath: string): Promise<string | undefined> {
+  const goFound = await checkForGo();
+  if (!goFound) {
+    return undefined;
+  }
   // Return the right linting exe for the tast repo.
   const match = TAST_RE.exec(realPath);
   if (!match) {
@@ -147,6 +151,32 @@ function tastLintExe(realPath: string): string | undefined {
   }
   const source = commonUtil.sourceDir(chroot);
   return path.join(source, linterPath);
+}
+
+let goWarningShown = false;
+async function checkForGo(): Promise<boolean> {
+  // Go needs to be installed for tast linter to work.
+  const res = await commonUtil.exec('which', ['go']);
+  if (!(res instanceof Error)) {
+    return true;
+  }
+  if (goWarningShown) {
+    return false;
+  }
+  goWarningShown = true;
+  // Suggest the user install go.
+  const choice = await vscode.window.showInformationMessage(
+    '*** Linting Tast repos requires the Golang go command. Please install the "go" command (Go language) to a location listed in $PATH.',
+    'Go Installation'
+  );
+  if (choice) {
+    void vscode.env.openExternal(
+      vscode.Uri.parse(
+        'http://go/go/codelabs/getting-started.md?cl=head#go-glinux-workstation'
+      )
+    );
+  }
+  return false;
 }
 
 // TODO(b/241434614): Remove goLintEnv function once cros lint bug is resolved.
@@ -235,7 +265,7 @@ async function updateDiagnostics(
       return;
     }
 
-    const name = lintConfig.executable(realpath);
+    const name = await lintConfig.executable(realpath);
     if (!name) {
       log.channel.append(
         `Could not find lint executable for ${document.uri.fsPath}\n`
