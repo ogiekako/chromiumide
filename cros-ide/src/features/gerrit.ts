@@ -6,5 +6,5 @@ import * as vscode from 'vscode';
 
 export function activate(_context: vscode.ExtensionContext) {
   // TODO: implement the feature
-  vscode.window.showInformationMessage('Hello gerritIntegration!!');
+  void vscode.window.showInformationMessage('Hello gerritIntegration!!');
 }
