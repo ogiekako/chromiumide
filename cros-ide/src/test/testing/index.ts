@@ -12,5 +12,7 @@ export {
   prefixMatch,
 } from './fake_exec';
 export {buildFakeChroot, getExtensionUri, putFiles, tempDir} from './fs';
+export {ThrottledJobRunner} from './parallelize';
+export {BlockingPromise} from './promises';
 export {flushMicrotasks} from './tasks';
 export {Mutable} from './types';

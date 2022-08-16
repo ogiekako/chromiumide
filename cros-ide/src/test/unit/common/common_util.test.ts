@@ -5,24 +5,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../common/common_util';
-import {flushMicrotasks, tempDir} from '../../testing';
-
-class BlockingPromise<T> {
-  readonly promise: Promise<T | undefined>;
-  unblock: () => void;
-  private constructor(created: (p: BlockingPromise<T>) => void, value?: T) {
-    this.unblock = () => {}; // placeholder to satisfy type system.
-    this.promise = new Promise(resolve => {
-      this.unblock = () => resolve(value);
-      created(this);
-    });
-  }
-  static async new<T>(value?: T): Promise<BlockingPromise<T>> {
-    return new Promise(resolve => {
-      return new BlockingPromise(resolve, value);
-    });
-  }
-}
+import {flushMicrotasks, tempDir, BlockingPromise} from '../../testing';
 
 class SimpleLogger {
   constructor(private readonly f: (s: string) => void) {}
@@ -36,7 +19,7 @@ describe('Job manager', () => {
   it('throttles jobs', async () => {
     const manager = new commonUtil.JobManager();
 
-    const guard = await BlockingPromise.new();
+    const guard = await BlockingPromise.new(undefined);
 
     const p1 = manager.offer(async () => {
       await guard.promise;
@@ -71,7 +54,7 @@ describe('Job manager', () => {
   it('handles errors', async () => {
     const manager = new commonUtil.JobManager();
 
-    const guard = await BlockingPromise.new();
+    const guard = await BlockingPromise.new(undefined);
 
     const p1 = manager.offer(async () => {
       await guard.promise;
