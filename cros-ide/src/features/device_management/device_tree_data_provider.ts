@@ -38,8 +38,10 @@ export class LeasedDeviceItem extends DeviceItem {
   constructor(public readonly device: repository.LeasedDevice) {
     super(device);
     this.description = `${device.board ?? '???'}/${device.model ?? '???'}`;
+    const now = new Date();
     if (device.deadline) {
-      this.description += ` (until ${dateFns.format(device.deadline, 'p')})`;
+      const distance = dateFns.differenceInMinutes(device.deadline, now);
+      this.description += ` (${distance}m remaining)`;
     }
   }
 }
@@ -97,6 +99,7 @@ export class DeviceTreeDataProvider
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<
     Item | undefined | null | void
   >();
+
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   private readonly subscriptions: vscode.Disposable[] = [
@@ -108,6 +111,17 @@ export class DeviceTreeDataProvider
     this.subscriptions.push(
       deviceRepository.onDidChange(() => {
         this.onDidChangeTreeDataEmitter.fire();
+      })
+    );
+
+    // Loading every time for displaying remaining leased time
+    const timerId = setInterval(() => {
+      this.onDidChangeTreeDataEmitter.fire();
+    }, 60000);
+
+    this.subscriptions.push(
+      new vscode.Disposable(() => {
+        clearInterval(timerId);
       })
     );
   }
