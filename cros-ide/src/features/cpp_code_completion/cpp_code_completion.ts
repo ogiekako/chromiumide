@@ -251,10 +251,20 @@ export class CompilationDatabase implements vscode.Disposable {
         command: SHOW_LOG_COMMAND,
       });
       try {
+        metrics.send({
+          category: 'background',
+          group: 'cppxrefs',
+          action: 'generate compdb',
+        });
         await this.compdbService.generate(board, packageInfo);
         await vscode.commands.executeCommand('clangd.restart');
       } catch (e) {
         if (e instanceof CompdbError) {
+          metrics.send({
+            category: 'error',
+            group: 'cppxrefs',
+            description: e.details.kind,
+          });
           if (!this.ignoredError.has(e.details.kind)) {
             this.showErrorMessageWithShowLogOption(board, e);
           }

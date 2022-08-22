@@ -81,7 +81,13 @@ const optionsGA = {
 };
 
 // Exhaustive list of feature groups.
-type FeatureGroup = 'codesearch' | 'device' | 'lint' | 'package' | 'misc';
+type FeatureGroup =
+  | 'codesearch'
+  | 'cppxrefs'
+  | 'device'
+  | 'lint'
+  | 'package'
+  | 'misc';
 
 // Fields common to InteractiveEvent and BackgroundEvent.
 interface EventBase {
