@@ -44,4 +44,15 @@ export class CipdRepository {
     );
     return path.join(this.installDir, 'crosfleet');
   }
+
+  async ensureTriciumSpellchecker(
+    output: vscode.OutputChannel
+  ): Promise<string> {
+    await this.ensurePackage(
+      'infra/tricium/function/spellchecker',
+      'live',
+      output
+    );
+    return path.join(this.installDir, 'spellchecker');
+  }
 }

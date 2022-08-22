@@ -96,14 +96,12 @@ export async function activate(
     gerrit.activate(context);
   }
 
-  const triciumSpellchecker =
-    config.underDevelopment.triciumSpellcheckerPath.get();
-  if (triciumSpellchecker) {
-    spellchecker.activate(
+  if (config.underDevelopment.triciumSpellchecker.get()) {
+    await spellchecker.activate(
       context,
-      triciumSpellchecker,
       statusManager,
-      chrootService
+      chrootService,
+      cipdRepository
     );
   }
 

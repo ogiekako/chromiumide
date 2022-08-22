@@ -71,8 +71,8 @@ export const underDevelopment = {
   testCoverage: new ConfigValue<boolean>('underDevelopment.testCoverage'),
   gerrit: new ConfigValue<boolean>('underDevelopment.gerrit'),
   runTastTests: new ConfigValue<boolean>('underDevelopment.runTastTests'),
-  triciumSpellcheckerPath: new ConfigValue<string>(
-    'underDevelopment.triciumSpellcheckerPath'
+  triciumSpellchecker: new ConfigValue<boolean>(
+    'underDevelopment.triciumSpellchecker'
   ),
 };
 

@@ -398,10 +398,10 @@
           "description": "Enable running tast tests (incomplete)",
           "default": false
         },
-        "cros-ide.underDevelopment.triciumSpellcheckerPath": {
-          "type": "string",
-          "description": "Path to Tricium Spellchecker executable (b/217287367).",
-          "default": ""
+        "cros-ide.underDevelopment.triciumSpellchecker": {
+          "type": "boolean",
+          "description": "Enable Tricium Spellchecker (b/217287367).",
+          "default": false
         },
         "cros-ide.deviceManagement.devices": {
           "type": "array",

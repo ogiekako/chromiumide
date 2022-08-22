@@ -6,7 +6,8 @@ import * as vscode from 'vscode';
 import * as chroot from '../../../services/chroot';
 import * as bgTaskStatus from '../../../ui/bg_task_status';
 import * as tricium from '../tricium';
-import * as util from './executor';
+import * as cipd from '../../../common/cipd';
+import * as executor from './executor';
 
 // Spellchecker demonstrates integration between Tricium's functions
 // and CrOS IDE.
@@ -21,11 +22,16 @@ const SHOW_LOG_COMMAND: vscode.Command = {
   title: 'Show Tricium Log',
 };
 
-export function activate(
+/**
+ * Activate should handle the errors instead of throwing them.
+ * In particular, CIPD interaction is wrapped in try-catch block, which logs
+ * an error and exits if the spellchecker cannot be installed.
+ */
+export async function activate(
   context: vscode.ExtensionContext,
-  triciumSpellchecker: string,
   statusManager: bgTaskStatus.StatusManager,
-  chrootService: chroot.ChrootService
+  chrootService: chroot.ChrootService,
+  cipdRepository: cipd.CipdRepository
 ) {
   const outputChannel = vscode.window.createOutputChannel('CrOS IDE: Tricium');
   context.subscriptions.push(
@@ -33,6 +39,17 @@ export function activate(
       outputChannel.show()
     )
   );
+
+  let triciumSpellchecker: string;
+  try {
+    triciumSpellchecker = await cipdRepository.ensureTriciumSpellchecker(
+      outputChannel
+    );
+  } catch (err) {
+    // TODO(b:217287367): send metrics
+    outputChannel.append(`Could not download Tricium spellchecker: ${err}`);
+    return;
+  }
 
   const spellchecker = new Spellchecker(
     context,
@@ -115,7 +132,8 @@ class Spellchecker {
       return;
     }
 
-    const results = await util.callSpellchecker(
+    // TODO(b:217287367): Cancel the operation if the active editor changes.
+    const results = await executor.callSpellchecker(
       sourceRoot,
       doc.uri.fsPath,
       this.toolPath,
