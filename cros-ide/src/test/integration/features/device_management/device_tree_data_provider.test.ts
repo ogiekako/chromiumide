@@ -34,7 +34,8 @@ async function renderTree(
   return children;
 }
 
-describe('Device tree data provider', () => {
+// Disabled because of flakiness (b/230425191).
+xdescribe('Device tree data provider', () => {
   const clock = jasmine.clock();
   beforeEach(() => {
     clock.install();
