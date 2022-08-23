@@ -11,6 +11,7 @@ import * as commander from 'commander';
 import * as glob from 'glob';
 import * as cppPackages from '../../../features/cpp_code_completion/packages';
 import * as testing from '../../testing';
+import {CompilationDatabase} from '../../../features/cpp_code_completion/compdb_service/compilation_database_type';
 import * as clangd from './clangd';
 import * as compdb from './compdb';
 import {chrootServiceInstance, packagesInstance} from './common';
@@ -28,8 +29,8 @@ const SKIP_PACKAGES = new Set([
 
 const SKIP_BUILD_GN = new Set([
   // There are no ebuild files compiling BUILD.gn under these directories.
-  'camera/features/auto_framing',
   'camera/features',
+  'camera/features/auto_framing',
   'camera/features/face_detection',
   'camera/features/gcam_ae',
   'camera/features/hdrnet',
@@ -37,6 +38,7 @@ const SKIP_BUILD_GN = new Set([
   'camera/gpu',
   'camera/gpu/egl',
   'camera/gpu/gles',
+  'camera/hal/fake',
   'common-mk/testrunner',
   'media_capabilities',
 ]);
@@ -45,6 +47,9 @@ type Options = {
   compdbGen: boolean;
   jobs: number;
   cutoff: number;
+  board: string;
+  // If empty, check all the packages.
+  package: string[];
 };
 
 export function installCommand(program: commander.Command) {
@@ -69,6 +74,17 @@ export function installCommand(program: commander.Command) {
         '--cutoff <number>',
         'skip C++ files with the number of lines more than this value'
       ).default(2000)
+    )
+    .addOption(
+      new commander.Option('--board <string>', 'the board to use').default(
+        'betty'
+      )
+    )
+    .addOption(
+      new commander.Option(
+        '--package <strings...>',
+        'package(s) to check'
+      ).default([])
     )
     .action(async opt => {
       await main(opt);
@@ -100,14 +116,19 @@ async function main(options: Options) {
 type Job<T> = () => Promise<T>;
 
 class PackageJobsProvider {
-  private errors: Error[] = []; // updated when error occurs.
+  private generateCompdbError: Error | undefined = undefined;
+  private readonly clangdErrors: Error[] = []; // updated when error occurs.
   constructor(
     private readonly packageInfo: cppPackages.PackageInfo,
     readonly output: vscode.OutputChannel
   ) {}
 
-  getErrors() {
-    return this.errors.slice();
+  getGenerateCompdbError() {
+    return this.generateCompdbError;
+  }
+
+  getClangdErrors() {
+    return this.clangdErrors.slice();
   }
 
   getPackageInfo() {
@@ -117,41 +138,48 @@ class PackageJobsProvider {
   /**
    * Returns a job to generate compilation database.
    */
-  generateCompdb(): Job<void> {
+  generateCompdb(board: string): Job<void> {
     return async () => {
       try {
-        await compdb.generate(this.packageInfo, this.output);
+        await compdb.generate(this.packageInfo, this.output, board);
       } catch (e) {
-        this.errors.push(e as Error);
+        this.generateCompdbError = e as Error;
       }
     };
   }
 
   /**
-   * Returns jobs that collectively call clangd for all the C++ files with
-   * the number of lines less than cutoff, updating the instance fields on
-   * encountering errors.
+   * Returns jobs that collectively call clangd for all the C++ files listed in
+   * compilation database, updating the instance fields on encountering errors.
    */
   async callClangdForAllCpp(cutoff: number): Promise<Job<void>[]> {
-    if (this.errors.length) {
+    if (this.generateCompdbError) {
       return [];
     }
-    const source = chrootServiceInstance().source()!.root;
-    const allCppFiles = await util.promisify(glob.glob)(
-      path.join(source, this.packageInfo.sourceDir, '**/*.{cc,cpp}')
+    const sourceDir = path.join(
+      chrootServiceInstance().source()!.root,
+      this.packageInfo.sourceDir
     );
+    const compdbPath = path.join(sourceDir, 'compile_commands.json');
+    const compdbContent = JSON.parse(
+      await fs.promises.readFile(compdbPath, 'utf-8')
+    ) as CompilationDatabase;
+
     const jobs = [];
-    for (const cppFile of allCppFiles) {
+    for (const entry of compdbContent) {
+      if (!entry.file.startsWith(sourceDir)) {
+        continue;
+      }
       jobs.push(async () => {
-        const content = await fs.promises.readFile(cppFile, 'utf8');
+        const content = await fs.promises.readFile(entry.file, 'utf8');
         if ((content.match(/\n/g) ?? []).length > cutoff) {
           return;
         }
-        const checkResult = await clangd.check(cppFile, this.output);
+        const checkResult = await clangd.check(entry.file, this.output);
         if (checkResult.notFoundHeaders) {
           for (const header of checkResult.notFoundHeaders) {
-            this.errors.push(
-              new Error(`${cppFile} pp_file_not_found ${header}`)
+            this.clangdErrors.push(
+              new Error(`${entry.file} pp_file_not_found ${header}`)
             );
           }
         }
@@ -162,7 +190,7 @@ class PackageJobsProvider {
 
   dumpErrors() {
     this.output.appendLine('========== ERRORS ==========');
-    for (const error of this.errors) {
+    for (const error of this.clangdErrors) {
       this.output.appendLine(error.message);
     }
   }
@@ -178,7 +206,7 @@ class Tester {
   async testPlatform2Packages() {
     const jobsProviders = await this.createJobsProviders();
     if (this.options.compdbGen) {
-      await this.generateCompdbs(jobsProviders);
+      await this.generateCompdbs(jobsProviders, this.options.board);
     }
     await this.runClangds(jobsProviders);
     this.reportAndThrowOnFailures(jobsProviders);
@@ -224,6 +252,12 @@ class Tester {
       if (SKIP_PACKAGES.has(packageInfo.atom)) {
         continue;
       }
+      if (
+        this.options.package.length &&
+        !this.options.package.includes(packageInfo.atom)
+      ) {
+        continue;
+      }
       if (seenAtoms.has(packageInfo.atom)) {
         continue;
       }
@@ -236,7 +270,10 @@ class Tester {
     return jobsProviders;
   }
 
-  private async generateCompdbs(jobsProviders: PackageJobsProvider[]) {
+  private async generateCompdbs(
+    jobsProviders: PackageJobsProvider[],
+    board: string
+  ) {
     const compdbJobs = [];
     for (const [i, jobsProvider] of jobsProviders.entries()) {
       // Add a fake job for logging.
@@ -248,7 +285,7 @@ class Tester {
         );
       });
 
-      compdbJobs.push(jobsProvider.generateCompdb());
+      compdbJobs.push(jobsProvider.generateCompdb(board));
     }
     await new testing.ThrottledJobRunner(
       compdbJobs,
@@ -281,22 +318,35 @@ class Tester {
   }
 
   private reportAndThrowOnFailures(jobsProviders: PackageJobsProvider[]) {
-    const failedJobProviders = new Array<[number, PackageJobsProvider]>();
-    for (const jobsProvider of jobsProviders) {
-      const errors = jobsProvider.getErrors();
+    const failureReports = [];
+
+    const compiledJobs = [];
+    for (const job of jobsProviders) {
+      if (!job.getGenerateCompdbError()) {
+        compiledJobs.push(job);
+        continue;
+      }
+      job.dumpErrors();
+      const sourceDir = job.getPackageInfo().sourceDir;
+      const logFile = job.output.name;
+      failureReports.push(`${sourceDir} (compile error): ${logFile}`);
+    }
+
+    const clangdFailedJobs: [number, PackageJobsProvider][] = [];
+    for (const job of compiledJobs) {
+      const errors = job.getClangdErrors();
       if (errors.length === 0) {
         continue;
       }
-      failedJobProviders.push([errors.length, jobsProvider]);
+      clangdFailedJobs.push([errors.length, job]);
     }
-    failedJobProviders.sort((a, b) => b[0] - a[0]); // descending order
+    clangdFailedJobs.sort((a, b) => b[0] - a[0]); // descending order
 
-    const failureReports = [];
-    for (const [errorCount, jobsProvider] of failedJobProviders) {
-      jobsProvider.dumpErrors();
+    for (const [errorCount, job] of clangdFailedJobs) {
+      job.dumpErrors();
 
-      const sourceDir = jobsProvider.getPackageInfo().sourceDir;
-      const logFile = jobsProvider.output.name;
+      const sourceDir = job.getPackageInfo().sourceDir;
+      const logFile = job.output.name;
       failureReports.push(`${sourceDir} (${errorCount} errors): ${logFile}`);
     }
     if (failureReports.length) {
