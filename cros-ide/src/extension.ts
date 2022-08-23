@@ -64,7 +64,8 @@ async function postMetricsActivate(
   assertOutsideChroot();
 
   const statusManager = bgTaskStatus.activate(context);
-  const chrootService = chroot.activate(context);
+  const chrootService = new chroot.ChrootService(undefined, undefined);
+  context.subscriptions.push(chrootService);
   const cipdRepository = new cipd.CipdRepository();
 
   context.subscriptions.push(

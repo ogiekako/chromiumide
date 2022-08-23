@@ -8,7 +8,6 @@ import * as vscode from 'vscode';
 import * as commonUtil from '../../../../common/common_util';
 import * as cros from '../../../../common/cros';
 import {CompdbServiceImpl} from '../../../../features/cpp_code_completion/compdb_service';
-import * as chroot from '../../../../services/chroot';
 import * as testing from '../../../testing';
 import * as fakes from '../../../testing/fakes';
 
@@ -51,13 +50,10 @@ describe('Compdb service', () => {
       recursive: true,
     });
 
-    const compdbService = new CompdbServiceImpl(
-      state.output,
-      new chroot.ChrootService(
-        new cros.WrapFs(state.chroot),
-        new cros.WrapFs(state.source)
-      )
-    );
+    const compdbService = new CompdbServiceImpl(state.output, {
+      chroot: new cros.WrapFs(state.chroot),
+      source: new cros.WrapFs(state.source),
+    });
     await compdbService.generate('amd64-generic', {
       sourceDir: 'src/platform2/codelab',
       atom: 'chromeos-base/codelab',
@@ -104,13 +100,10 @@ describe('Compdb service', () => {
       path.join(state.source, 'src/platform2/codelab/compile_commands.json')
     );
 
-    const compdbService = new CompdbServiceImpl(
-      state.output,
-      new chroot.ChrootService(
-        new cros.WrapFs(state.chroot),
-        new cros.WrapFs(state.source)
-      )
-    );
+    const compdbService = new CompdbServiceImpl(state.output, {
+      chroot: new cros.WrapFs(state.chroot),
+      source: new cros.WrapFs(state.source),
+    });
     await compdbService.generate('amd64-generic', {
       sourceDir: 'src/platform2/codelab',
       atom: 'chromeos-base/codelab',

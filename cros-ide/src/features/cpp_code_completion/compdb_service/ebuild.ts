@@ -4,10 +4,8 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as commonUtil from '../../../common/common_util';
-import {WrapFs} from '../../../common/cros';
 import {Atom} from '../packages';
-import {ChrootService} from '../../../services/chroot';
+import * as servicesChroot from '../../../services/chroot';
 import {MNT_HOST_SOURCE} from '../constants';
 import {Board, HOST} from './board';
 import {CompdbError, CompdbErrorKind} from './error';
@@ -18,8 +16,7 @@ export class Ebuild {
     private readonly board: Board,
     private readonly atom: Atom,
     private readonly output: vscode.OutputChannel,
-    private readonly chrootFs: WrapFs<commonUtil.Chroot>,
-    private readonly chrootService: ChrootService,
+    private readonly crosFs: servicesChroot.CrosFs,
     private readonly useFlags: string[]
   ) {}
 
@@ -94,11 +91,11 @@ export class Ebuild {
       try {
         cache = path.join(dir, '.configured');
         this.output.appendLine(`Removing cache file ${cache}`);
-        await this.chrootFs.rm(cache, {force: true});
+        await this.crosFs.chroot.rm(cache, {force: true});
 
         cache = path.join(dir, '.compiled');
         this.output.appendLine(`Removing cache file ${cache}`);
-        await this.chrootFs.rm(cache, {force: true});
+        await this.crosFs.chroot.rm(cache, {force: true});
       } catch (e) {
         throw new CompdbError({
           kind: CompdbErrorKind.RemoveCache,
@@ -110,7 +107,8 @@ export class Ebuild {
   }
 
   private async runCompgen() {
-    const res = await this.chrootService.exec(
+    const res = await servicesChroot.execInChroot(
+      this.crosFs.source.root,
       'env',
       [
         'USE=' + this.useFlags.join(' '),
@@ -138,7 +136,7 @@ export class Ebuild {
         'out/Default/compile_commands_no_chroot.json'
       );
       try {
-        const stat = await this.chrootFs.stat(file);
+        const stat = await this.crosFs.chroot.stat(file);
         candidates.push([stat.mtime, file]);
       } catch (_e) {
         // Ignore possible file not found error, which happens because we

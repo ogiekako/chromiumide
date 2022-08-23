@@ -18,25 +18,44 @@ import * as sudo from './sudo';
  * 2. Multiple chroots are detected - this happens in multiroot
  *    workspace. We show an error message and use one of the chroots.
  */
-export function activate(context: vscode.ExtensionContext): ChrootService {
-  const service = new ChrootService(undefined, undefined);
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeWorkspaceFolders(_e => {
-      service.onUpdate();
-    })
-  );
-  service.onUpdate();
-  return service;
-}
+
+/**
+ * Holds accessors to files related to chromiumOS.
+ */
+export type CrosFs = {
+  chroot: WrapFs<commonUtil.Chroot>;
+  source: WrapFs<commonUtil.Source>;
+};
 
 /**
  * Provides tools to operate chroot.
  */
-export class ChrootService {
+export class ChrootService implements vscode.Disposable {
+  private readonly subscriptions = new Array<vscode.Disposable>();
+  private readonly onDidActivateEmitter = new vscode.EventEmitter<CrosFs>();
+  /**
+   * Event fired with CrosFs. Fired at most once asynchronously after the class is
+   * constructed.
+   */
+  readonly onDidActivate = this.onDidActivateEmitter.event;
+
   constructor(
     private chrootFs: WrapFs<commonUtil.Chroot> | undefined,
     private sourceFs: WrapFs<commonUtil.Source> | undefined
-  ) {}
+  ) {
+    this.subscriptions.push(
+      vscode.workspace.onDidChangeWorkspaceFolders(_e => {
+        this.onUpdate();
+      })
+    );
+    if (!chrootFs) {
+      setImmediate(() => this.onUpdate());
+    }
+  }
+
+  dispose() {
+    vscode.Disposable.from(...this.subscriptions).dispose();
+  }
 
   /**
    * Returns an accessor to files under chroot. Don't store the returned value,
@@ -54,17 +73,20 @@ export class ChrootService {
     return this.sourceFs;
   }
 
-  private setPaths(chroot?: commonUtil.Chroot) {
+  private setPaths(chroot: commonUtil.Chroot) {
     // Context for the custom `when` clause in boards and packages view.
     void vscode.commands.executeCommand(
       'setContext',
       'cros-ide.chrootPath',
       chroot
     );
-    this.chrootFs = chroot ? new WrapFs(chroot) : undefined;
-    this.sourceFs = chroot
-      ? new WrapFs(commonUtil.sourceDir(chroot))
-      : undefined;
+    this.chrootFs = new WrapFs(chroot);
+    this.sourceFs = new WrapFs(commonUtil.sourceDir(chroot));
+
+    this.onDidActivateEmitter.fire({
+      chroot: this.chrootFs,
+      source: this.sourceFs,
+    });
   }
 
   /**
@@ -82,9 +104,7 @@ export class ChrootService {
         'cros_sdk not found; open a directory under which chroot has been set up'
       );
     }
-    const crosSdk = path.join(source.root, 'chromite/bin/cros_sdk');
-    const crosSdkArgs = ['--', name, ...args];
-    return sudo.execSudo(crosSdk, crosSdkArgs, options);
+    return await execInChroot(source.root, name, args, options);
   }
 
   onUpdate() {
@@ -110,21 +130,24 @@ export class ChrootService {
     // when adding and removing folders under distinct chroots.
     // (The first folder needs to be non-CrOS, because when it changes,
     // then the extensions restart.)
-    if (currentChroot && currentChroot !== selected) {
-      void vscode.window.showErrorMessage(
-        `Chroot change ${currentChroot} → ${selected} will be ignored. ` +
-          'CrOS IDE requires reloading the window to change the chroot.'
-      );
-      metrics.send({
-        category: 'background',
-        group: 'misc',
-        action: 'chroot change rejected',
-      });
+    if (currentChroot) {
+      if (currentChroot !== selected) {
+        void vscode.window.showErrorMessage(
+          `Chroot change ${currentChroot} → ${selected} will be ignored. ` +
+            'CrOS IDE requires reloading the window to change the chroot.'
+        );
+        metrics.send({
+          category: 'background',
+          group: 'misc',
+          action: 'chroot change rejected',
+        });
+      }
       return;
     }
 
-    // TODO(b:235773376): Make sure users of this service show a warning if invoked,
-    // when chroot is not available.
+    if (!selected) {
+      return;
+    }
     this.setPaths(selected);
   }
 
@@ -139,4 +162,19 @@ export class ChrootService {
 
     return candidates;
   }
+}
+
+/**
+ * Executes command in chroot. Returns InvalidPasswordError in case the user
+ * enters invalid password.
+ */
+export async function execInChroot(
+  source: commonUtil.Source,
+  name: string,
+  args: string[],
+  options: sudo.SudoExecOptions
+): ReturnType<typeof commonUtil.exec> {
+  const crosSdk = path.join(source, 'chromite/bin/cros_sdk');
+  const crosSdkArgs = ['--', name, ...args];
+  return sudo.execSudo(crosSdk, crosSdkArgs, options);
 }

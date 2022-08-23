@@ -41,10 +41,11 @@ export async function generate(
   output: vscode.OutputChannel,
   board?: string
 ): Promise<void> {
-  const compdbService = new cppCompdbService.CompdbServiceImpl(
-    output,
-    chrootServiceInstance()
-  );
+  const chrootService = chrootServiceInstance();
+  const compdbService = new cppCompdbService.CompdbServiceImpl(output, {
+    chroot: chrootService.chroot()!,
+    source: chrootService.source()!,
+  });
   await compdbService.generate(board ?? DEFAULT_BOARD, packageInfo);
   return;
 }

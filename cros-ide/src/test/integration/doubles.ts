@@ -82,6 +82,8 @@ function newVscodeEmitters() {
       onDidSaveTextDocument: new vscode.EventEmitter<vscode.TextDocument>(),
       onDidChangeConfiguration:
         new vscode.EventEmitter<vscode.ConfigurationChangeEvent>(),
+      onDidChangeWorkspaceFolders:
+        new vscode.EventEmitter<vscode.WorkspaceFoldersChangeEvent>(),
     },
   };
 }

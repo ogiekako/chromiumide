@@ -26,25 +26,29 @@ export function activate(
   statusManager: bgTaskStatus.StatusManager,
   chrootService: ChrootService
 ) {
-  const output = vscode.window.createOutputChannel('CrOS IDE: C++ Support');
   context.subscriptions.push(
-    vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () =>
-      output.show()
-    )
-  );
+    chrootService.onDidActivate(crosFs => {
+      const output = vscode.window.createOutputChannel('CrOS IDE: C++ Support');
+      context.subscriptions.push(
+        vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () =>
+          output.show()
+        )
+      );
 
-  const compdbService = new CompdbServiceImpl(output, chrootService);
+      const compdbService = new CompdbServiceImpl(output, crosFs);
 
-  const useHardcodedMapping =
-    config.cppCodeCompletion.useHardcodedMapping.get();
-  context.subscriptions.push(
-    new CompilationDatabase(
-      statusManager,
-      new Packages(chrootService, !useHardcodedMapping),
-      output,
-      compdbService,
-      chrootService
-    )
+      const useHardcodedMapping =
+        config.cppCodeCompletion.useHardcodedMapping.get();
+      context.subscriptions.push(
+        new CompilationDatabase(
+          statusManager,
+          new Packages(chrootService, !useHardcodedMapping),
+          output,
+          compdbService,
+          chrootService
+        )
+      );
+    })
   );
 }
 

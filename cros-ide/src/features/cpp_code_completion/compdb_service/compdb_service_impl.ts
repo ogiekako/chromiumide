@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as uuid from 'uuid';
-import {ChrootService} from '../../../services/chroot';
+import {CrosFs} from '../../../services/chroot';
 import {PackageInfo} from '../packages';
 import {CompdbService} from './compdb_service';
 import {Ebuild} from './ebuild';
@@ -18,7 +18,7 @@ import {checkCompilationDatabase} from './compdb_checker';
 export class CompdbServiceImpl implements CompdbService {
   constructor(
     private readonly output: vscode.OutputChannel,
-    private readonly chrootService: ChrootService
+    private readonly crosFs: CrosFs
   ) {}
 
   async generate(board: string, packageInfo: PackageInfo) {
@@ -57,30 +57,14 @@ export class CompdbServiceImpl implements CompdbService {
     {sourceDir, atom}: PackageInfo,
     useFlags: string[]
   ): Promise<string | undefined> {
-    const sourceFs = this.chrootService.source();
-    const chrootFs = this.chrootService.chroot();
-    if (!sourceFs || !chrootFs) {
-      this.output.appendLine(
-        `Failed to generate compdb; source exists = ${!!sourceFs}, chroot exists = ${!!chrootFs}`
-      );
-      return undefined;
-    }
-
-    const ebuild = new Ebuild(
-      board,
-      atom,
-      this.output,
-      chrootFs,
-      this.chrootService,
-      useFlags
-    );
+    const ebuild = new Ebuild(board, atom, this.output, this.crosFs, useFlags);
     const artifact = await ebuild.generate();
     if (artifact === undefined) {
       throw new CompdbError({
         kind: CompdbErrorKind.NotGenerated,
       });
     }
-    const dest = destination(sourceFs.root, {sourceDir, atom});
+    const dest = destination(this.crosFs.source.root, {sourceDir, atom});
     let tempFile;
     for (;;) {
       tempFile = path.join(path.dirname(dest), '.' + uuid.v4());
@@ -90,7 +74,7 @@ export class CompdbServiceImpl implements CompdbService {
     }
     try {
       this.output.appendLine(`Copying ${artifact} to ${tempFile}`);
-      await chrootFs.copyFile(artifact, tempFile);
+      await this.crosFs.chroot.copyFile(artifact, tempFile);
       this.output.appendLine(`Renaming ${tempFile} to ${dest}`);
       await fs.promises.rename(tempFile, dest);
     } catch (e) {

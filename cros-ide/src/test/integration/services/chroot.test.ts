@@ -62,7 +62,7 @@ describe('chroot detection', () => {
 
   const {vscodeSpy} = installVscodeDouble();
 
-  it('finds chroot wih single chromeos folder', async () => {
+  it('finds chroot wih single chromeos folder and emits event', async () => {
     const crosCheckout = temp.path;
     await buildFakeChroot(crosCheckout);
     (vscode.workspace as Mutable<typeof vscode.workspace>).workspaceFolders = [
@@ -73,11 +73,19 @@ describe('chroot detection', () => {
       },
     ];
     const cros = new ChrootService(undefined, undefined);
+
+    let onActivatedCalled = 0;
+    cros.onDidActivate(() => {
+      onActivatedCalled++;
+    });
+
     cros.onUpdate();
+
     expect(cros.chroot()?.root).toEqual(
       path.join(crosCheckout, 'chroot') as commonUtil.Chroot
     );
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
+    expect(onActivatedCalled).toEqual(1);
   });
 
   it('finds chroot wih single chromeos folder and a non-chromeos folder', async () => {
@@ -108,13 +116,21 @@ describe('chroot detection', () => {
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
   });
 
-  it('does not find chromeos folder when there are no folders', async () => {
+  it('does not find chromeos folder or fire event when there are no folders', async () => {
     (vscode.workspace as Mutable<typeof vscode.workspace>).workspaceFolders =
       [];
     const cros = new ChrootService(undefined, undefined);
+
+    let onActivatedCalled = 0;
+    cros.onDidActivate(() => {
+      onActivatedCalled++;
+    });
+
     cros.onUpdate();
+
     expect(cros.chroot()?.root).toBeUndefined();
     expect(vscodeSpy.window.showErrorMessage).not.toHaveBeenCalled();
+    expect(onActivatedCalled).toEqual(0);
   });
 
   it('finds a chroot when there are multiple candidates', async () => {
