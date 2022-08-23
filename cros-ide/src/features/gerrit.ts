@@ -6,20 +6,43 @@ import * as vscode from 'vscode';
 import * as https from 'https';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as commonUtil from '../common/common_util';
 
 export function activate(context: vscode.ExtensionContext) {
   void vscode.window.showInformationMessage('Hello GerritIntegration!!');
-  const demoCmd = vscode.commands.registerCommand(
-    'cros-ide.gerrit',
-    showGerritComments
-  );
+  const demoCmd = vscode.commands.registerCommand('cros-ide.gerrit', () => {
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+      return showGerritComments(activeEditor);
+    }
+  });
   context.subscriptions.push(demoCmd);
 }
 
-async function showGerritComments() {
-  // TODO(teramon): Construct the URL parsing Git commit
+async function showGerritComments(activeEditor: vscode.TextEditor) {
+  const latestCommit: commonUtil.ExecResult | Error = await commonUtil.exec(
+    'git',
+    ['show', '-s'],
+    {cwd: path.dirname(activeEditor.document.fileName)}
+  );
+  if (latestCommit instanceof Error) {
+    void vscode.window.showErrorMessage(
+      'Failed to detect a commit'
+      // TODO(teramon): Avoid showing the error message more than once.
+    );
+
+    return;
+  }
+  const changeIdRegex = /Change-Id: (I[0-9a-z]*)/;
+  const changeIdArray = changeIdRegex.exec(latestCommit.stdout);
+  if (!changeIdArray) {
+    return;
+  }
+  const changeId = changeIdArray[1];
   const commentsUrl =
-    'https://chromium-review.googlesource.com/changes/I3657a22eae0f8fbe0601f26c7647be3134572ac0/comments';
+    'https://chromium-review.googlesource.com/changes/' +
+    changeId +
+    '/comments';
   const controller = vscode.comments.createCommentController(
     'comment-sample',
     'comment-API-sample'
@@ -28,9 +51,18 @@ async function showGerritComments() {
     const commentsContent = await httpsGet(commentsUrl);
     const commentsJson = commentsContent.substring(')]}\n'.length);
     const contentJson = JSON.parse(commentsJson) as ChangeComments;
-    for (const [key, value] of Object.entries(contentJson)) {
-      contentJson[key].forEach(msg => {
-        showCommentInfo(controller, msg, key);
+    const gitDir = findGitDir(activeEditor.document.fileName);
+    if (!gitDir) {
+      void vscode.window.showErrorMessage(
+        'Git directory not found'
+        // TODO(teramon): Avoid showing the error message more than once.
+      );
+      return;
+    }
+    for (const [filepath, value] of Object.entries(contentJson)) {
+      value.forEach(commentInfo => {
+        const dataUri = vscode.Uri.file(path.join(gitDir, filepath));
+        showCommentInfo(controller, commentInfo, dataUri);
       });
       console.log(value);
     }
@@ -39,6 +71,7 @@ async function showGerritComments() {
       `Failed to add Gerrit comments: ${err}`
       // TODO(teramon): Avoid showing the error message more than once.
     );
+    return;
   }
 }
 
@@ -68,6 +101,7 @@ type ChangeComments = {
 type CommentInfo = {
   author: AccountInfo;
   range: CommentRange;
+  line: number;
   message: string;
 };
 
@@ -85,7 +119,7 @@ type CommentRange = {
 function showCommentInfo(
   controller: vscode.CommentController,
   commentInfo: CommentInfo,
-  filePath: string
+  dataUri: vscode.Uri
 ) {
   let dataRange;
   if (commentInfo.range !== undefined) {
@@ -94,6 +128,14 @@ function showCommentInfo(
       commentInfo.range.start_character,
       commentInfo.range.end_line - 1,
       commentInfo.range.end_character
+    );
+  } else if (commentInfo.line !== undefined) {
+    // comments for a line
+    dataRange = new vscode.Range(
+      commentInfo.line - 1,
+      0,
+      commentInfo.line - 1,
+      0
     );
   } else {
     // comments for the entire file
@@ -108,15 +150,6 @@ function showCommentInfo(
       mode: vscode.CommentMode.Preview,
     },
   ];
-  const activeFileUri = vscode.window.activeTextEditor?.document.uri;
-  if (!activeFileUri) {
-    return;
-  }
-  const gitDir = findGitDir(activeFileUri.path);
-  if (!gitDir) {
-    void vscode.window.showErrorMessage('Git directory not found');
-  }
-  const dataUri = vscode.Uri.file(gitDir + '/' + filePath);
   controller.createCommentThread(dataUri, dataRange, newComment);
 }
 
