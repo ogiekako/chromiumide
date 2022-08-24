@@ -103,16 +103,14 @@ class Spellchecker {
       void this.refreshDiagnostics(vscode.window.activeTextEditor.document);
     }
     context.subscriptions.push(
-      vscode.window.onDidChangeActiveTextEditor(editor => {
-        if (editor) {
-          void this.refreshDiagnostics(editor.document);
-        }
-      })
+      vscode.workspace.onDidOpenTextDocument(
+        doc => void this.refreshDiagnostics(doc)
+      )
     );
 
     context.subscriptions.push(
-      vscode.workspace.onDidChangeTextDocument(ev =>
-        this.refreshDiagnostics(ev.document)
+      vscode.workspace.onDidSaveTextDocument(doc =>
+        this.refreshDiagnostics(doc)
       )
     );
 
