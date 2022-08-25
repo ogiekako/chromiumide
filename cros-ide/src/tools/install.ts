@@ -23,7 +23,10 @@ const GS_PREFIX = 'gs://chromeos-velocity/ide/cros-ide';
 async function execute(
   name: string,
   args: string[],
-  showStdout?: boolean
+  opts?: {
+    showStdout?: boolean;
+    cwd?: string;
+  }
 ): Promise<string> {
   const res = await commonUtil.exec(name, args, {
     logger: new (class {
@@ -31,7 +34,8 @@ async function execute(
         process.stderr.write(s);
       }
     })(),
-    logStdout: showStdout,
+    logStdout: opts?.showStdout,
+    cwd: opts?.cwd,
   });
   if (res instanceof Error) {
     throw res;
@@ -48,8 +52,12 @@ export async function findArchive(
   version?: semver.SemVer,
   gsutil = GSUTIL
 ): Promise<Archive> {
+  // In development mode, the code that checks for updates calls gsutil
+  // with absolute path. This requires that the call is done in a directory
+  // inside chroot.
+  const cwd = gsutil.startsWith('/') ? path.dirname(gsutil) : undefined;
   // The result of `gsutil ls` is lexicographically sorted.
-  const stdout = await execute(gsutil, ['ls', GS_PREFIX]);
+  const stdout = await execute(gsutil, ['ls', GS_PREFIX], {cwd});
   const archives = stdout
     .trim()
     .split('\n')
@@ -164,7 +172,9 @@ export async function installDev(exe: string) {
     await bumpDevVersion();
     const built = await build(td);
     const src = path.join(td, built.name);
-    await execute(exe, ['--force', '--install-extension', src], true);
+    await execute(exe, ['--force', '--install-extension', src], {
+      showStdout: true,
+    });
   });
 }
 
@@ -194,7 +204,7 @@ export async function install(
       args.push('--force');
     }
 
-    await execute(exe, args, true);
+    await execute(exe, args, {showStdout: true});
   });
 }
 
