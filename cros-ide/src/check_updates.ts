@@ -8,26 +8,40 @@ import * as semver from 'semver';
 import * as ideUtil from './ide_util';
 import * as install from './tools/install';
 import * as chroot from './services/chroot';
+import * as metrics from './features/metrics/metrics';
 
-export async function run(chrootService: chroot.ChrootService) {
-  const extension = vscode.extensions.getExtension('google.cros-ide');
-  // This should not happen.
-  if (!extension) {
-    return;
-  }
-  const source = chrootService.source();
-  if (!source) {
-    return;
-  }
-  const gsutil = path.join(source.root, 'chromite/scripts/gsutil');
+export function run(chrootService: chroot.ChrootService): void {
+  void (async () => {
+    try {
+      const extension = vscode.extensions.getExtension('google.cros-ide');
+      // This should not happen.
+      if (!extension) {
+        return;
+      }
+      const source = chrootService.source();
+      if (!source) {
+        return;
+      }
+      const gsutil = path.join(source.root, 'chromite/scripts/gsutil');
 
-  const installed = new semver.SemVer(extension.packageJSON.version);
-  const latest = (await install.findArchive(/* version = */ undefined, gsutil))
-    .version;
+      const installed = new semver.SemVer(extension.packageJSON.version);
+      const latest = (
+        await install.findArchive(/* version = */ undefined, gsutil)
+      ).version;
 
-  if (installed.compare(latest) < 0) {
-    await showInstallPrompt(installed, latest, gsutil);
-  }
+      if (installed.compare(latest) < 0) {
+        await showInstallPrompt(installed, latest, gsutil);
+      }
+    } catch (err) {
+      // The caller cannot handler errors for the async task.
+      metrics.send({
+        category: 'error',
+        group: 'misc',
+        description: `checking for updates failed: ${err}`,
+      });
+      throw err;
+    }
+  })();
 }
 
 const INSTALL = 'Install';
