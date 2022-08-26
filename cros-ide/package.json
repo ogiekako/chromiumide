@@ -450,6 +450,28 @@
           "**/upstart/*.conf"
         ],
         "configuration": "./languages/upstart-language-configuration.json"
+      },
+      {
+        "comment": "https://chromium.googlesource.com/chromiumos/platform/ec/+/HEAD/docs/ide-support.md#odd-file-types",
+        "id": "c",
+        "filenames": [
+          "gpio.wrap",
+          "gpio.inc"
+        ],
+        "extensions": [
+          ".tasklist",
+          ".irqlist",
+          ".mocklist",
+          ".testlist"
+        ]
+      },
+      {
+        "comment": "https://chromium.googlesource.com/chromiumos/platform/ec/+/HEAD/docs/ide-support.md#odd-file-types",
+        "id": "makefile",
+        "filenames": [
+          "Makefile.rules",
+          "Makefile.toolchain"
+        ]
       }
     ],
     "grammars": [
