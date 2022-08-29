@@ -7,18 +7,32 @@ import * as https from 'https';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as commonUtil from '../../common/common_util';
+import * as git from './git';
 
 export function activate(context: vscode.ExtensionContext) {
-  const demoCmd = vscode.commands.registerCommand('cros-ide.gerrit', () => {
-    const activeEditor = vscode.window.activeTextEditor;
-    if (activeEditor) {
-      return showGerritComments(activeEditor.document);
-    }
-  });
-  context.subscriptions.push(demoCmd);
+  const controller = vscode.comments.createCommentController(
+    'cros-ide-gerrit',
+    'CrOS IDE Gerrit'
+  );
+  context.subscriptions.push(controller);
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(editor => {
+      if (editor) {
+        void showGerritComments(editor.document, controller);
+      }
+    })
+  );
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument(document => {
+      void showGerritComments(document, controller);
+    })
+  );
 }
 
-async function showGerritComments(activeDocument: vscode.TextDocument) {
+async function showGerritComments(
+  activeDocument: vscode.TextDocument,
+  controller: vscode.CommentController
+) {
   const latestCommit: commonUtil.ExecResult | Error = await commonUtil.exec(
     'git',
     ['show', '-s'],
@@ -41,14 +55,11 @@ async function showGerritComments(activeDocument: vscode.TextDocument) {
     'https://chromium-review.googlesource.com/changes/' +
     changeId +
     '/comments';
-  const controller = vscode.comments.createCommentController(
-    'comment-sample',
-    'comment-API-sample'
-  );
+
   try {
     const commentsContent = await httpsGet(commentsUrl);
     const commentsJson = commentsContent.substring(')]}\n'.length);
-    const contentJson = JSON.parse(commentsJson) as ChangeComments;
+    const originalChangeComments = JSON.parse(commentsJson) as ChangeComments;
     const gitDir = findGitDir(activeDocument.fileName);
     if (!gitDir) {
       void vscode.window.showErrorMessage(
@@ -57,13 +68,11 @@ async function showGerritComments(activeDocument: vscode.TextDocument) {
       );
       return;
     }
-    for (const [filepath, value] of Object.entries(contentJson)) {
-      value.forEach(commentInfo => {
-        const dataUri = vscode.Uri.file(path.join(gitDir, filepath));
-        showCommentInfo(controller, commentInfo, dataUri);
-      });
-      console.log(value);
-    }
+    const shiftedChangeComments = await shiftChangeComments(
+      gitDir,
+      originalChangeComments
+    );
+    updateCommentThreads(controller, shiftedChangeComments, gitDir);
   } catch (err) {
     void vscode.window.showErrorMessage(
       `Failed to add Gerrit comments: ${err}`
@@ -88,6 +97,48 @@ async function httpsGet(url: string): Promise<string> {
       })
       .on('error', reject);
   });
+}
+
+async function shiftChangeComments(
+  gitDir: string,
+  changeComments: ChangeComments
+): Promise<ChangeComments> {
+  const gitDiff = await commonUtil.exec('git', ['diff', '-U0'], {cwd: gitDir});
+  if (gitDiff instanceof Error) {
+    void vscode.window.showErrorMessage(
+      'Failed to get git diff to reposition Gerrit comments'
+      // TODO(teramon): Avoid showing the error message more than once.
+    );
+    return changeComments;
+  }
+  const hunks = git.getHunk(gitDiff.stdout);
+  return updateChangeComments(hunks, changeComments);
+}
+
+// TODO(teramon): Avoid using global value.
+const commentThreads: vscode.CommentThread[] = [];
+
+function updateChangeComments(
+  hunks: git.Hunk[],
+  changeComments: ChangeComments
+): ChangeComments {
+  // TODO(teramon): Add a process to reposition comments
+  return changeComments;
+}
+
+function updateCommentThreads(
+  controller: vscode.CommentController,
+  changeComments: ChangeComments,
+  gitDir: string
+) {
+  commentThreads.forEach(commentThread => commentThread.dispose());
+  commentThreads.length = 0;
+  for (const [filepath, value] of Object.entries(changeComments)) {
+    value.forEach(commentInfo => {
+      const dataUri = vscode.Uri.file(path.join(gitDir, filepath));
+      commentThreads.push(showCommentInfo(controller, commentInfo, dataUri));
+    });
+  }
 }
 
 // Response from Gerrit List Change Comments API.
@@ -118,7 +169,7 @@ function showCommentInfo(
   controller: vscode.CommentController,
   commentInfo: CommentInfo,
   dataUri: vscode.Uri
-) {
+): vscode.CommentThread {
   let dataRange;
   if (commentInfo.range !== undefined) {
     dataRange = new vscode.Range(
@@ -148,7 +199,7 @@ function showCommentInfo(
       mode: vscode.CommentMode.Preview,
     },
   ];
-  controller.createCommentThread(dataUri, dataRange, newComment);
+  return controller.createCommentThread(dataUri, dataRange, newComment);
 }
 
 function findGitDir(filePath: string): string | undefined {

@@ -2,13 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-type Hunk = {
+export type Hunk = {
   originalStartLine: number;
   originalLineSize: number;
   currentStartLine: number;
   currentLineSize: number;
 };
 
+/**
+ * Parses the output of `git diff -U0` and returns hunks.
+ */
 export function getHunk(gitDiffContent: string): Hunk[] {
   const gitDiffRegex = /@@ -([0-9]*)[,]?([0-9]*) \+([0-9]*)[,]?([0-9]*) @@/gm;
   const hunks: Hunk[] = [];
