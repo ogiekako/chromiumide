@@ -52,7 +52,7 @@ export function activate(
   );
 }
 
-const STATUS_BAR_TASK_ID = 'C++ Support';
+const STATUS_BAR_TASK_NAME = 'C++ xrefs generation';
 
 export class CompilationDatabase implements vscode.Disposable {
   private readonly jobManager = new commonUtil.JobManager<void>();
@@ -250,7 +250,7 @@ export class CompilationDatabase implements vscode.Disposable {
     // Generating the database is time consuming involving execution of external
     // processes, so we ensure it to run only one at a time using the manager.
     await this.jobManager.offer(async () => {
-      this.statusManager.setTask(STATUS_BAR_TASK_ID, {
+      this.statusManager.setTask(STATUS_BAR_TASK_NAME, {
         status: bgTaskStatus.TaskStatus.RUNNING,
         command: SHOW_LOG_COMMAND,
       });
@@ -276,14 +276,14 @@ export class CompilationDatabase implements vscode.Disposable {
 
         this.log.appendLine((e as Error).message);
         console.error(e);
-        this.statusManager.setTask(STATUS_BAR_TASK_ID, {
+        this.statusManager.setTask(STATUS_BAR_TASK_NAME, {
           status: bgTaskStatus.TaskStatus.ERROR,
           command: SHOW_LOG_COMMAND,
         });
         return;
       }
       this.generated.add(packageInfo.atom);
-      this.statusManager.setTask(STATUS_BAR_TASK_ID, {
+      this.statusManager.setTask(STATUS_BAR_TASK_NAME, {
         status: bgTaskStatus.TaskStatus.OK,
         command: SHOW_LOG_COMMAND,
       });

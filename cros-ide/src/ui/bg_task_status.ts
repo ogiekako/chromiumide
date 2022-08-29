@@ -56,7 +56,7 @@ function getIcon(ts: TaskStatus): string {
   }
 }
 
-export type TaskId = string;
+export type TaskName = string;
 
 export interface TaskData {
   status: TaskStatus;
@@ -74,51 +74,54 @@ export interface TaskData {
  *
  * The status is shown in an abbreviated for in the status bar. Clicking on the status bar item
  * takes the user to a longer view, with a detailed view of all available tasks.
+ *
+ * Tasks are identified by a human-readable `TaskName`, which is display in various UI locations.
  */
 export interface StatusManager {
-  setTask(taskId: TaskId, taskData: TaskData): void;
-  deleteTask(taskId: TaskId): void;
+  setTask(taskName: TaskName, taskData: TaskData): void;
+  deleteTask(taskName: TaskName): void;
 }
 
 type ChangeHandler = (arg: StatusManagerImpl) => void;
 
 class StatusManagerImpl implements StatusManager {
-  private tasks = new Map<TaskId, TaskData>();
+  private tasks = new Map<TaskName, TaskData>();
   private handlers: ChangeHandler[] = [];
 
-  setTask(taskId: TaskId, taskData: TaskData) {
-    this.tasks.set(taskId, taskData);
+  setTask(taskName: TaskName, taskData: TaskData) {
+    this.tasks.set(taskName, taskData);
     this.handleChange();
   }
 
-  deleteTask(taskId: TaskId) {
-    this.tasks.delete(taskId);
+  deleteTask(taskName: TaskName) {
+    this.tasks.delete(taskName);
     this.handleChange();
   }
 
-  getTasks(): TaskId[] {
+  getTasks(): TaskName[] {
     return Array.from(this.tasks.keys());
   }
 
-  getTaskData(taskId: TaskId): TaskData | undefined {
-    return this.tasks.get(taskId);
+  getTaskData(taskName: TaskName): TaskData | undefined {
+    return this.tasks.get(taskName);
   }
 
-  private has(status: TaskStatus): boolean {
-    for (const td of this.tasks.values()) {
-      if (td.status === status) {
-        return true;
+  private get(status: TaskStatus): TaskName[] {
+    const taskNames = [];
+    for (const [id, data] of this.tasks) {
+      if (data.status === status) {
+        taskNames.push(id);
       }
     }
-    return false;
+    return taskNames;
   }
 
-  hasError(): boolean {
-    return this.has(TaskStatus.ERROR);
+  getErrorTasks(): TaskName[] {
+    return this.get(TaskStatus.ERROR);
   }
 
-  hasRunning(): boolean {
-    return this.has(TaskStatus.RUNNING);
+  getRunningTasks(): TaskName[] {
+    return this.get(TaskStatus.RUNNING);
   }
 
   onChange(handler: ChangeHandler) {
@@ -150,41 +153,43 @@ class StatusBarHandler {
     let background: vscode.ThemeColor | undefined;
     let tooltip: string | undefined;
 
-    if (statusManagerImpl.hasError()) {
+    const errorTasks = statusManagerImpl.getErrorTasks();
+    if (errorTasks.length) {
       icon = `$(${getIcon(TaskStatus.ERROR)})`;
       background = new vscode.ThemeColor('statusBarItem.errorBackground');
-      tooltip = 'Background Tasks (Errors)';
+      tooltip = `Errors: ${errorTasks.sort().join(', ')}`;
     } else {
       icon = `$(${getIcon(TaskStatus.OK)})`;
       background = undefined;
-      tooltip = 'Background Tasks (No Problems)';
+      tooltip = 'No Problems';
     }
     this.statusBarItem.backgroundColor = background;
 
-    if (statusManagerImpl.hasRunning()) {
+    const runningTasks = statusManagerImpl.getRunningTasks();
+    if (runningTasks.length) {
       icon = `$(${getIcon(TaskStatus.RUNNING)})`;
-      tooltip = 'Background Tasks (Running)';
+      tooltip = `Running ${runningTasks.sort().join(', ')}`;
     }
     this.statusBarItem.text = `${icon} CrOS IDE`;
     this.statusBarItem.tooltip = tooltip;
   }
 }
 
-class StatusTreeData implements vscode.TreeDataProvider<TaskId> {
+class StatusTreeData implements vscode.TreeDataProvider<TaskName> {
   private statusManagerImpl?: StatusManagerImpl;
 
   private onDidChangeTreeDataEmitter = new vscode.EventEmitter<
-    TaskId | undefined | null | void
+    TaskName | undefined | null | void
   >();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
-  getTreeItem(element: TaskId): vscode.TreeItem | Thenable<vscode.TreeItem> {
+  getTreeItem(element: TaskName): vscode.TreeItem | Thenable<vscode.TreeItem> {
     const statusManagerImp = this.statusManagerImpl!;
     const taskData = statusManagerImp.getTaskData(element)!;
     return new TaskTreeItem(element, taskData.status, taskData.command);
   }
 
-  getChildren(_element?: TaskId): vscode.ProviderResult<TaskId[]> {
+  getChildren(_element?: TaskName): vscode.ProviderResult<TaskName[]> {
     return this.statusManagerImpl!.getTasks();
   }
 

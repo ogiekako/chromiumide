@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 import {
   StatusManager,
-  TaskId,
+  TaskName,
   TaskStatus,
   TEST_ONLY,
 } from '../../../ui/bg_task_status';
@@ -15,11 +15,14 @@ const {StatusManagerImpl, StatusBarHandler, StatusTreeData} = TEST_ONLY;
 describe('Background Task Status', () => {
   const errorBgColor = new vscode.ThemeColor('statusBarItem.errorBackground');
 
-  function assertShowsError(statusBarItem: vscode.StatusBarItem) {
+  function assertShowsError(
+    statusBarItem: vscode.StatusBarItem,
+    tooltip: string
+  ) {
     expect(statusBarItem).toEqual(
       jasmine.objectContaining({
         text: '$(error) CrOS IDE',
-        tooltip: 'Background Tasks (Errors)',
+        tooltip: tooltip,
         backgroundColor: errorBgColor,
       })
     );
@@ -29,7 +32,7 @@ describe('Background Task Status', () => {
     expect(statusBarItem).toEqual(
       jasmine.objectContaining({
         text: '$(check) CrOS IDE',
-        tooltip: 'Background Tasks (No Problems)',
+        tooltip: 'No Problems',
         backgroundColor: undefined,
       })
     );
@@ -37,7 +40,7 @@ describe('Background Task Status', () => {
 
   let statusBarItem: vscode.StatusBarItem;
   let statusManager: StatusManager;
-  let statusTreeData: vscode.TreeDataProvider<TaskId>;
+  let statusTreeData: vscode.TreeDataProvider<TaskName>;
 
   beforeEach(() => {
     statusBarItem = vscode.window.createStatusBarItem();
@@ -61,10 +64,10 @@ describe('Background Task Status', () => {
 
     statusManager.setTask('error-A', {status: TaskStatus.ERROR});
     statusManager.setTask('error-B', {status: TaskStatus.ERROR});
-    assertShowsError(statusBarItem);
+    assertShowsError(statusBarItem, 'Errors: error-A, error-B');
 
     statusManager.deleteTask('error-A');
-    assertShowsError(statusBarItem);
+    assertShowsError(statusBarItem, 'Errors: error-B');
 
     statusManager.deleteTask('error-B');
     assertShowsOk(statusBarItem);
@@ -83,6 +86,7 @@ describe('Background Task Status', () => {
       jasmine.objectContaining({
         text: '$(sync~spin) CrOS IDE',
         backgroundColor: errorBgColor,
+        tooltip: 'Running running',
       })
     );
 
@@ -91,6 +95,7 @@ describe('Background Task Status', () => {
       jasmine.objectContaining({
         text: '$(error) CrOS IDE',
         backgroundColor: errorBgColor,
+        tooltip: 'Errors: error',
       })
     );
 
@@ -99,6 +104,7 @@ describe('Background Task Status', () => {
       jasmine.objectContaining({
         text: '$(check) CrOS IDE',
         backgroundColor: undefined,
+        tooltip: 'No Problems',
       })
     );
 
@@ -107,6 +113,7 @@ describe('Background Task Status', () => {
       jasmine.objectContaining({
         text: '$(check) CrOS IDE',
         backgroundColor: undefined,
+        tooltip: 'No Problems',
       })
     );
   });
@@ -115,7 +122,7 @@ describe('Background Task Status', () => {
     statusManager.setTask('task-1', {status: TaskStatus.OK});
     statusManager.setTask('task-2', {status: TaskStatus.OK});
 
-    const children = statusTreeData.getChildren(undefined) as TaskId[];
+    const children = statusTreeData.getChildren(undefined) as TaskName[];
     expect(children).toEqual(
       jasmine.arrayWithExactContents(['task-1', 'task-2'])
     );
