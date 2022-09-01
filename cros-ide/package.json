@@ -499,6 +499,24 @@
           "meta.embedded.block.shellscript": "shellscript"
         }
       }
+    ],
+    "problemMatchers": [
+      {
+        "name": "platform-ec-host-unittest",
+        "label": "Host unit tests in Platform EC",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": [
+          {
+            "regexp": "(test/[^:]*):([0-9]+): (.*)",
+            "file": 1,
+            "location": 2,
+            "message": 3
+          }
+        ]
+      }
     ]
   },
   "scripts": {
