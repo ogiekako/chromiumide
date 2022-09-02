@@ -43,6 +43,7 @@
     "onCommand:cros-ide.fileIdeBug",
     "onCommand:cros-ide.resetUserID",
     "onCommand:cros-ide.openEbuild",
+    "onCommand:workbench.action.tasks.runTask",
     "onView:devices",
     "onView:boards-packages",
     "onView:cros-ide-status",
@@ -549,6 +550,18 @@
         "embeddedLanguages": {
           "meta.embedded.block.shellscript": "shellscript"
         }
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "platform-ec-host-test",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Test target to run"
+          }
+        },
+        "when": "config.cros-ide.underDevelopment.platformEC"
       }
     ],
     "problemMatchers": [

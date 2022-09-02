@@ -27,6 +27,13 @@ export type CrosFs = {
   source: WrapFs<commonUtil.Source>;
 };
 
+export interface ChrootExecOptions extends sudo.SudoExecOptions {
+  /**
+   * Argument to pass to `cros_sdk --working-dir`.
+   */
+  crosSdkWorkingDir?: string;
+}
+
 /**
  * Provides tools to operate chroot.
  */
@@ -96,7 +103,7 @@ export class ChrootService implements vscode.Disposable {
   async exec(
     name: string,
     args: string[],
-    options: sudo.SudoExecOptions
+    options: ChrootExecOptions
   ): ReturnType<typeof commonUtil.exec> {
     const source = this.source();
     if (source === undefined) {
@@ -172,9 +179,13 @@ export async function execInChroot(
   source: commonUtil.Source,
   name: string,
   args: string[],
-  options: sudo.SudoExecOptions
+  options: ChrootExecOptions
 ): ReturnType<typeof commonUtil.exec> {
   const crosSdk = path.join(source, 'chromite/bin/cros_sdk');
-  const crosSdkArgs = ['--', name, ...args];
+  const crosSdkArgs: string[] = [];
+  if (options.crosSdkWorkingDir) {
+    crosSdkArgs.push('--working-dir', options.crosSdkWorkingDir);
+  }
+  crosSdkArgs.push('--', name, ...args);
   return sudo.execSudo(crosSdk, crosSdkArgs, options);
 }

@@ -126,7 +126,7 @@ async function postMetricsActivate(
   }
 
   if (config.underDevelopment.platformEc.get()) {
-    platformEc.activate(context);
+    platformEc.activate(context, statusManager, chrootService);
   }
 
   if (config.underDevelopment.newFileTemplate.get()) {
