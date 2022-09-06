@@ -419,6 +419,11 @@
           "description": "Enable Tricium Spellchecker (b/217287367).",
           "default": false
         },
+        "cros-ide.underDevelopment.platformEC": {
+          "type": "boolean",
+          "description": "Enable Platform EC support (under development)",
+          "default": false
+        },
         "cros-ide.deviceManagement.devices": {
           "type": "array",
           "scope": "machine-overridable",
