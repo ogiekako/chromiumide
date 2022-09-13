@@ -51,6 +51,7 @@
     "onLanguage:go",
     "onLanguage:python",
     "onLanguage:shellscript",
+    "onLanguage:typescript",
     "onLanguage:upstart"
   ],
   "main": "./dist/extension.js",
