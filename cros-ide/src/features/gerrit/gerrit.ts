@@ -5,7 +5,6 @@
 import * as vscode from 'vscode';
 import * as https from 'https';
 import * as path from 'path';
-import * as fs from 'fs';
 import * as commonUtil from '../../common/common_util';
 import * as git from './git';
 
@@ -60,7 +59,7 @@ async function showGerritComments(
     const commentsContent = await httpsGet(commentsUrl);
     const commentsJson = commentsContent.substring(')]}\n'.length);
     const originalChangeComments = JSON.parse(commentsJson) as ChangeComments;
-    const gitDir = findGitDir(activeDocument.fileName);
+    const gitDir = commonUtil.findGitDir(activeDocument.fileName);
     if (!gitDir) {
       void vscode.window.showErrorMessage(
         'Git directory not found'
@@ -200,16 +199,4 @@ function showCommentInfo(
     },
   ];
   return controller.createCommentThread(dataUri, dataRange, newComment);
-}
-
-function findGitDir(filePath: string): string | undefined {
-  let parent: string = path.dirname(filePath);
-  while (!fs.existsSync(path.join(parent, '.git'))) {
-    const grandParent = path.dirname(parent);
-    if (grandParent === parent) {
-      return undefined;
-    }
-    parent = path.dirname(parent);
-  }
-  return parent;
 }

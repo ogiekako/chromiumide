@@ -4,7 +4,6 @@
 
 import * as fs from 'fs';
 import * as https from 'https';
-import * as path from 'path';
 import * as commonUtil from '../../common/common_util';
 
 export async function isGoogler(): Promise<boolean> {
@@ -51,13 +50,9 @@ export function getGitRepoName(
     return undefined;
   }
 
-  let gitDir = path.dirname(filePath);
-  while (!fs.existsSync(path.join(gitDir, '.git'))) {
-    const parent = path.dirname(gitDir);
-    if (parent === gitDir) {
-      return undefined;
-    }
-    gitDir = parent;
+  const gitDir = commonUtil.findGitDir(filePath);
+  if (!gitDir) {
+    return undefined;
   }
 
   // Trim prefixes corresponding to path of CrOS checkout.

@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import * as fs from 'fs';
-import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
 import * as metrics from '../../features/metrics/metrics';
@@ -189,7 +188,7 @@ export class CompilationDatabase implements vscode.Disposable {
     });
 
     // platform2 user may prefer subdirectories
-    const gitFolder = await this.getGitTopLevelDirectory(fileName);
+    const gitFolder = commonUtil.findGitDir(fileName);
 
     const openGitFolder = gitFolder ? `Open ${gitFolder}` : undefined;
     const openOtherFolder = gitFolder ? 'Open Other' : 'Open Folder';
@@ -210,22 +209,6 @@ export class CompilationDatabase implements vscode.Disposable {
         vscode.Uri.file(gitFolder)
       );
     }
-  }
-
-  /** Get top directory of the repo for the `fileName`. Errors are ignored. */
-  private async getGitTopLevelDirectory(
-    fileName: string
-  ): Promise<string | undefined> {
-    const fileDir = path.dirname(fileName);
-    const result = await commonUtil.exec(
-      'git',
-      ['rev-parse', '--show-toplevel'],
-      {cwd: fileDir}
-    );
-    if (result instanceof Error) {
-      return undefined;
-    }
-    return result.stdout.trim();
   }
 
   private async board(): Promise<string | undefined> {

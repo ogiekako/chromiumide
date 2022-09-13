@@ -3,9 +3,11 @@
 // found in the LICENSE file.
 
 import * as assert from 'assert';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../common/common_util';
-import {flushMicrotasks, tempDir, BlockingPromise} from '../../testing';
+import * as testing from '../../testing';
 
 class SimpleLogger {
   constructor(private readonly f: (s: string) => void) {}
@@ -19,14 +21,14 @@ describe('Job manager', () => {
   it('throttles jobs', async () => {
     const manager = new commonUtil.JobManager();
 
-    const guard = await BlockingPromise.new(undefined);
+    const guard = await testing.BlockingPromise.new(undefined);
 
     const p1 = manager.offer(async () => {
       await guard.promise;
       return true;
     });
 
-    await flushMicrotasks();
+    await testing.flushMicrotasks();
 
     const p2 = manager.offer(async () => {
       assert.fail('Intermediate job should not run');
@@ -54,14 +56,14 @@ describe('Job manager', () => {
   it('handles errors', async () => {
     const manager = new commonUtil.JobManager();
 
-    const guard = await BlockingPromise.new(undefined);
+    const guard = await testing.BlockingPromise.new(undefined);
 
     const p1 = manager.offer(async () => {
       await guard.promise;
       throw new Error('p1');
     });
 
-    await flushMicrotasks();
+    await testing.flushMicrotasks();
 
     const p2 = manager.offer(async () => {
       assert.fail('Intermediate job should not run');
@@ -79,7 +81,7 @@ describe('Job manager', () => {
 });
 
 describe('Logging exec', () => {
-  const temp = tempDir();
+  const temp = testing.tempDir();
 
   it('returns stdout and logs stderr', async () => {
     let logs = '';
@@ -221,11 +223,48 @@ describe('withTimeout utility', () => {
   });
 
   it('returns undefined after timeout', async () => {
-    const f = await BlockingPromise.new(true);
+    const f = await testing.BlockingPromise.new(true);
     try {
       assert.strictEqual(await commonUtil.withTimeout(f.promise, 1), undefined);
     } finally {
       f.unblock();
     }
+  });
+});
+
+function assertNotGitRepository(tempDir: string) {
+  const tempRoot = /(\/\w+)/.exec(tempDir)![1];
+  if (fs.existsSync(path.join(tempRoot, '.git'))) {
+    throw new Error(
+      `bad test environment: please remove ${tempRoot}/.git and rerun the test`
+    );
+  }
+}
+
+describe('getGitDir', () => {
+  const tempDir = testing.tempDir();
+
+  it('returns Git root directory', async () => {
+    assertNotGitRepository(tempDir.path);
+
+    await testing.putFiles(tempDir.path, {
+      'a/b/c/d.txt': '',
+      'a/e.txt': '',
+      'x/y/z.txt': '',
+    });
+    await commonUtil.exec('git', ['init'], {
+      cwd: path.join(tempDir.path, 'a/b'),
+    });
+    await commonUtil.exec('git', ['init'], {cwd: path.join(tempDir.path, 'a')});
+
+    expect(
+      commonUtil.findGitDir(path.join(tempDir.path, 'a/b/c/d.txt'))
+    ).toEqual(path.join(tempDir.path, 'a/b'));
+    expect(commonUtil.findGitDir(path.join(tempDir.path, 'a/e.txt'))).toEqual(
+      path.join(tempDir.path, 'a')
+    );
+    expect(
+      commonUtil.findGitDir(path.join(tempDir.path, 'x/y/z.txt'))
+    ).toBeUndefined();
   });
 });

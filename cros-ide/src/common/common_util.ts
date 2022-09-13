@@ -333,3 +333,19 @@ export function withTimeout<T>(
     ),
   ]);
 }
+
+/**
+ * Finds the root directory of the Git repository containing the file.
+ * Returns undefined if the file is not under a Git repository.
+ */
+export function findGitDir(filePath: string): string | undefined {
+  let dir: string = path.dirname(filePath);
+  while (!fs.existsSync(path.join(dir, '.git'))) {
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return undefined;
+    }
+    dir = parent;
+  }
+  return dir;
+}
