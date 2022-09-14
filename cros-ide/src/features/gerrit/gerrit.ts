@@ -118,7 +118,7 @@ async function shiftChangeComments(
 const commentThreads: vscode.CommentThread[] = [];
 
 function updateChangeComments(
-  hunks: git.Hunk[],
+  hunks: git.Hunks,
   changeComments: ChangeComments
 ): ChangeComments {
   // TODO(teramon): Add a process to reposition comments
