@@ -11,6 +11,7 @@ import * as vscode from 'vscode';
 import * as cipd from './common/cipd';
 import * as commonUtil from './common/common_util';
 import * as boardsPackages from './features/boards_packages';
+import * as chromiumBuild from './features/chromium_build';
 import * as codesearch from './features/codesearch';
 import * as coverage from './features/coverage';
 import * as cppCodeCompletion from './features/cpp_code_completion/cpp_code_completion';
@@ -120,6 +121,10 @@ async function postMetricsActivate(
     const gitDocumentProvider = new gitDocument.GitDocumentProvider();
     gitDocumentProvider.activate();
     gerrit.activate(context, statusManager, gitDocumentProvider);
+  }
+
+  if (config.underDevelopment.chromiumBuild.get()) {
+    chromiumBuild.activate(context, statusManager);
   }
 
   if (config.underDevelopment.triciumSpellchecker.get()) {

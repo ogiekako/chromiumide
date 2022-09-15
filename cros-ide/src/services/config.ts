@@ -64,6 +64,7 @@ export const cppCodeCompletion = {
 };
 
 export const underDevelopment = {
+  chromiumBuild: new ConfigValue<boolean>('underDevelopment.chromiumBuild'),
   crosFormat: new ConfigValue<boolean>('underDevelopment.crosFormat'),
   deviceManagement: new ConfigValue<boolean>(
     'underDevelopment.deviceManagement'
@@ -103,6 +104,11 @@ export const platformEc = {
 
 export const goExtension = {
   toolsGopath: new ConfigValue<string>('toolsGopath', GO_PREFIX),
+};
+
+export const chrome = {
+  ashBuildDir: new ConfigValue<string>('chrome.ashBuildDir'),
+  dutName: new ConfigValue<string>('chrome.dutName'),
 };
 
 export const TEST_ONLY = {
