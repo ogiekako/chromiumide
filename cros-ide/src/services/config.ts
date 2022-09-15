@@ -76,6 +76,7 @@ export const underDevelopment = {
   ),
   systemLogViewer: new ConfigValue<boolean>('underDevelopment.systemLogViewer'),
   platformEc: new ConfigValue<boolean>('underDevelopment.platformEC'),
+  newFileTemplate: new ConfigValue<boolean>('underDevelopment.newFileTemplate'),
 };
 
 export const deviceManagement = {

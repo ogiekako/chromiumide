@@ -23,6 +23,7 @@ import * as gn from './features/gn';
 import * as hints from './features/hints';
 import * as feedback from './features/metrics/feedback';
 import * as metrics from './features/metrics/metrics';
+import * as newFileTemplate from './features/new_file_template';
 import * as platformEc from './features/platform_ec';
 import * as shortLinkProvider from './features/short_link_provider';
 import * as suggestExtension from './features/suggest_extension';
@@ -126,6 +127,10 @@ async function postMetricsActivate(
 
   if (config.underDevelopment.platformEc.get()) {
     platformEc.activate(context);
+  }
+
+  if (config.underDevelopment.newFileTemplate.get()) {
+    context.subscriptions.push(new newFileTemplate.NewFileTemplate());
   }
 
   // Avoid network operations in tests.
