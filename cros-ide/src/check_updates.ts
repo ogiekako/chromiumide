@@ -2,38 +2,30 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as path from 'path';
 import * as vscode from 'vscode';
 import * as semver from 'semver';
 import * as ideUtil from './ide_util';
 import * as install from './tools/install';
-import * as chroot from './services/chroot';
 import * as metrics from './features/metrics/metrics';
 
-export function run(chrootService: chroot.ChrootService): void {
+const EXTENSION_ID = 'google.cros-ide';
+
+export function run(): void {
   void (async () => {
     try {
-      const extension = vscode.extensions.getExtension('google.cros-ide');
+      const extension = vscode.extensions.getExtension(EXTENSION_ID);
       // This should not happen.
       if (!extension) {
         return;
       }
-      const source = chrootService.source();
-      if (!source) {
-        return;
-      }
-      const gsutil = path.join(source.root, 'chromite/scripts/gsutil');
 
       const installed = new semver.SemVer(extension.packageJSON.version);
-      const latest = (
-        await install.findArchive(/* version = */ undefined, gsutil)
-      ).version;
-
-      if (installed.compare(latest) < 0) {
-        await showInstallPrompt(installed, latest, gsutil);
+      const marketplaceInitialRelease = new semver.SemVer('0.1.0');
+      if (installed.compare(marketplaceInitialRelease) < 0) {
+        await navigateToMarketplace();
       }
     } catch (err) {
-      // The caller cannot handler errors for the async task.
+      // The caller cannot handle errors for the async task.
       metrics.send({
         category: 'error',
         group: 'misc',
@@ -42,6 +34,28 @@ export function run(chrootService: chroot.ChrootService): void {
       throw err;
     }
   })();
+}
+
+let navigateToMarketplaceShown = false;
+async function navigateToMarketplace() {
+  if (navigateToMarketplaceShown) {
+    return;
+  }
+  const chosen = await vscode.window.showInformationMessage(
+    'New CrOS IDE is available in the marketplace',
+    INSTALL
+  );
+  navigateToMarketplaceShown = true;
+
+  if (chosen !== INSTALL) {
+    return;
+  }
+
+  await vscode.commands.executeCommand('extension.open', EXTENSION_ID);
+  await vscode.commands.executeCommand(
+    'workbench.extensions.installExtension',
+    EXTENSION_ID
+  );
 }
 
 const INSTALL = 'Install';

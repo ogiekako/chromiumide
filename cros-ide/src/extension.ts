@@ -137,7 +137,7 @@ async function postMetricsActivate(
   if (context.extensionMode !== vscode.ExtensionMode.Test) {
     // Start checking for updates. The process will run in the background
     // allowing the extension start without waiting.
-    checkUpdates.run(chrootService);
+    checkUpdates.run();
   }
 
   metrics.send({
