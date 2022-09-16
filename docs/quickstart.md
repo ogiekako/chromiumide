@@ -29,8 +29,8 @@ First, you need to install Visual Studio Code (VSCode) on your client machine.
 Check if it's already installed by running `code` in terminal
 or look for it in the application menu, otherwise:
 
-```
-(cd &&
+```shell
+(outside) $ (cd &&
     sudo glinux-add-repo typescript stable &&
     sudo apt update &&
     sudo apt install code)
@@ -75,8 +75,8 @@ palette), select your remote machine, and open your working directory under `~/c
 
 From your terminal run
 
-```
-~/chromiumos/chromite/ide_tooling/cros-ide/install.sh
+```shell
+(outside) $ ~/chromiumos/chromite/ide_tooling/cros-ide/install.sh
 ```
 
 ### Additional installation options
@@ -84,8 +84,8 @@ From your terminal run
 - In case you are using code-server or VSCode Insiders, specify the VSCode executable with
   `--exe` flag. For example
 
-```
-~/chromiumos/chromite/ide_tooling/cros-ide/install.sh --exe ~/.local/bin/code-server
+```shell
+(outside) $ ~/chromiumos/chromite/ide_tooling/cros-ide/install.sh --exe ~/.local/bin/code-server
 ```
 
 - You can install an old version of the extension (say 0.0.1), with the `--force 0.0.1` flag.
