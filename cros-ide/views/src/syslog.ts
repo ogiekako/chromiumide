@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import {selectColor} from '../../src/features/device_management/color_log';
+
 async function onReady(): Promise<void> {
   const container = document.getElementById('main')!;
   const syslogUrl = container.dataset.syslogUrl!;
@@ -83,26 +85,11 @@ function makeTable(data: string[][], container: HTMLElement): void {
 }
 
 function colorLogs(line: string[], row: HTMLTableRowElement): void {
-  if (line[1] === 'NOTICE') {
-    row.style.opacity = '0.8';
-  } else if (line[1] === 'INFO' || line[1] === 'DEBUG') {
-    row.style.opacity = '0.5';
-  } else if (line[1] === 'ERR') {
-    row.style.color = 'red';
-    row.style.border = '1px solid red';
-  } else if (line[1] === 'WARNING') {
-    row.style.color = 'green';
-    row.style.border = '1px solid green';
-  } else if (line[1] === 'CRIT') {
-    row.style.color = 'red';
-    row.style.border = '1px solid red';
-  } else if (line[1] === 'ALERT') {
-    row.style.color = 'red';
-    row.style.border = '1px solid red';
-  } else if (line[1] === 'EMERG') {
-    row.style.color = 'red';
-    row.style.border = '1px solid red';
-  }
+  const rowColor = selectColor(line);
+  row.style.opacity = rowColor.opacity;
+  row.style.color = rowColor.color;
+  row.style.border = rowColor.border;
+  return;
 }
 
 void (async () => {
