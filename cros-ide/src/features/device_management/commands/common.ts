@@ -46,6 +46,10 @@ export async function promptNewHostname(
   });
 }
 
+/**
+ * Prompt known hostnames on quick pick or shows an error
+ * if no devices are set up.
+ */
 export async function promptKnownHostnameIfNeeded(
   title: string,
   item: provider.DeviceItem | undefined,
@@ -58,13 +62,26 @@ export async function promptKnownHostnameIfNeeded(
     return item.hostname;
   }
 
-  const hostnamesPromise = (async () => {
-    const devices = await deviceRepository.getDevices();
-    return devices.map(device => device.hostname);
+  const devices = await deviceRepository.getDevices();
+  const hostnames = devices.map(device => device.hostname);
+  if (hostnames.length > 0) {
+    return await vscode.window.showQuickPick(hostnames, {
+      title,
+    });
+  }
+  const CONFIGURE = 'Configure';
+  void (async () => {
+    const action = await vscode.window.showErrorMessage(
+      'No device has been configured yet',
+      CONFIGURE
+    );
+    if (action === CONFIGURE) {
+      await vscode.commands.executeCommand(
+        'workbench.view.extension.cros-view'
+      );
+    }
   })();
-  return await vscode.window.showQuickPick(hostnamesPromise, {
-    title,
-  });
+  return undefined;
 }
 
 class SimplePickItem implements vscode.QuickPickItem {
