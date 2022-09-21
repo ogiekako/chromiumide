@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
+import * as process from 'process';
+import * as vscode from 'vscode';
+import * as config from '../services/config';
 import * as commonUtil from './common_util';
 
 const defaultInstallDir = path.join(os.homedir(), '.cache/cros-ide/cipd');
@@ -26,12 +28,34 @@ export class CipdRepository {
     version: string,
     output: vscode.OutputChannel
   ): Promise<void> {
+    // Expand PATH to <custom_setting>:$PATH:~/depot_tools.
+    // This gives preference to the custom setting and fallback on a default.
+
+    const depotToolsSetting = config.paths.depotTools.get();
+    const originalPath = process.env['PATH'];
+    const homeDepotTools = path.join(os.homedir(), 'depot_tools');
+
+    const expandedPath: string[] = [];
+    if (depotToolsSetting) {
+      expandedPath.push(depotToolsSetting);
+    }
+    if (originalPath) {
+      expandedPath.push(originalPath);
+    }
+    expandedPath.push(homeDepotTools);
+
+    const env = {
+      ...process.env,
+      PATH: expandedPath.join(':'),
+    };
+
     await this.cipdMutex.runExclusive(async () => {
       const result = await commonUtil.exec(
         'cipd',
         ['install', '-root', this.installDir, packageName, version],
         {
           logger: output,
+          env,
         }
       );
       if (result instanceof Error) {

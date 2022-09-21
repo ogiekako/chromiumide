@@ -4,6 +4,8 @@
 
 import 'jasmine';
 import * as cipd from '../../../common/cipd';
+import * as common_util from '../../../common/common_util';
+import * as config from '../../../services/config';
 import * as testing from '../../testing';
 import * as fakes from '../../testing/fakes';
 
@@ -29,5 +31,28 @@ describe('CIPD repository', () => {
     await expectAsync(
       cipdRepository.ensureCrosfleet(new fakes.VoidOutputChannel())
     ).toBeRejected();
+  });
+
+  it('adjusts PATH based on settings', async () => {
+    await config.paths.depotTools.update('/opt/custom_depot_tools');
+
+    let capturedPath: string | undefined = '';
+    fakeExec.on(
+      'cipd',
+      async (_args: string[], options: common_util.ExecOptions) => {
+        capturedPath = options?.env?.PATH;
+        return 'ok';
+      }
+    );
+
+    const cipdRepository = new cipd.CipdRepository();
+
+    await expectAsync(
+      cipdRepository.ensureCrosfleet(new fakes.VoidOutputChannel())
+    ).toBeResolved();
+
+    expect(capturedPath).toEqual(
+      jasmine.stringMatching('^/opt/custom_depot_tools:.*/depot_tools')
+    );
   });
 });

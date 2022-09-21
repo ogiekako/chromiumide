@@ -88,6 +88,10 @@ export const metrics = {
   showMessage: new ConfigValue<boolean>('metrics.showMessage'),
 };
 
+export const paths = {
+  depotTools: new ConfigValue<string>('paths.depotTools'),
+};
+
 export const platformEc = {
   board: new ConfigValue<string>('platformEC.board'),
   mode: new ConfigValue<'RO' | 'RW'>('platformEC.mode'),

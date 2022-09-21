@@ -487,6 +487,10 @@
           "type": "boolean",
           "description": "Show information on metrics collection.",
           "default": true
+        },
+        "cros-ide.paths.depotTools": {
+          "type": "string",
+          "markdownDescription": "Path to depot tools. By default we search for depot tools in the `$PATH` and then in `~/depot_tools`. When set, the path specified here will be searched first. Use it to point CrOS IDE to commands such as `cipd`."
         }
       }
     },
