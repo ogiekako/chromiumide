@@ -55,6 +55,16 @@ export class Platform2CompdbGenerator implements CompdbGenerator {
       return false;
     }
 
+    // Send metrcis if the user interacts with platform2 files for which we support
+    // xrefs.
+    if (['cpp', 'c'].includes(document.languageId)) {
+      metrics.send({
+        category: 'background',
+        group: 'cppxrefs',
+        action: 'interact with platform2 files supporting xrefs',
+      });
+    }
+
     // Rebuild when a GN file is edited.
     if (document.languageId === 'gn') {
       return true;
