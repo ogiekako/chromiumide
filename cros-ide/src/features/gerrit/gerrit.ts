@@ -6,87 +6,22 @@ import * as vscode from 'vscode';
 import * as https from 'https';
 import * as path from 'path';
 import * as commonUtil from '../../common/common_util';
+import * as gitDocument from '../../services/git_document';
 import * as git from './git';
 
-const HARDCODED_INPUT = `
-{
-  "ide_tooling/cros-ide/src/test/integration/features/short_link_provider.test.ts": [
-    {
-      "author": {
-        "_account_id": 1355869,
-        "name": "Tomasz Tylenda",
-        "email": "ttylenda@chromium.org",
-        "avatars": [
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s32-p/photo.jpg",
-            "height": 32
-          },
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s56-p/photo.jpg",
-            "height": 56
-          },
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s100-p/photo.jpg",
-            "height": 100
-          },
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s120-p/photo.jpg",
-            "height": 120
-          }
-        ]
-      },
-      "change_message_id": "ad6fcc72c1a7d2ece9ccc596244debbf21570cce",
-      "unresolved": true,
-      "patch_set": 1,
-      "id": "5f2cf98d_4796d62d",
-      "line": 47,
-      "updated": "2022-09-05 05:13:53.000000000",
-      "message": "Comment 1 on SLP. - NOW CHANGED!",
-      "commit_id": "6a72e188f3de9eec46dbe990d2dfa22b3da50637"
-    },
-    {
-      "author": {
-        "_account_id": 1355869,
-        "name": "Tomasz Tylenda",
-        "email": "ttylenda@chromium.org",
-        "avatars": [
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s32-p/photo.jpg",
-            "height": 32
-          },
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s56-p/photo.jpg",
-            "height": 56
-          },
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s100-p/photo.jpg",
-            "height": 100
-          },
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s120-p/photo.jpg",
-            "height": 120
-          }
-        ]
-      },
-      "change_message_id": "ad6fcc72c1a7d2ece9ccc596244debbf21570cce",
-      "unresolved": true,
-      "patch_set": 1,
-      "id": "7f534daa_be72f2d6",
-      "line": 126,
-      "updated": "2022-09-05 05:13:53.000000000",
-      "message": "Comment 2 on SLP.",
-      "commit_id": "6a72e188f3de9eec46dbe990d2dfa22b3da50637"
-    }
-  ]
-}
-`;
-
-export function activate(context: vscode.ExtensionContext) {
+export function activate(
+  context: vscode.ExtensionContext,
+  _gitDocumentProvider: gitDocument.GitDocumentProvider
+) {
   const controller = vscode.comments.createCommentController(
     'cros-ide-gerrit',
     'CrOS IDE Gerrit'
   );
   context.subscriptions.push(controller);
+  if (vscode.window.activeTextEditor) {
+    const document = vscode.window.activeTextEditor.document;
+    void showGerritComments(document, controller);
+  }
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(editor => {
       if (editor) {
@@ -122,10 +57,8 @@ async function showGerritComments(
   if (!changeIdArray) {
     return;
   }
-  // TODO(teramon): Revert when the commit is unified.
-  // For now, comments cannot be gotten if there are multiple commits.
-  let changeId = changeIdArray[1];
-  changeId = 'I9b0050e658554c093b617ae38828a55c470caf9d';
+  // TODO(teramon): Support multiple commits
+  const changeId = changeIdArray[1];
   const commentsUrl =
     'https://chromium-review.googlesource.com/changes/' +
     changeId +
@@ -133,9 +66,7 @@ async function showGerritComments(
 
   try {
     const commentsContent = await httpsGet(commentsUrl);
-    let commentsJson = commentsContent.substring(')]}\n'.length);
-    // TODO(teramon): Remove this line when the commit is unified.
-    commentsJson = HARDCODED_INPUT;
+    const commentsJson = commentsContent.substring(')]}\n'.length);
     const originalChangeComments = JSON.parse(commentsJson) as ChangeComments;
     const gitDir = commonUtil.findGitDir(activeDocument.fileName);
     if (!gitDir) {
@@ -268,8 +199,8 @@ function shiftComment(commentInfo: CommentInfo, delta: number) {
     commentInfo.range !== undefined &&
     commentInfo.line !== undefined
   ) {
-    commentInfo.range.startLine += delta;
-    commentInfo.range.endLine += delta;
+    commentInfo.range.start_line += delta;
+    commentInfo.range.end_line += delta;
     commentInfo.line += delta;
   } else if (
     // Comments for lines
@@ -288,8 +219,24 @@ function updateCommentThreads(
   commentThreads.length = 0;
   for (const [filepath, value] of Object.entries(changeComments)) {
     value.forEach(commentInfo => {
-      const dataUri = vscode.Uri.file(path.join(gitDir, filepath));
-      commentThreads.push(showCommentInfo(controller, commentInfo, dataUri));
+      let uri;
+      if (filepath !== '/COMMIT_MSG') {
+        uri = vscode.Uri.file(path.join(gitDir, filepath));
+        commentThreads.push(showCommentInfo(controller, commentInfo, uri));
+      } else {
+        uri = vscode.Uri.from({
+          scheme: gitDocument.GIT_MSG_SCHEME,
+          path: path.join(gitDir, 'COMMIT MESSAGE'),
+          query: 'HEAD',
+        });
+        // Compensate the difference between commit message on Gerrit and Terminal
+        if (commentInfo.line !== undefined && commentInfo.line > 6) {
+          shiftComment(commentInfo, -6);
+        } else if (commentInfo.line !== undefined) {
+          shiftComment(commentInfo, -1 * (commentInfo.line - 1));
+        }
+        commentThreads.push(showCommentInfo(controller, commentInfo, uri));
+      }
     });
   }
 }
@@ -313,10 +260,10 @@ export type AccountInfo = {
 };
 
 export type CommentRange = {
-  startLine: number; // 1-based
-  startCharacter: number; // 0-based
-  endLine: number; // 1-based
-  endCharacter: number; // 0-based
+  start_line: number; // 1-based
+  start_character: number; // 0-based
+  end_line: number; // 1-based
+  end_character: number; // 0-based
 };
 
 function showCommentInfo(
@@ -327,10 +274,10 @@ function showCommentInfo(
   let dataRange;
   if (commentInfo.range !== undefined) {
     dataRange = new vscode.Range(
-      commentInfo.range.startLine - 1,
-      commentInfo.range.startCharacter,
-      commentInfo.range.endLine - 1,
-      commentInfo.range.endCharacter
+      commentInfo.range.start_line - 1,
+      commentInfo.range.start_character,
+      commentInfo.range.end_line - 1,
+      commentInfo.range.end_character
     );
   } else if (commentInfo.line !== undefined) {
     // comments for a line

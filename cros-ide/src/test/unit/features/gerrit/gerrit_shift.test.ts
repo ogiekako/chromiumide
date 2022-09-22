@@ -21,16 +21,16 @@ function hunk(
 }
 
 function range(
-  startLine: number,
-  startCharacter: number,
-  endLine: number,
-  endCharacter: number
+  start_line: number,
+  start_character: number,
+  end_line: number,
+  end_character: number
 ): gerrit.CommentRange {
   return {
-    startLine,
-    startCharacter,
-    endLine,
-    endCharacter,
+    start_line,
+    start_character,
+    end_line,
+    end_character,
   };
 }
 

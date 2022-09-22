@@ -33,6 +33,7 @@ import * as ideUtil from './ide_util';
 import * as logs from './logs';
 import * as chroot from './services/chroot';
 import * as config from './services/config';
+import * as gitDocument from './services/git_document';
 import * as bgTaskStatus from './ui/bg_task_status';
 
 export interface ExtensionApi {
@@ -112,7 +113,9 @@ async function postMetricsActivate(
   }
 
   if (config.underDevelopment.gerrit.get()) {
-    gerrit.activate(context);
+    const gitDocumentProvider = new gitDocument.GitDocumentProvider();
+    gitDocumentProvider.activate();
+    gerrit.activate(context, gitDocumentProvider);
   }
 
   if (config.underDevelopment.triciumSpellchecker.get()) {
