@@ -7,6 +7,7 @@
 
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
+const {GitRevisionPlugin} = require('git-revision-webpack-plugin');
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -69,6 +70,12 @@ const extensionConfig = {
       },
     ],
   },
+
+  plugins: [
+    new GitRevisionPlugin({
+      versionCommand: 'describe --always --dirty',
+    }),
+  ],
 };
 
 /** @type WebpackConfig */
