@@ -447,8 +447,8 @@
         },
         "cros-ide.underDevelopment.runTastTests": {
           "type": "boolean",
-          "description": "Enable running tast tests (incomplete)",
-          "default": false
+          "description": "Enable running tast tests",
+          "default": true
         },
         "cros-ide.underDevelopment.systemLogViewer": {
           "type": "boolean",
