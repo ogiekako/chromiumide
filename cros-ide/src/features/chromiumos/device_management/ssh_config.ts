@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-const defaultConfigPath = path.join(os.homedir(), '.ssh', 'config');
+export const defaultConfigPath = path.join(os.homedir(), '.ssh', 'config');
 
 async function readAllHosts(configPath: string): Promise<string[]> {
   let content: string;

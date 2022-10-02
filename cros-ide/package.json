@@ -479,6 +479,11 @@
           "description": "Format files with 'cros format' (under development)",
           "default": false
         },
+        "cros-ide.underDevelopment.deviceManagementV2": {
+          "type": "boolean",
+          "description": "Enable experimental Enhanced Device Management features, such as a more complete UX for DUT setup, and auto ssh configuration.",
+          "default": false
+        },
         "cros-ide.underDevelopment.deviceManagement": {
           "type": "boolean",
           "description": "Enable experimental Device Management features.",

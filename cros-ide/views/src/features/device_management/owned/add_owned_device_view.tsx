@@ -73,14 +73,14 @@ export function AddOwnedDeviceView(props: any) {
   const [addToSshConfig, setAddToSshConfig] = useState(true);
   const [addToHostsFile, setAddToHostsFile] = useState(true);
 
-  const connectionConfig = new model.DutConnectionConfig(
-    networkType ?? '',
-    ipAddress ?? '',
-    networkType === 'office' ? null : Number(port),
-    hostname ?? '',
-    addToSshConfig,
-    addToHostsFile
-  );
+  const connectionConfig: model.DutConnectionConfig = {
+    location: networkType ?? '',
+    ipAddress: ipAddress ?? '',
+    forwardedPort: port === 'office' ? null : Number(port),
+    hostname: hostname ?? '',
+    addToSshConfig: addToSshConfig,
+    addToHostsFile: addToHostsFile,
+  };
 
   const handleBack = () => {
     setActiveStep(activeStep - 1);
