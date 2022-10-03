@@ -304,5 +304,8 @@ function showCommentInfo(
       mode: vscode.CommentMode.Preview,
     },
   ];
-  return controller.createCommentThread(dataUri, dataRange, newComment);
+  const thread = controller.createCommentThread(dataUri, dataRange, newComment);
+  thread.label = 'Gerrit';
+  thread.canReply = false;
+  return thread;
 }
