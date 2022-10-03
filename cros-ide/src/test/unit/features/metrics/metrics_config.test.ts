@@ -69,3 +69,30 @@ describe('Metrics config', () => {
     expect(uidRead).toMatch(UID_REGEXP);
   });
 });
+
+describe('getUserIdAgeInDays', () => {
+  const tempDir = testing.tempDir();
+
+  it('returns 0 for freshly initialized user ID', async () => {
+    const configPath = path.join(tempDir.path, 'config.json');
+
+    // File containing user ID not found, should create a new one.
+    await metricsConfig.getOrGenerateValidUserId(configPath);
+    // Verify that the user ID is 0 days old.
+    const ageRead = await metricsConfig.getUserIdAgeInDays(configPath);
+    expect(ageRead).toEqual(0);
+  });
+
+  it('returns correct age for user ID with random update time', async () => {
+    const configPath = path.join(tempDir.path, 'config.json');
+    // Random age in between 0 to 180 days old, in number of days (integer).
+    const age = Math.floor(Math.random() * 180);
+
+    const createDate = new Date(Date.now() - age * 24 * 60 * 60 * 1000);
+    // Create user ID with the random create date.
+    await metricsConfig.generateValidUserId(configPath, createDate);
+    // Verify that the user ID has correct age.
+    const ageRead = await metricsConfig.getUserIdAgeInDays(configPath);
+    expect(ageRead).toEqual(age);
+  });
+});

@@ -22,6 +22,7 @@ import * as gn from './features/gn';
 import * as hints from './features/hints';
 import * as feedback from './features/metrics/feedback';
 import * as metrics from './features/metrics/metrics';
+import * as metricsConfig from './features/metrics/metrics_config';
 import * as newFileTemplate from './features/new_file_template';
 import * as platformEc from './features/platform_ec';
 import * as shortLinkProvider from './features/short_link_provider';
@@ -139,6 +140,14 @@ async function postMetricsActivate(
     category: 'background',
     group: 'misc',
     action: 'activate',
+  });
+
+  const age = await metricsConfig.getUserIdAgeInDays();
+  metrics.send({
+    category: 'background',
+    group: 'misc',
+    action: 'user ID age',
+    label: age.toString(),
   });
 
   return {

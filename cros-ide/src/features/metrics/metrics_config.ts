@@ -6,9 +6,12 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as uuid from 'uuid';
+import * as dateFns from 'date-fns';
 
+// Number of ms in one day.
+const oneDayInMs = 24 * 60 * 60 * 1000;
 // Rotate user ID every 180 days or less.
-const expirationInMs = 180 * 24 * 60 * 60 * 1000;
+const expirationInMs = 180 * oneDayInMs;
 
 // Special UID indicating the user is an external user and their metrics must not be collected.
 // It used to be set in older versions. We need to regenerate a user ID in that case.
@@ -127,4 +130,15 @@ export async function getOrGenerateValidUserId(
     // Ignore errors.
   }
   return await generateValidUserId(configPath, updateTime);
+}
+
+/**
+ * Returns in integer the age of the user ID (floored number of days, i.e. n if
+ * it is between n and n+1 days).
+ */
+export async function getUserIdAgeInDays(
+  configPath = defaultConfigPath
+): Promise<number> {
+  const config = await loadConfig(configPath);
+  return dateFns.differenceInDays(Date.now(), config.lastUpdate.getTime());
 }
