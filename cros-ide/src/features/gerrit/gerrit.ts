@@ -17,76 +17,80 @@ export function activate(
     'cros-ide-gerrit',
     'CrOS IDE Gerrit'
   );
+
   context.subscriptions.push(controller);
+
+  const gerrit = new Gerrit(controller);
+
   if (vscode.window.activeTextEditor) {
     const document = vscode.window.activeTextEditor.document;
-    void showGerritComments(document, controller);
+    void gerrit.showComments(document);
   }
+
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(editor => {
       if (editor) {
-        void showGerritComments(editor.document, controller);
+        void gerrit.showComments(editor.document);
       }
-    })
-  );
-  context.subscriptions.push(
+    }),
     vscode.workspace.onDidSaveTextDocument(document => {
-      void showGerritComments(document, controller);
+      void gerrit.showComments(document);
     })
   );
 }
 
-async function showGerritComments(
-  activeDocument: vscode.TextDocument,
-  controller: vscode.CommentController
-) {
-  const latestCommit: commonUtil.ExecResult | Error = await commonUtil.exec(
-    'git',
-    ['show', '-s'],
-    {cwd: path.dirname(activeDocument.fileName)}
-  );
-  if (latestCommit instanceof Error) {
-    void vscode.window.showErrorMessage(
-      'Failed to detect a commit'
-      // TODO(teramon): Avoid showing the error message more than once.
-    );
-    return;
-  }
-  const changeIdRegex = /Change-Id: (I[0-9a-z]*)/;
-  const changeIdArray = changeIdRegex.exec(latestCommit.stdout);
-  if (!changeIdArray) {
-    return;
-  }
-  // TODO(teramon): Support multiple commits
-  const changeId = changeIdArray[1];
-  const commentsUrl =
-    'https://chromium-review.googlesource.com/changes/' +
-    changeId +
-    '/comments';
+class Gerrit {
+  constructor(private readonly controller: vscode.CommentController) {}
 
-  try {
-    const commentsContent = await httpsGet(commentsUrl);
-    const commentsJson = commentsContent.substring(')]}\n'.length);
-    const originalChangeComments = JSON.parse(commentsJson) as ChangeComments;
-    const gitDir = commonUtil.findGitDir(activeDocument.fileName);
-    if (!gitDir) {
+  async showComments(activeDocument: vscode.TextDocument) {
+    const latestCommit: commonUtil.ExecResult | Error = await commonUtil.exec(
+      'git',
+      ['show', '-s'],
+      {cwd: path.dirname(activeDocument.fileName)}
+    );
+    if (latestCommit instanceof Error) {
       void vscode.window.showErrorMessage(
-        'Git directory not found'
+        'Failed to detect a commit'
         // TODO(teramon): Avoid showing the error message more than once.
       );
       return;
     }
-    const shiftedChangeComments = await shiftChangeComments(
-      gitDir,
-      originalChangeComments
-    );
-    updateCommentThreads(controller, shiftedChangeComments, gitDir);
-  } catch (err) {
-    void vscode.window.showErrorMessage(
-      `Failed to add Gerrit comments: ${err}`
-      // TODO(teramon): Avoid showing the error message more than once.
-    );
-    return;
+    const changeIdRegex = /Change-Id: (I[0-9a-z]*)/;
+    const changeIdArray = changeIdRegex.exec(latestCommit.stdout);
+    if (!changeIdArray) {
+      return;
+    }
+    // TODO(teramon): Support multiple commits
+    const changeId = changeIdArray[1];
+    const commentsUrl =
+      'https://chromium-review.googlesource.com/changes/' +
+      changeId +
+      '/comments';
+
+    try {
+      const commentsContent = await httpsGet(commentsUrl);
+      const commentsJson = commentsContent.substring(')]}\n'.length);
+      const originalChangeComments = JSON.parse(commentsJson) as ChangeComments;
+      const gitDir = commonUtil.findGitDir(activeDocument.fileName);
+      if (!gitDir) {
+        void vscode.window.showErrorMessage(
+          'Git directory not found'
+          // TODO(teramon): Avoid showing the error message more than once.
+        );
+        return;
+      }
+      const shiftedChangeComments = await shiftChangeComments(
+        gitDir,
+        originalChangeComments
+      );
+      updateCommentThreads(this.controller, shiftedChangeComments, gitDir);
+    } catch (err) {
+      void vscode.window.showErrorMessage(
+        `Failed to add Gerrit comments: ${err}`
+        // TODO(teramon): Avoid showing the error message more than once.
+      );
+      return;
+    }
   }
 }
 
