@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.1 (October 4, 2022)
+
+- Run Tast tests
+- Initial xrefs support for platform/ec
+
 ## 0.1.0 (September 2022)
 
 - **Installation from the Marketplace**
