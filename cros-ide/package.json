@@ -47,6 +47,7 @@
     "onView:devices",
     "onView:boards-packages",
     "onView:cros-ide-status",
+    "onLanguage:c",
     "onLanguage:cpp",
     "onLanguage:gn",
     "onLanguage:go",
