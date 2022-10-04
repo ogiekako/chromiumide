@@ -11,7 +11,7 @@ import * as commonUtil from '../../common/common_util';
 import * as netUtil from '../../common/net_util';
 import * as sshUtil from './ssh_util';
 import * as webviewShared from './webview_shared';
-import {escapeForHtmlAttribute, replaceAll} from './html_util';
+import {replaceAll} from './html_util';
 
 /**
  * Represents a protocol used between the WebView and localhost.
@@ -179,16 +179,16 @@ export class VncSession {
   ): string {
     const filePath = path.join(context.extensionPath, 'dist/views/vnc.html');
     const html = fs.readFileSync(filePath, {encoding: 'utf-8'});
+    // NOTE: No need to escape URLs for HTML attributes since vscode.Uri.toString() is aggressive
+    // on escaping special characters.
     return replaceAll(html, [
       {
-        from: /%EXTENSION_ROOT_URL_ESCAPED_FOR_ATTR%/g,
-        to: escapeForHtmlAttribute(
-          webview.asWebviewUri(context.extensionUri).toString()
-        ),
+        from: /%EXTENSION_ROOT_URL%/g,
+        to: webview.asWebviewUri(context.extensionUri).toString(),
       },
       {
-        from: /%WEB_SOCKET_PROXY_URL_ESCAPED_FOR_ATTR%/g,
-        to: escapeForHtmlAttribute(proxyUrl),
+        from: /%WEB_SOCKET_PROXY_URL%/g,
+        to: proxyUrl,
       },
     ]);
   }

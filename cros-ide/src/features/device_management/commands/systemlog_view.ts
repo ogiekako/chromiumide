@@ -12,7 +12,7 @@ import * as sshUtil from '../ssh_util';
 import * as shutil from '../../../common/shutil';
 import * as commonUtil from '../../../common/common_util';
 import {CommandContext, promptKnownHostnameIfNeeded} from './common';
-import {escapeForHtmlAttribute, replaceAll} from './../html_util';
+import {replaceAll} from './../html_util';
 
 export async function openSystemLogViewer(
   context: CommandContext,
@@ -89,16 +89,16 @@ function getWebviewContent(
 ): string {
   const filePath = path.join(context.extensionPath, 'dist/views/syslog.html');
   const html = fs.readFileSync(filePath, {encoding: 'utf-8'});
+  // NOTE: No need to escape URLs for HTML attributes since vscode.Uri.toString() is aggressive
+  // on escaping special characters.
   return replaceAll(html, [
     {
-      from: /%EXTENSION_ROOT_URL_ESCAPED_FOR_ATTR%/g,
-      to: escapeForHtmlAttribute(
-        webview.asWebviewUri(context.extensionUri).toString()
-      ),
+      from: /%EXTENSION_ROOT_URL%/g,
+      to: webview.asWebviewUri(context.extensionUri).toString(),
     },
     {
-      from: /%SYSLOG_URL_ESCAPED_FOR_ATTR%/g,
-      to: escapeForHtmlAttribute(webview.asWebviewUri(syslogUrl).toString()),
+      from: /%SYSLOG_URL%/g,
+      to: webview.asWebviewUri(syslogUrl).toString(),
     },
   ]);
 }
