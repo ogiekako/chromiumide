@@ -88,6 +88,24 @@ function newVscodeEmitters() {
   };
 }
 
+function copyVscodeNamespaces() {
+  return {
+    authentication: vscode.authentication,
+    commands: vscode.commands,
+    comments: vscode.comments,
+    debug: vscode.debug,
+    env: vscode.env,
+    extensions: vscode.extensions,
+    languages: vscode.languages,
+    notebooks: vscode.notebooks,
+    scm: vscode.scm,
+    tasks: vscode.tasks,
+    tests: vscode.tests,
+    window: vscode.window,
+    workspace: vscode.workspace,
+  };
+}
+
 /**
  * Installs a double for the vscode namespace and returns handlers to interact
  * with it.
@@ -100,7 +118,11 @@ export function installVscodeDouble(): {
   const vscodeEmitters = cleanState(() => newVscodeEmitters());
 
   const real = vscode;
-  const original = Object.assign({}, real);
+
+  // We cannot use Object.assign({}, real) here; if we do so we see the
+  // following error in unit tests where vscode is an injected module.
+  // TypeError: Cannot set property CancellationTokenSource of #<Object> which has only a getter
+  const original = copyVscodeNamespaces();
   beforeEach(() => {
     real.commands = vscodeSpy.commands;
     real.env = vscodeSpy.env;
