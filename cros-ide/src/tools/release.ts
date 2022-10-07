@@ -120,18 +120,59 @@ function nextUpdateKind(
   }
 }
 
-async function bumpVersion(preRelease: boolean): Promise<string> {
-  return (
+async function bumpVersion(preRelease: boolean): Promise<semver.SemVer> {
+  return new semver.SemVer(
     await execute('npm', [
       'version',
       nextUpdateKind(await currentVersion(), preRelease),
     ])
-  ).trim();
+  );
+}
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+async function updateChangelogForRelease(version: semver.SemVer) {
+  const changeLog = (
+    await fs.promises.readFile('./CHANGELOG.md', 'utf8')
+  ).split('\n');
+
+  const header = changeLog.slice(0, 2);
+  const body = changeLog.slice(2);
+
+  const now = new Date();
+  const month = MONTH_NAMES[now.getMonth()];
+  const releaseDate = `${month} ${now.getFullYear()}`;
+  const insertion = `## ${version} (${releaseDate})
+
+- FIXME: fill in the update
+`;
+
+  const updatedText = [...header, insertion, ...body].join('\n');
+
+  await fs.promises.writeFile('./CHANGELOG.md', updatedText, 'utf8');
 }
 
 async function updateVersionAndCommit(preRelease: boolean) {
   await assertCleanGitStatus();
   const version = await bumpVersion(preRelease);
+
+  if (!preRelease) {
+    await updateChangelogForRelease(version);
+  }
+
   const release = preRelease ? 'pre-release' : 'release';
   const test = preRelease ? 'None' : 'Bugfest';
   await execute('git', [
