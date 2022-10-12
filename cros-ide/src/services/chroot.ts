@@ -10,6 +10,14 @@ import * as metrics from '../features/metrics/metrics';
 import * as sudo from './sudo';
 
 /**
+ * This component is DEPRECATED.
+ *
+ * New features that interact with chroot should be put under
+ * features/chromiumos/ and should use ChrootService in
+ * services/chromiumos/chroot.ts.
+ */
+
+/**
  * Chroot module detects the location of the chroot.
  *
  * In the following cases chroot cannot be detected:
@@ -19,14 +27,16 @@ import * as sudo from './sudo';
  *    workspace. We show an error message and use one of the chroots.
  */
 
+// TODO(oka): Move the definition to services/chromiumos/chroot.ts.
 /**
  * Holds accessors to files related to chromiumOS.
  */
 export type CrosFs = {
-  chroot: WrapFs<commonUtil.Chroot>;
-  source: WrapFs<commonUtil.Source>;
+  readonly chroot: WrapFs<commonUtil.Chroot>;
+  readonly source: WrapFs<commonUtil.Source>;
 };
 
+// TODO(oka): Move the definition to services/chromiumos/chroot.ts.
 export interface ChrootExecOptions extends sudo.SudoExecOptions {
   /**
    * Argument to pass to `cros_sdk --working-dir`.
@@ -35,6 +45,8 @@ export interface ChrootExecOptions extends sudo.SudoExecOptions {
 }
 
 /**
+ * @deprecated: see the comment at the beginning of this file.
+ *
  * Provides tools to operate chroot.
  */
 export class ChrootService implements vscode.Disposable {
@@ -171,6 +183,7 @@ export class ChrootService implements vscode.Disposable {
   }
 }
 
+// TODO(oka): Move the definition to services/chromiumos/chroot.ts.
 /**
  * Executes command in chroot. Returns InvalidPasswordError in case the user
  * enters invalid password.
