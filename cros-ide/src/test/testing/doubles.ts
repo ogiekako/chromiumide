@@ -72,18 +72,60 @@ export type VscodeEmitters = ReturnType<typeof newVscodeEmitters>;
 function newVscodeEmitters() {
   return {
     window: {
-      // TODO(oka): Add more `onDid...` event emitters here.
+      onDidChangeActiveColorTheme: new vscode.EventEmitter<vscode.ColorTheme>(),
+      onDidChangeActiveNotebookEditor: new vscode.EventEmitter<
+        vscode.NotebookEditor | undefined
+      >(),
+      onDidChangeActiveTerminal: new vscode.EventEmitter<
+        vscode.Terminal | undefined
+      >(),
       onDidChangeActiveTextEditor: new vscode.EventEmitter<
         vscode.TextEditor | undefined
       >(),
+      onDidChangeTerminalState: new vscode.EventEmitter<vscode.Terminal>(),
+      onDidChangeTextEditorOptions:
+        new vscode.EventEmitter<vscode.TextEditorOptionsChangeEvent>(),
+      onDidChangeTextEditorSelection:
+        new vscode.EventEmitter<vscode.TextEditorSelectionChangeEvent>(),
+      onDidChangeTextEditorViewColumn:
+        new vscode.EventEmitter<vscode.TextEditorViewColumnChangeEvent>(),
+      onDidChangeTextEditorVisibleRanges:
+        new vscode.EventEmitter<vscode.TextEditorVisibleRangesChangeEvent>(),
+      onDidChangeVisibleNotebookEditors: new vscode.EventEmitter<
+        readonly vscode.NotebookEditor[]
+      >(),
+      onDidChangeVisibleTextEditors: new vscode.EventEmitter<
+        readonly vscode.TextEditor[]
+      >(),
+      onDidChangeWindowState: new vscode.EventEmitter<vscode.WindowState>(),
+      onDidCloseTerminal: new vscode.EventEmitter<vscode.Terminal>(),
+      onDidOpenTerminal: new vscode.EventEmitter<vscode.Terminal>(),
     },
     workspace: {
-      // Add more `onDid...` and `onWill...` event emitters here.
-      onDidSaveTextDocument: new vscode.EventEmitter<vscode.TextDocument>(),
       onDidChangeConfiguration:
         new vscode.EventEmitter<vscode.ConfigurationChangeEvent>(),
+      onDidChangeTextDocument:
+        new vscode.EventEmitter<vscode.TextDocumentChangeEvent>(),
       onDidChangeWorkspaceFolders:
         new vscode.EventEmitter<vscode.WorkspaceFoldersChangeEvent>(),
+      onDidCloseNotebookDocument:
+        new vscode.EventEmitter<vscode.NotebookDocument>(),
+      onDidCloseTextDocument: new vscode.EventEmitter<vscode.TextDocument>(),
+      onDidCreateFiles: new vscode.EventEmitter<vscode.FileCreateEvent>(),
+      onDidDeleteFiles: new vscode.EventEmitter<vscode.FileDeleteEvent>(),
+      onDidGrantWorkspaceTrust: new vscode.EventEmitter<void>(),
+      onDidOpenNotebookDocument:
+        new vscode.EventEmitter<vscode.NotebookDocument>(),
+      onDidOpenTextDocument: new vscode.EventEmitter<vscode.TextDocument>(),
+      onDidRenameFiles: new vscode.EventEmitter<vscode.FileRenameEvent>(),
+      onDidSaveNotebookDocument:
+        new vscode.EventEmitter<vscode.NotebookDocument>(),
+      onDidSaveTextDocument: new vscode.EventEmitter<vscode.TextDocument>(),
+      onWillCreateFiles: new vscode.EventEmitter<vscode.FileWillCreateEvent>(),
+      onWillDeleteFiles: new vscode.EventEmitter<vscode.FileWillDeleteEvent>(),
+      onWillRenameFiles: new vscode.EventEmitter<vscode.FileWillRenameEvent>(),
+      onWillSaveTextDocument:
+        new vscode.EventEmitter<vscode.TextDocumentWillSaveEvent>(),
     },
   };
 }
