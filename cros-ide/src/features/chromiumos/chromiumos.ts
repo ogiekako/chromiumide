@@ -48,15 +48,17 @@ export class Chromiumos implements vscode.Disposable {
         // The method shouldn't throw an error as its API contract.
         await this.activate(context);
       } catch (_e) {
-        // TODO(oka): Ensure the error doesn't contain PII, and include it in the description.
         metrics.send({
           category: 'error',
           group: 'misc',
-          description: 'activate on Chromiumos failed',
+          description: `failed to activte ${this.featureName}`,
         });
       }
     })();
   }
+
+  // feature name being activated to include in error message
+  private featureName = 'Chromiumos';
 
   // TODO(oka): Cancel ongoing activation when this class is disposed.
   private async activate(context: Context) {
@@ -72,12 +74,17 @@ export class Chromiumos implements vscode.Disposable {
       this.root
     );
     if (chrootService) {
+      this.featureName = 'cppCodeCompletion';
       cppCodeCompletion.activate(
         this.subscriptions,
         this.statusManager,
         chrootService
       );
+
+      this.featureName = 'boardsPackages';
       await boardsPackages.activate(this.subscriptions, chrootService);
+
+      this.featureName = 'deviceManagement';
       await deviceManagement.activate(
         ephemeralContext,
         this.statusManager,
