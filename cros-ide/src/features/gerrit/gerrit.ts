@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as https from 'https';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
@@ -10,6 +9,7 @@ import * as gitDocument from '../../services/git_document';
 import * as bgTaskStatus from '../../ui/bg_task_status';
 import * as api from './api';
 import * as git from './git';
+import * as https from './https';
 
 export function activate(
   context: vscode.ExtensionContext,
@@ -82,7 +82,7 @@ class Gerrit {
     // TODO(teramon): Support multiple commits
     const commentsUrl = `https://chromium-review.googlesource.com/changes/${changeIds[0]}/comments`;
     try {
-      const commentsContent = await httpsGet(commentsUrl);
+      const commentsContent = await https.get(commentsUrl);
       const commentsJson = commentsContent.substring(')]}\n'.length);
       const originalChangeComments = JSON.parse(
         commentsJson
@@ -127,23 +127,6 @@ class Gerrit {
     }
     return undefined;
   }
-}
-
-async function httpsGet(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, res => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`status code: ${res.statusCode}`));
-        }
-        const body: Uint8Array[] = [];
-        res.on('data', data => body.push(data));
-        res.on('end', () => {
-          resolve(Buffer.concat(body).toString());
-        });
-      })
-      .on('error', reject);
-  });
 }
 
 function partitionCommentArray(comments: api.CommentInfo[]): Thread[] {
@@ -379,5 +362,6 @@ function createCommentThread(
 }
 
 export const TEST_ONLY = {
+  Gerrit,
   partitionThreads,
 };

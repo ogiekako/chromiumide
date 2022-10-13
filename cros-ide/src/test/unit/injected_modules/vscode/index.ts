@@ -7,10 +7,13 @@ import * as window from './window';
 import * as workspace from './workspace';
 
 export {CancellationTokenSource} from './cancellation_token';
+export {CommentMode} from './comment_mode';
 export {ConfigurationTarget} from './configuration';
 export {Disposable} from './disposable';
 export {EventEmitter} from './event';
 export {ExtensionMode} from './extension_mode';
+export {Position} from './position';
+export {Range} from './range';
 export {Uri} from './uri';
 export {extensions, window, workspace};
 
