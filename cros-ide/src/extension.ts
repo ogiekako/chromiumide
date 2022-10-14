@@ -13,7 +13,6 @@ import * as commonUtil from './common/common_util';
 import * as features from './features';
 import * as chromiumBuild from './features/chromium_build';
 import * as codesearch from './features/codesearch';
-import * as coverage from './features/coverage';
 import * as crosFormat from './features/cros_format';
 import * as crosLint from './features/cros_lint';
 import * as gerrit from './features/gerrit';
@@ -99,10 +98,6 @@ async function postMetricsActivate(
   feedback.activate(context);
   upstart.activate(context);
   hints.activate(context);
-
-  if (config.underDevelopment.testCoverage.get()) {
-    new coverage.Coverage(chrootService, statusManager).activate(context);
-  }
 
   if (config.underDevelopment.crosFormat.get()) {
     crosFormat.activate(context);

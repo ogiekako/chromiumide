@@ -3,12 +3,10 @@
 // found in the LICENSE file.
 
 import * as assert from 'assert';
-import {Chroot} from '../../../common/common_util';
-import {WrapFs} from '../../../common/cros';
-import {Coverage} from '../../../features/coverage';
-import {ChrootService} from '../../../services/chroot';
-import * as bgTaskStatus from '../../../ui/bg_task_status';
-import * as testing from '../../testing';
+import {Coverage} from '../../../../features/chromiumos/coverage';
+import * as services from '../../../../services';
+import * as bgTaskStatus from '../../../../ui/bg_task_status';
+import * as testing from '../../../testing';
 
 const coverageJsonContents =
   `{"data": [{ "files": [{
@@ -26,16 +24,16 @@ const coverageJsonPath =
   '/build/amd64-generic/build/coverage_data/chromeos-base/chaps-0/0.0.1-r3594/coverage.json';
 
 describe('Test coverage', () => {
-  const tempdir = testing.tempDir();
+  const tempDir = testing.tempDir();
 
   const state = testing.cleanState(async () => {
-    await testing.putFiles(tempdir.path, {
+    const chroot = await testing.buildFakeChroot(tempDir.path);
+    await testing.putFiles(chroot, {
       [coverageJsonPath]: coverageJsonContents,
     });
-    const chrootService = new ChrootService(
-      new WrapFs(tempdir.path as Chroot),
-      undefined
-    );
+    const chrootService = services.chromiumos.ChrootService.maybeCreate(
+      tempDir.path
+    )!;
     return {
       coverage: new Coverage(
         chrootService,

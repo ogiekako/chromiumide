@@ -6,9 +6,9 @@ import * as fs from 'fs';
 import * as util from 'util';
 import * as vscode from 'vscode';
 import * as glob from 'glob';
-import {ChrootService} from '../services/chroot';
-import * as bgTaskStatus from '../ui/bg_task_status';
-import {Package} from './chromiumos/boards_packages';
+import * as services from '../../services';
+import * as bgTaskStatus from '../../ui/bg_task_status';
+import {Package} from './boards_packages';
 
 // Highlight colors were copied from Code Search.
 const coveredDecoration = vscode.window.createTextEditorDecorationType({
@@ -34,7 +34,7 @@ export class Coverage {
   private output: vscode.OutputChannel;
 
   constructor(
-    private readonly chrootService: ChrootService,
+    private readonly chrootService: services.chromiumos.ChrootService,
     private readonly statusManager: bgTaskStatus.StatusManager
   ) {
     this.output = vscode.window.createOutputChannel('CrOS IDE: Code Coverage');
@@ -162,15 +162,10 @@ export class Coverage {
     pkg: Package,
     fileName: string
   ): Promise<string | undefined> {
-    const chroot = this.chrootService.chroot();
-    if (!chroot) {
-      return undefined;
-    }
-
     // TODO(ttylenda): find a cleaner way of normalizing the package name.
     const pkgPart = pkg.name.indexOf('/') === -1 ? `*/${pkg.name}` : pkg.name;
 
-    const globPattern = chroot.realpath(
+    const globPattern = this.chrootService.chroot.realpath(
       `${coverageDir}/${pkgPart}*/*/${fileName}`
     );
 
