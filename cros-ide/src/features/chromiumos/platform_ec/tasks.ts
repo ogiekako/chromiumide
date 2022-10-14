@@ -3,14 +3,14 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as chroot from '../../services/chroot';
-import * as bgTaskStatus from '../../ui/bg_task_status';
+import * as services from '../../../services';
+import * as bgTaskStatus from '../../../ui/bg_task_status';
 import {STATUS_TASK_NAME, SHOW_LOG_COMMAND} from '.';
 
 export function activate(
   context: vscode.ExtensionContext,
   statusManager: bgTaskStatus.StatusManager,
-  chrootService: chroot.ChrootService,
+  chrootService: services.chromiumos.ChrootService,
   output: vscode.OutputChannel
 ) {
   const hostTestTaskProvider = new HostTestTaskProvider(
@@ -34,7 +34,7 @@ export class HostTestTaskProvider implements vscode.TaskProvider {
   tasks?: vscode.Task[];
 
   constructor(
-    private readonly chrootService: chroot.ChrootService,
+    private readonly chrootService: services.chromiumos.ChrootService,
     private readonly output: vscode.OutputChannel,
     private readonly statusManager: bgTaskStatus.StatusManager
   ) {}

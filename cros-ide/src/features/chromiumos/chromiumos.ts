@@ -13,6 +13,7 @@ import {Coverage} from './coverage';
 import * as cppCodeCompletion from './cpp_code_completion';
 import * as deviceManagement from './device_management';
 import {NewFileTemplate} from './new_file_template';
+import * as platformEc from './platform_ec';
 import * as tricium from './tricium';
 
 /**
@@ -112,6 +113,15 @@ export class Chromiumos implements vscode.Disposable {
         this.featureName = 'testCoverage';
         new Coverage(chrootService, this.statusManager).activate(
           ephemeralContext
+        );
+      }
+
+      if (config.underDevelopment.platformEc.get()) {
+        this.featureName = 'platformEc';
+        platformEc.activate(
+          ephemeralContext,
+          this.statusManager,
+          chrootService
         );
       }
     }

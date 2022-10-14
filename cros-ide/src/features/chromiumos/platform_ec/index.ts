@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as chroot from '../../services/chroot';
-import * as bgTaskStatus from '../../ui/bg_task_status';
+import * as services from '../../../services';
+import * as bgTaskStatus from '../../../ui/bg_task_status';
 import * as statusBar from './status_bar';
 import * as tasks from './tasks';
 
@@ -17,7 +17,7 @@ export const SHOW_LOG_COMMAND: vscode.Command = {
 export function activate(
   context: vscode.ExtensionContext,
   statusManager: bgTaskStatus.StatusManager,
-  chrootService: chroot.ChrootService
+  chrootService: services.chromiumos.ChrootService
 ) {
   // We are using one output channel for all platform EC related tasks.
   // TODO(b:236389226): when servod is integrated, send its logs somewhere else

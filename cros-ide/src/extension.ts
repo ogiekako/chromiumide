@@ -21,7 +21,6 @@ import * as hints from './features/hints';
 import * as feedback from './features/metrics/feedback';
 import * as metrics from './features/metrics/metrics';
 import * as metricsConfig from './features/metrics/metrics_config';
-import * as platformEc from './features/platform_ec';
 import * as shortLinkProvider from './features/short_link_provider';
 import * as suggestExtension from './features/suggest_extension';
 import * as targetBoard from './features/target_board';
@@ -114,10 +113,6 @@ async function postMetricsActivate(
 
   if (config.underDevelopment.chromiumBuild.get()) {
     chromiumBuild.activate(context, statusManager);
-  }
-
-  if (config.underDevelopment.platformEc.get()) {
-    platformEc.activate(context, statusManager, chrootService);
   }
 
   metrics.send({
