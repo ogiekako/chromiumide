@@ -8,6 +8,7 @@
  * Keep this minimal - breakout GUI and App-Behavior to separate files.
  */
 import * as vscode from 'vscode';
+import * as sourceMapSupport from 'source-map-support';
 import * as cipd from './common/cipd';
 import * as commonUtil from './common/common_util';
 import * as features from './features';
@@ -30,6 +31,10 @@ import * as services from './services';
 import * as config from './services/config';
 import * as gitDocument from './services/git_document';
 import * as bgTaskStatus from './ui/bg_task_status';
+
+// Install source map if it's available so that error stacktraces show TS
+// filepaths during our development.
+sourceMapSupport.install({});
 
 export interface ExtensionApi {
   // ExtensionContext passed to the activation function.
