@@ -27,7 +27,6 @@ import * as upstart from './features/upstart';
 import * as ideUtil from './ide_util';
 import * as logs from './logs';
 import * as services from './services';
-import * as chroot from './services/chroot';
 import * as config from './services/config';
 import * as gitDocument from './services/git_document';
 import * as bgTaskStatus from './ui/bg_task_status';
@@ -67,9 +66,6 @@ async function postMetricsActivate(
   context.subscriptions.push(
     new ChromiumosActivation(context, statusManager, cipdRepository)
   );
-
-  const chrootService = new chroot.ChrootService(undefined, undefined);
-  context.subscriptions.push(chrootService);
 
   context.subscriptions.push(
     vscode.commands.registerCommand(ideUtil.SHOW_UI_LOG.command, () =>

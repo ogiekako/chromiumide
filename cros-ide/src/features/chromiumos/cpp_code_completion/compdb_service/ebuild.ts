@@ -5,7 +5,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {Atom} from '../packages';
-import * as servicesChroot from '../../../../services/chroot';
+import * as services from '../../../../services';
 import {MNT_HOST_SOURCE} from '../constants';
 import {Board, HOST} from './board';
 import {CompdbError, CompdbErrorKind} from './error';
@@ -16,7 +16,7 @@ export class Ebuild {
     private readonly board: Board,
     private readonly atom: Atom,
     private readonly output: vscode.OutputChannel,
-    private readonly crosFs: servicesChroot.CrosFs,
+    private readonly crosFs: services.chromiumos.CrosFs,
     private readonly useFlags: string[]
   ) {}
 
@@ -107,7 +107,7 @@ export class Ebuild {
   }
 
   private async runCompgen() {
-    const res = await servicesChroot.execInChroot(
+    const res = await services.chromiumos.execInChroot(
       this.crosFs.source.root,
       'env',
       [

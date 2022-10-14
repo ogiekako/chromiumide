@@ -5,9 +5,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {ChrootExecOptions, CrosFs, execInChroot} from '../chroot';
 import * as commonUtil from '../../common/common_util';
 import {WrapFs} from '../../common/cros';
+import * as sudo from '../../services/sudo';
 
 /**
  * Provides tools to operate chroot.
@@ -117,4 +117,38 @@ async function showChrootNotFoundError(root: string) {
       )
     );
   }
+}
+
+/**
+ * Holds accessors to files related to chromiumOS.
+ */
+export type CrosFs = {
+  readonly chroot: WrapFs<commonUtil.Chroot>;
+  readonly source: WrapFs<commonUtil.Source>;
+};
+
+export interface ChrootExecOptions extends sudo.SudoExecOptions {
+  /**
+   * Argument to pass to `cros_sdk --working-dir`.
+   */
+  crosSdkWorkingDir?: string;
+}
+
+/**
+ * Executes command in chroot. Returns InvalidPasswordError in case the user
+ * enters invalid password.
+ */
+export async function execInChroot(
+  source: commonUtil.Source,
+  name: string,
+  args: string[],
+  options: ChrootExecOptions
+): ReturnType<typeof commonUtil.exec> {
+  const crosSdk = path.join(source, 'chromite/bin/cros_sdk');
+  const crosSdkArgs: string[] = [];
+  if (options.crosSdkWorkingDir) {
+    crosSdkArgs.push('--working-dir', options.crosSdkWorkingDir);
+  }
+  crosSdkArgs.push('--', name, ...args);
+  return sudo.execSudo(crosSdk, crosSdkArgs, options);
 }

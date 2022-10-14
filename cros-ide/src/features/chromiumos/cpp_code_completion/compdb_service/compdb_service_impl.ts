@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as uuid from 'uuid';
-import {CrosFs} from '../../../../services/chroot';
+import * as services from '../../../../services';
 import {PackageInfo} from '../packages';
 import {CompdbService} from './compdb_service';
 import {Ebuild} from './ebuild';
@@ -18,7 +18,7 @@ import {checkCompilationDatabase} from './compdb_checker';
 export class CompdbServiceImpl implements CompdbService {
   constructor(
     private readonly output: vscode.OutputChannel,
-    private readonly crosFs: CrosFs
+    private readonly crosFs: services.chromiumos.CrosFs
   ) {}
 
   async generate(board: string, packageInfo: PackageInfo) {
