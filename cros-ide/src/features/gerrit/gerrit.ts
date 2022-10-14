@@ -61,6 +61,8 @@ export function activate(
 }
 
 class Gerrit {
+  commentThreads: vscode.CommentThread[] = [];
+
   constructor(
     private readonly controller: vscode.CommentController,
     private readonly outputChannel: vscode.OutputChannel
@@ -105,7 +107,7 @@ class Gerrit {
       }
 
       await shiftChangeComments(gitDir, originalCommitId, changeThreads);
-      updateCommentThreads(this.controller, changeThreads, gitDir);
+      this.updateCommentThreads(this.controller, changeThreads, gitDir);
     } catch (err) {
       this.showErrorMessage(`Failed to add Gerrit comments: ${err}`);
       return;
@@ -126,6 +128,43 @@ class Gerrit {
       }
     }
     return undefined;
+  }
+
+  updateCommentThreads(
+    controller: vscode.CommentController,
+    changeThreads: ChangeThreads,
+    gitDir: string
+  ) {
+    this.commentThreads.forEach(commentThread => commentThread.dispose());
+    this.commentThreads.length = 0;
+
+    for (const [filepath, threads] of Object.entries(changeThreads)) {
+      threads.forEach(thread => {
+        let uri;
+        if (filepath !== '/COMMIT_MSG') {
+          uri = vscode.Uri.file(path.join(gitDir, filepath));
+          this.commentThreads.push(
+            createCommentThread(controller, thread, uri)
+          );
+        } else {
+          uri = vscode.Uri.from({
+            scheme: gitDocument.GIT_MSG_SCHEME,
+            path: path.join(gitDir, 'COMMIT MESSAGE'),
+            query: 'HEAD',
+          });
+          // Compensate the difference between commit message on Gerrit and Terminal
+          const commentInfo = thread[0];
+          if (commentInfo.line !== undefined && commentInfo.line > 6) {
+            shiftComment(commentInfo, -6);
+          } else if (commentInfo.line !== undefined) {
+            shiftComment(commentInfo, -1 * (commentInfo.line - 1));
+          }
+          this.commentThreads.push(
+            createCommentThread(controller, thread, uri)
+          );
+        }
+      });
+    }
   }
 }
 
@@ -185,9 +224,6 @@ async function shiftChangeComments(
   }
   updateChangeComments(hunks, changeThreads);
 }
-
-// TODO(teramon): Avoid using global value.
-const commentThreads: vscode.CommentThread[] = [];
 
 /**
  * Repositions threads based on the given hunks.
@@ -270,38 +306,6 @@ function shiftComment(commentInfo: api.CommentInfo, delta: number) {
     commentInfo.line !== undefined
   ) {
     commentInfo.line += delta;
-  }
-}
-
-function updateCommentThreads(
-  controller: vscode.CommentController,
-  changeThreads: ChangeThreads,
-  gitDir: string
-) {
-  commentThreads.forEach(commentThread => commentThread.dispose());
-  commentThreads.length = 0;
-  for (const [filepath, threads] of Object.entries(changeThreads)) {
-    threads.forEach(thread => {
-      let uri;
-      if (filepath !== '/COMMIT_MSG') {
-        uri = vscode.Uri.file(path.join(gitDir, filepath));
-        commentThreads.push(createCommentThread(controller, thread, uri));
-      } else {
-        uri = vscode.Uri.from({
-          scheme: gitDocument.GIT_MSG_SCHEME,
-          path: path.join(gitDir, 'COMMIT MESSAGE'),
-          query: 'HEAD',
-        });
-        // Compensate the difference between commit message on Gerrit and Terminal
-        const commentInfo = thread[0];
-        if (commentInfo.line !== undefined && commentInfo.line > 6) {
-          shiftComment(commentInfo, -6);
-        } else if (commentInfo.line !== undefined) {
-          shiftComment(commentInfo, -1 * (commentInfo.line - 1));
-        }
-        commentThreads.push(createCommentThread(controller, thread, uri));
-      }
-    });
   }
 }
 
