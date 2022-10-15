@@ -4,6 +4,7 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import * as dateFns from 'date-fns';
 import * as commonUtil from '../../common/common_util';
 import * as gitDocument from '../../services/git_document';
 import * as bgTaskStatus from '../../ui/bg_task_status';
@@ -319,11 +320,43 @@ export type ChangeThreads = {
   [filePath: string]: Thread[];
 };
 
+/**
+ * Convert UTC timestamp returned by Gerrit into a localized human fiendly format.
+ *
+ * Sample input: '2022-09-27 09:25:04.000000000'
+ */
+function formatGerritTimestamp(timestamp: string) {
+  try {
+    // The input is UTC, but before we can parse it, we need to adjust
+    // the format by replacing '.000000000' at the end with 'Z'
+    // ('Z' tells date-fns that it's UTC time).
+    const timestampZ: string = timestamp.replace(/\.[0-9]*$/, 'Z');
+    const date: Date = dateFns.parse(
+      timestampZ,
+      'yyyy-MM-dd HH:mm:ssX',
+      new Date()
+    );
+    // Date-fns functions use the local timezone.
+    if (dateFns.isToday(date)) {
+      return dateFns.format(date, 'HH:mm'); // e.g., 14:27
+    } else if (dateFns.isThisYear(date)) {
+      return dateFns.format(date, 'MMM d'); // e.g., Sep 5
+    } else {
+      return dateFns.format(date, 'yyyy MMM d'); // e.g., 2019 Aug 15
+    }
+  } catch (err) {
+    // Make sure not to throw any errors, because then
+    // the comments may not be shown at all.
+    return timestamp;
+  }
+}
+
 function toVscodeComment(c: api.CommentInfo): vscode.Comment {
   return {
     author: {
       name: c.author.name,
     },
+    label: formatGerritTimestamp(c.updated),
     body: c.message,
     mode: vscode.CommentMode.Preview,
   };
@@ -370,6 +403,7 @@ function createCommentThread(
 }
 
 export const TEST_ONLY = {
+  formatGerritTimestamp,
   Gerrit,
   partitionThreads,
 };
