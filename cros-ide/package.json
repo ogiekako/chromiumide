@@ -211,6 +211,13 @@
         "category": "CrOS",
         "title": "Show Coverage Report",
         "enablement": "config.cros-ide.underDevelopment.testCoverage"
+      },
+      {
+        "command": "cros-ide.gerrit.collapseAllComments",
+        "category": "CrOS",
+        "title": "Collapse All Comments",
+        "icon": "$(collapse-all)",
+        "enablement": "config.cros-ide.underDevelopment.gerrit"
       }
     ],
     "viewsContainers": {
@@ -239,6 +246,11 @@
       ]
     },
     "menus": {
+      "comments/commentThread/title": [
+        {
+          "command": "cros-ide.gerrit.collapseAllComments"
+        }
+      ],
       "editor/context": [
         {
           "command": "cros-ide.codeSearchOpenCurrentFile"

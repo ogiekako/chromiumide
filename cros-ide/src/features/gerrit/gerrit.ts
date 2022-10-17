@@ -57,7 +57,13 @@ export function activate(
     }),
     vscode.workspace.onDidSaveTextDocument(document => {
       void gerrit.showComments(document);
-    })
+    }),
+    vscode.commands.registerCommand(
+      'cros-ide.gerrit.collapseAllComments',
+      () => {
+        gerrit.collapseAllComments();
+      }
+    )
   );
 }
 
@@ -112,6 +118,12 @@ class Gerrit {
     } catch (err) {
       this.showErrorMessage(`Failed to add Gerrit comments: ${err}`);
       return;
+    }
+  }
+
+  collapseAllComments() {
+    for (const thread of this.commentThreads) {
+      thread.collapsibleState = vscode.CommentThreadCollapsibleState.Collapsed;
     }
   }
 
@@ -398,6 +410,10 @@ function createCommentThread(
   // Unresolved can be undefined according the the API documentation,
   // but Gerrit always sent it on the changes the we inspected.
   vscodeThread.label = unresolved ? 'Unresolved' : 'Resolved';
+  if (unresolved) {
+    vscodeThread.collapsibleState =
+      vscode.CommentThreadCollapsibleState.Expanded;
+  }
   vscodeThread.canReply = false;
   return vscodeThread;
 }
