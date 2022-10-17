@@ -63,7 +63,7 @@ export function activate(
       }
     }),
     vscode.workspace.onDidSaveTextDocument(document => {
-      void gerrit.showComments(document);
+      void gerrit.showComments(document, {noFetch: true});
     }),
     vscode.commands.registerCommand(
       'cros-ide.gerrit.collapseAllComments',
@@ -75,7 +75,9 @@ export function activate(
 }
 
 class Gerrit {
-  commentThreads: vscode.CommentThread[] = [];
+  // list of [commit id, threads] pairs
+  private partitionedThreads?: [string, ChangeThreads][];
+  private commentThreads: vscode.CommentThread[] = [];
 
   constructor(
     private readonly controller: vscode.CommentController,
@@ -83,38 +85,33 @@ class Gerrit {
     private readonly statusBar: vscode.StatusBarItem
   ) {}
 
-  // TODO(b:216048068): Do not retrieve data unnecessarily if we only
-  // need to reposition comments on source changes.
-  async showComments(activeDocument: vscode.TextDocument) {
+  /**
+   * Fetches comments given to the file and shows them with
+   * proper repositioning based on the local diff. It caches the response
+   * from Gerrit and uses it unless opts.fetch is true.
+   */
+  async showComments(
+    activeDocument: vscode.TextDocument,
+    opts?: {noFetch: boolean}
+  ) {
     const fileName = activeDocument.fileName;
-    const changeIds = await git.readChangeIds(path.dirname(fileName));
-    if (changeIds instanceof Error) {
-      this.showErrorMessage(`Failed to detect a commits for ${fileName}`);
-      return;
-    }
-    if (changeIds.length === 0) {
-      return;
-    }
-
-    // TODO(teramon): Support multiple commits
-    const commentsUrl = `https://chromium-review.googlesource.com/changes/${changeIds[0]}/comments`;
     try {
-      const commentsContent = await https.get(commentsUrl);
-      const commentsJson = commentsContent.substring(')]}\n'.length);
-      const originalChangeComments = JSON.parse(
-        commentsJson
-      ) as api.ChangeComments;
+      if (!opts?.noFetch) {
+        this.partitionedThreads = await this.fetchComments(fileName);
+      }
+      if (!this.partitionedThreads) {
+        return;
+      }
+
       const gitDir = commonUtil.findGitDir(fileName);
       if (!gitDir) {
         this.showErrorMessage('Git directory not found');
         return;
       }
-      const combinedChangeThreads = partitionThreads(originalChangeComments);
-      const partitionedThreads = partitionByCommitId(combinedChangeThreads);
 
       this.clearCommentThreads();
 
-      for (const [originalCommitId, changeThreads] of partitionedThreads) {
+      for (const [originalCommitId, changeThreads] of this.partitionedThreads) {
         for (const [, threads] of Object.entries(changeThreads)) {
           for (const thread of threads) {
             thread.initializeLocation();
@@ -148,16 +145,40 @@ class Gerrit {
     }
   }
 
+  /**
+   * Retrieves data from Gerrit API and applies basic transformations
+   * to partition it into threads and by commit id.
+   */
+  private async fetchComments(fileName: string) {
+    const changeIds = await git.readChangeIds(path.dirname(fileName));
+    if (changeIds instanceof Error) {
+      this.showErrorMessage(`Failed to detect a commits for ${fileName}`);
+      return undefined;
+    }
+    if (changeIds.length === 0) {
+      return undefined;
+    }
+
+    // TODO(teramon): Support multiple commits
+    const commentsUrl = `https://chromium-review.googlesource.com/changes/${changeIds[0]}/comments`;
+
+    const commentsContent = await https.get(commentsUrl);
+    const commentsJson = commentsContent.substring(')]}\n'.length);
+    const changeComments = JSON.parse(commentsJson) as api.ChangeComments;
+    const combinedChangeThreads = partitionThreads(changeComments);
+    return partitionByCommitId(combinedChangeThreads);
+  }
+
   private showErrorMessage(message: string) {
     this.outputChannel.appendLine(message);
   }
 
-  clearCommentThreads() {
+  private clearCommentThreads() {
     this.commentThreads.forEach(commentThread => commentThread.dispose());
     this.commentThreads.length = 0;
   }
 
-  displayCommentThreads(
+  private displayCommentThreads(
     controller: vscode.CommentController,
     changeThreads: ChangeThreads,
     gitDir: string
