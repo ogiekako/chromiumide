@@ -484,6 +484,11 @@
           "description": "Enable Gerrit support (incomplete)",
           "default": false
         },
+        "cros-ide.underDevelopment.platform2GtestDebugging": {
+          "type": "boolean",
+          "description": "Enable platform2 gtest debugging support (under development)",
+          "default": false
+        },
         "cros-ide.underDevelopment.platformEC": {
           "type": "boolean",
           "description": "Enable Platform EC support (under development)",

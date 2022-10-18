@@ -70,6 +70,9 @@ export const underDevelopment = {
     'underDevelopment.deviceManagement'
   ),
   gerrit: new ConfigValue<boolean>('underDevelopment.gerrit'),
+  platform2GtestDebugging: new ConfigValue<boolean>(
+    'underDevelopment.platform2GtestDebugging'
+  ),
   platformEc: new ConfigValue<boolean>('underDevelopment.platformEC'),
   runTastTests: new ConfigValue<boolean>('underDevelopment.runTastTests'),
   systemLogViewer: new ConfigValue<boolean>('underDevelopment.systemLogViewer'),
