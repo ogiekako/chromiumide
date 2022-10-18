@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as dateFns from 'date-fns';
 import * as commonUtil from '../../common/common_util';
+import * as services from '../../services';
 import * as gitDocument from '../../services/git_document';
 import * as bgTaskStatus from '../../ui/bg_task_status';
 import * as api from './api';
@@ -16,7 +17,8 @@ import * as https from './https';
 export function activate(
   context: vscode.ExtensionContext,
   statusManager: bgTaskStatus.StatusManager,
-  _gitDocumentProvider: gitDocument.GitDocumentProvider
+  _gitDocumentProvider: gitDocument.GitDocumentProvider,
+  gitDirsWatcher: services.GitDirsWatcher
 ) {
   const outputChannel = vscode.window.createOutputChannel('CrOS IDE: Gerrit');
   context.subscriptions.push(outputChannel);
@@ -51,26 +53,25 @@ export function activate(
 
   const gerrit = new Gerrit(controller, outputChannel, statusBar);
 
-  if (vscode.window.activeTextEditor) {
-    const document = vscode.window.activeTextEditor.document;
-    void gerrit.showComments(document);
-  }
-
   context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor(editor => {
-      if (editor) {
-        void gerrit.showComments(editor.document);
-      }
-    }),
     vscode.workspace.onDidSaveTextDocument(document => {
-      void gerrit.showComments(document, {noFetch: true});
+      void gerrit.showComments(document.fileName, {noFetch: true});
     }),
     vscode.commands.registerCommand(
       'cros-ide.gerrit.collapseAllComments',
       () => {
         gerrit.collapseAllComments();
       }
-    )
+    ),
+    gitDirsWatcher.onDidChangeHead(async event => {
+      if (event.head) {
+        // TODO(b:216048068): Clean up the hack with placeholder file name.
+        await gerrit.showComments(path.join(event.gitDir, 'placeholder.cc'));
+      } else {
+        gerrit.clearCommentThreads();
+        gerrit.updateStatusBar();
+      }
+    })
   );
 }
 
@@ -90,11 +91,7 @@ class Gerrit {
    * proper repositioning based on the local diff. It caches the response
    * from Gerrit and uses it unless opts.fetch is true.
    */
-  async showComments(
-    activeDocument: vscode.TextDocument,
-    opts?: {noFetch: boolean}
-  ) {
-    const fileName = activeDocument.fileName;
+  async showComments(fileName: string, opts?: {noFetch: boolean}) {
     try {
       if (!opts?.noFetch) {
         this.partitionedThreads = await this.fetchComments(fileName);
@@ -121,17 +118,7 @@ class Gerrit {
         await shiftChangeComments(gitDir, originalCommitId, changeThreads);
         this.displayCommentThreads(this.controller, changeThreads, gitDir);
       }
-
-      const nThreads = this.commentThreads.length;
-      if (nThreads > 0) {
-        // TODO(b:216048068): show number of unresolved comments rather than the total
-        this.statusBar.text = `$(comment) ${nThreads}`;
-        this.statusBar.tooltip =
-          nThreads > 1 ? `${nThreads} Gerrit comments` : '1 Gerrit comment';
-        this.statusBar.show();
-      } else {
-        this.statusBar.hide();
-      }
+      this.updateStatusBar();
     } catch (err) {
       this.showErrorMessage(`Failed to add Gerrit comments: ${err}`);
       return;
@@ -141,6 +128,19 @@ class Gerrit {
   collapseAllComments() {
     for (const thread of this.commentThreads) {
       thread.collapsibleState = vscode.CommentThreadCollapsibleState.Collapsed;
+    }
+  }
+
+  updateStatusBar() {
+    const nThreads = this.commentThreads.length;
+    if (nThreads > 0) {
+      // TODO(b:216048068): show number of unresolved comments rather than the total
+      this.statusBar.text = `$(comment) ${nThreads}`;
+      this.statusBar.tooltip =
+        nThreads > 1 ? `${nThreads} Gerrit comments` : '1 Gerrit comment';
+      this.statusBar.show();
+    } else {
+      this.statusBar.hide();
     }
   }
 
@@ -172,7 +172,7 @@ class Gerrit {
     this.outputChannel.appendLine(message);
   }
 
-  private clearCommentThreads() {
+  clearCommentThreads() {
     this.commentThreads.forEach(commentThread => commentThread.dispose());
     this.commentThreads.length = 0;
   }

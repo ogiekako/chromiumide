@@ -231,9 +231,7 @@ describe('Gerrit', () => {
       statusBar
     );
 
-    const document = {
-      fileName: abs('cryptohome/cryptohome.cc'),
-    } as vscode.TextDocument;
+    const fileName = abs('cryptohome/cryptohome.cc');
 
     spyOn(https, 'get')
       .withArgs(
@@ -241,7 +239,7 @@ describe('Gerrit', () => {
       )
       .and.returnValue(Promise.resolve(SIMPLE_COMMENT_GERRIT_JSON(commitId)));
 
-    await expectAsync(gerrit.showComments(document)).toBeResolved();
+    await expectAsync(gerrit.showComments(fileName)).toBeResolved();
 
     expect(commentController.createCommentThread).toHaveBeenCalledTimes(1);
     const callData = commentController.createCommentThread.calls.first();
@@ -319,9 +317,7 @@ describe('Gerrit', () => {
       vscode.window.createStatusBarItem()
     );
 
-    const document = {
-      fileName: abs('cryptohome/cryptohome.cc'),
-    } as vscode.TextDocument;
+    const fileName = abs('cryptohome/cryptohome.cc');
 
     spyOn(https, 'get')
       .withArgs(
@@ -331,7 +327,7 @@ describe('Gerrit', () => {
         Promise.resolve(TWO_PATCHSETS_GERRIT_JSON(commitId1, commitId2))
       );
 
-    await expectAsync(gerrit.showComments(document)).toBeResolved();
+    await expectAsync(gerrit.showComments(fileName)).toBeResolved();
 
     expect(commentController.createCommentThread).toHaveBeenCalledTimes(2);
     // Order of calls is irrelevant, but since our algorithm is deterministic,

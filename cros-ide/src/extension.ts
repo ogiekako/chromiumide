@@ -105,7 +105,13 @@ async function postMetricsActivate(
   gitDocumentProvider.activate();
 
   if (config.underDevelopment.gerrit.get()) {
-    gerrit.activate(context, statusManager, gitDocumentProvider);
+    const gitDirsWatcher = new services.GitDirsWatcher('/');
+    gerrit.activate(
+      context,
+      statusManager,
+      gitDocumentProvider,
+      gitDirsWatcher
+    );
   }
 
   if (config.underDevelopment.chromiumBuild.get()) {
