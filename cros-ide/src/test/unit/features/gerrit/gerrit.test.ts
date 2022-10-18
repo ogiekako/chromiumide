@@ -68,28 +68,18 @@ describe('partitionThreads', () => {
 });
 
 describe('formatGerritTimestaps', () => {
-  const now = new Date();
-
-  const year = now.getUTCFullYear().toString();
-  const month = (now.getUTCMonth() + 1).toString().padStart(2, '0');
-  const dayNoPadding = now.getUTCDate().toString();
-  const day = dayNoPadding.padStart(2, '0');
-  const hours = now.getUTCHours().toString().padStart(2, '0');
-  const minutes = now.getUTCMinutes().toString().padStart(2, '0');
-
   it("formats today's date as hours and minutes", () => {
+    const now = new Date();
+
+    const year = now.getUTCFullYear().toString();
+    const month = (now.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = now.getUTCDate().toString().padStart(2, '0');
+    const hours = now.getUTCHours().toString().padStart(2, '0');
+    const minutes = now.getUTCMinutes().toString().padStart(2, '0');
+
     const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:04.000000000`;
     // We don't know the local timezone, only match the regex.
     expect(formatGerritTimestamp(timestamp)).toMatch(/[0-9]{2}:[0-9]{2}/);
-  });
-
-  it("formats this year's dates as month and day", () => {
-    const month = (((now.getUTCMonth() + 1) % 12) + 1)
-      .toString()
-      .padStart(2, '0');
-    const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:04.000000000`;
-    // Test only the day, because month name could be localized.
-    expect(formatGerritTimestamp(timestamp)).toContain(dayNoPadding);
   });
 
   it('formats dates long time ago as year, month, and day', () => {
