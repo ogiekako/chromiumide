@@ -2,20 +2,34 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as services from '../../../services';
+import {Config} from './config';
+import {RunProfile} from './run_profile';
+import {TestControllerSingleton} from './test_controller_singleton';
 
 export class Platform2Gtest implements vscode.Disposable {
-  private readonly disposable: vscode.Disposable[] = [];
+  constructor(
+    private readonly chromiumosRoot: string,
+    private readonly chrootService: services.chromiumos.ChrootService
+  ) {}
+
+  private readonly cfg: Config = {
+    platform2: path.join(this.chromiumosRoot, 'src/platform2'),
+    chrootService: this.chrootService,
+    testControllerRepository: new TestControllerSingleton(),
+  };
+
+  private readonly subscriptions: vscode.Disposable[] = [
+    this.cfg.testControllerRepository,
+    new RunProfile(this.cfg),
+  ];
   dispose() {
-    vscode.Disposable.from(...this.disposable.reverse()).dispose();
+    vscode.Disposable.from(...this.subscriptions.reverse()).dispose();
   }
 
-  constructor(
-    _chromiumosRoot: string,
-    _chrootService: services.chromiumos.ChrootService
-  ) {
-    // TODO(oka): Implement it.
-    void vscode.window.showInformationMessage('Hello platform2 gtest!');
+  getTestControllerForTesting(): vscode.TestController {
+    return this.cfg.testControllerRepository.getOrCreate();
   }
 }

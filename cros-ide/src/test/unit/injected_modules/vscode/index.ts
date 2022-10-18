@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as extensions from './extensions';
-import * as window from './window';
-import * as workspace from './workspace';
+export * as extensions from './extensions';
+export * as tests from './tests';
+export * as window from './window';
+export * as workspace from './workspace';
 
 export {CancellationTokenSource} from './cancellation_token';
 export {CommentMode} from './comment_mode';
@@ -16,7 +17,7 @@ export {ExtensionMode} from './extension_mode';
 export {Position} from './position';
 export {Range} from './range';
 export {StatusBarAlignment, StatusBarItem} from './status_bar';
+export {TestRunProfileKind} from './test_run_profile_kind';
 export {Uri} from './uri';
-export {extensions, window, workspace};
 
 export class TreeItem {}
