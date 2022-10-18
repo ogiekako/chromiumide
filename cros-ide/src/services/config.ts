@@ -69,17 +69,17 @@ export const underDevelopment = {
   deviceManagement: new ConfigValue<boolean>(
     'underDevelopment.deviceManagement'
   ),
-  testCoverage: new ConfigValue<boolean>('underDevelopment.testCoverage'),
   gerrit: new ConfigValue<boolean>('underDevelopment.gerrit'),
+  platformEc: new ConfigValue<boolean>('underDevelopment.platformEC'),
   runTastTests: new ConfigValue<boolean>('underDevelopment.runTastTests'),
+  systemLogViewer: new ConfigValue<boolean>('underDevelopment.systemLogViewer'),
+  testCoverage: new ConfigValue<boolean>('underDevelopment.testCoverage'),
   triciumSpellchecker: new ConfigValue<boolean>(
     'underDevelopment.triciumSpellchecker'
   ),
   triciumSpellcheckerForCommitMessage: new ConfigValue<boolean>(
     'underDevelopment.triciumSpellcheckerForCommitMessage'
   ),
-  systemLogViewer: new ConfigValue<boolean>('underDevelopment.systemLogViewer'),
-  platformEc: new ConfigValue<boolean>('underDevelopment.platformEC'),
 };
 
 export const deviceManagement = {
