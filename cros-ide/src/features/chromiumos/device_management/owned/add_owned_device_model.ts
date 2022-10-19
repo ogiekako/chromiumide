@@ -2,8 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+export enum DutNetworkType {
+  OFFICE,
+  HOME,
+  P2P,
+}
+
 export type DutConnectionConfig = {
-  readonly location: string; // DutLocation enum,
+  readonly networkType: DutNetworkType;
   readonly ipAddress: string;
   readonly forwardedPort: number | null;
   readonly hostname: string;

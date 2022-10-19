@@ -6,11 +6,29 @@ import * as fs from 'fs';
 import {OutputChannel} from 'vscode';
 import {DeviceComm} from '../device_comm';
 import {OwnedDeviceRepository} from '../device_repository';
-import {DutConnectionConfig} from './add_owned_device_model';
+import {DutConnectionConfig, DutNetworkType} from './add_owned_device_model';
 
 // TODO(joelbecker): import normally once tsconfig esModuleInterop=true doesn't break a lot of
 // other things.
 const SSHConfig = require('ssh-config');
+
+type SshConfigHost = {
+  Host?: string;
+  Hostname?: string;
+  Port?: number;
+  CheckHostIP?: string;
+  ControlMaster?: string;
+  ControlPath?: string;
+  ControlPersist?: string;
+  IdentitiesOnly?: string;
+  IdentityFile?: string;
+  StrictHostKeyChecking?: string;
+  User?: string;
+  UserKnownHostsFile?: string;
+  VerifyHostKeyDNS?: string;
+  ProxyCommand?: string;
+  HostKeyAlias?: string;
+};
 
 /**
  * Service layer for the Add Owned Device feature (used by the controller/panel to perform the
@@ -62,12 +80,18 @@ export class AddOwnedDeviceService {
     }
   }
 
-  private sshConfigHostTemplate(config: DutConnectionConfig): any {
-    if (config.location === 'office') {
+  private sshConfigHostTemplate(config: DutConnectionConfig): SshConfigHost {
+    if (config.networkType === DutNetworkType.OFFICE) {
       return {
         Host: config.hostname,
-        Hostname: config.location === 'office' ? config.ipAddress : '127.0.0.1',
-        Port: config.location === 'office' ? 22 : config.forwardedPort,
+        Hostname:
+          config.networkType === DutNetworkType.OFFICE
+            ? config.ipAddress
+            : '127.0.0.1',
+        Port:
+          config.networkType === DutNetworkType.OFFICE
+            ? 22
+            : config.forwardedPort ?? undefined,
         CheckHostIP: 'no',
         ControlMaster: 'auto',
         ControlPath: '/tmp/ssh-%r%h%p',
@@ -84,7 +108,7 @@ export class AddOwnedDeviceService {
       return {
         Host: config.hostname,
         Hostname: '127.0.0.1',
-        Port: config.forwardedPort,
+        Port: config.forwardedPort ?? undefined,
         User: 'root',
         IdentitiesOnly: 'yes',
         IdentityFile: '%d/.ssh/testing_rsa',
@@ -93,6 +117,7 @@ export class AddOwnedDeviceService {
     }
   }
 
+  // TODO(joelbecker): Return dut info model.
   private async tryToConnect(config: DutConnectionConfig): Promise<string> {
     const comm = new DeviceComm(config.hostname, config.forwardedPort);
     return await comm.readLsbRelease();

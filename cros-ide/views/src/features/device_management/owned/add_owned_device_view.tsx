@@ -42,11 +42,13 @@ import * as model from '../../../../../src/features/chromiumos/device_management
 import * as ReactPanelHelper from '../../../react/common/react_panel_helper';
 
 const STEP_CONTENT_HEIGHT = '24em';
-const DEFAULT_PORT = '2222';
+const DEFAULT_PORT = 2222;
 
 const vscodeApi = acquireVsCodeApi();
 
-ReactPanelHelper.receiveInitialData(vscodeApi).then(context => {
+ReactPanelHelper.receiveInitialData<model.AddOwnedDeviceViewContext>(
+  vscodeApi
+).then(context => {
   ReactPanelHelper.createAndRenderRoot(
     <AddOwnedDeviceView context={context} />
   );
@@ -58,29 +60,40 @@ const centerStyle = {
   justifyContent: 'center',
 };
 
-export function AddOwnedDeviceView(props: any) {
+type Step = {
+  readonly label: string;
+  readonly content: React.ReactElement;
+};
+
+type StepProps = {
+  readonly setNextStepEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  readonly setBackEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+type AddOwnedDeviceStepProps = StepProps & {
+  readonly context: model.AddOwnedDeviceViewContext;
+  readonly connectionConfig: model.DutConnectionConfig;
+  readonly setConnectionConfig: (newConfig: model.DutConnectionConfig) => void;
+};
+
+export function AddOwnedDeviceView(props: {
+  context: model.AddOwnedDeviceViewContext;
+}) {
   const context = props.context;
 
   const [activeStep, setActiveStep] = useState(0);
   const [nextStepEnabled, setNextStepEnabled] = useState(false);
   const [backEnabled, setBackEnabled] = useState(true);
 
-  // Form fields
-  const [networkType, setNetworkType] = useState('office');
-  const [ipAddress, setIpAddress] = useState<string | null>(null);
-  const [port, setPort] = useState<string | null>(DEFAULT_PORT);
-  const [hostname, setHostname] = useState<string | null>(null);
-  const [addToSshConfig, setAddToSshConfig] = useState(true);
-  const [addToHostsFile, setAddToHostsFile] = useState(true);
-
-  const connectionConfig: model.DutConnectionConfig = {
-    location: networkType ?? '',
-    ipAddress: ipAddress ?? '',
-    forwardedPort: port === 'office' ? null : Number(port),
-    hostname: hostname ?? '',
-    addToSshConfig: addToSshConfig,
-    addToHostsFile: addToHostsFile,
-  };
+  const [connectionConfig, setConnectionConfig] =
+    useState<model.DutConnectionConfig>({
+      networkType: model.DutNetworkType.OFFICE,
+      ipAddress: '',
+      forwardedPort: DEFAULT_PORT,
+      hostname: '',
+      addToSshConfig: true,
+      addToHostsFile: true,
+    });
 
   const handleBack = () => {
     setActiveStep(activeStep - 1);
@@ -97,76 +110,55 @@ export function AddOwnedDeviceView(props: any) {
       setActiveStep(activeStep + 1);
     }
   };
-  const handleNetworkType = (newType: string) => {
-    setNetworkType(newType);
+  const handleConnectionConfigChange = (
+    newConfig: model.DutConnectionConfig
+  ) => {
+    setConnectionConfig(newConfig);
   };
 
-  const networkTypeStep = {
+  const stepProps: AddOwnedDeviceStepProps = {
+    connectionConfig: connectionConfig,
+    context: context,
+    setConnectionConfig: handleConnectionConfigChange,
+    setNextStepEnabled: setNextStepEnabled,
+    setBackEnabled: setBackEnabled,
+  };
+
+  const networkTypeStep: Step = {
     label: 'Network Type',
-    content: (
-      <NetworkTypeStep
-        networkType={networkType}
-        setNetworkType={handleNetworkType}
-        setNextStepEnabled={setNextStepEnabled}
-      />
-    ),
+    content: <NetworkTypeStep {...stepProps} />,
   };
-  const ipAddressStep = {
+  const ipAddressStep: Step = {
     label: 'IP Address',
-    content: (
-      <IpAddressStep
-        ipAddress={ipAddress}
-        setIpAddress={setIpAddress}
-        setNextStepEnabled={setNextStepEnabled}
-      />
-    ),
+    content: <IpAddressStep {...stepProps} />,
   };
-  const portForwardingInsStep = {
+  const portForwardingInsStep: Step = {
     label: 'Port Forwarding',
-    content: (
-      <PortForwardingStep
-        networkType={networkType}
-        setNextStepEnabled={setNextStepEnabled}
-        context={context}
-        ipAddress={ipAddress}
-        port={port}
-        setPort={setPort}
-      />
-    ),
+    content: <PortForwardingStep {...stepProps} />,
   };
-  const hostnameStep = {
+  const hostnameStep: Step = {
     label: 'Host Name',
-    content: (
-      <HostNameStep
-        hostname={hostname}
-        setHostname={setHostname}
-        setNextStepEnabled={setNextStepEnabled}
-        addToSshConfig={addToSshConfig}
-        setAddToSshConfig={setAddToSshConfig}
-        addToHostsFile={addToHostsFile}
-        setAddToHostsFile={setAddToHostsFile}
-      />
-    ),
+    content: <HostNameStep {...stepProps} />,
   };
-  const connectionTestStep = {
+  const connectionTestStep: Step = {
     label: 'Test',
-    content: (
-      <ConnectionTestStep
-        connectionConfig={connectionConfig}
-        setBackEnabled={setBackEnabled}
-      />
-    ),
+    content: <ConnectionTestStep {...stepProps} />,
   };
 
-  const stepsByNetworkType: {[networkType: string]: Array<any>} = {
-    office: [networkTypeStep, ipAddressStep, hostnameStep, connectionTestStep],
-    home: [
+  const stepsByNetworkType = {
+    [model.DutNetworkType.OFFICE]: [
+      networkTypeStep,
+      ipAddressStep,
+      hostnameStep,
+      connectionTestStep,
+    ],
+    [model.DutNetworkType.HOME]: [
       networkTypeStep,
       portForwardingInsStep,
       hostnameStep,
       connectionTestStep,
     ],
-    p2p: [
+    [model.DutNetworkType.P2P]: [
       networkTypeStep,
       portForwardingInsStep,
       hostnameStep,
@@ -174,60 +166,51 @@ export function AddOwnedDeviceView(props: any) {
     ],
   };
 
-  const steps = stepsByNetworkType[networkType];
+  const steps = stepsByNetworkType[connectionConfig.networkType];
 
   return (
     <form id="stepperForm" onSubmit={handleNext}>
-      <HotKeys
-        keyMap={{
-          back: 'backspace',
-        }}
-        handlers={{
-          back: handleBack,
-        }}
-      >
-        <Container maxWidth="md">
-          <Stack spacing={2}>
-            <Stepper activeStep={activeStep}>
-              {steps.map((step: any) => (
-                <Step key={step.label}>
-                  <StepLabel>{step.label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
+      <Container maxWidth="md">
+        <Stack spacing={2}>
+          <Stepper activeStep={activeStep}>
+            {steps.map((step: Step) => (
+              <Step key={step.label}>
+                <StepLabel>{step.label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
 
-            <Box sx={{height: STEP_CONTENT_HEIGHT}} style={centerStyle}>
-              {steps[activeStep].content}
-            </Box>
+          <Box sx={{height: STEP_CONTENT_HEIGHT}} style={centerStyle}>
+            {steps[activeStep].content}
+          </Box>
 
-            <Box sx={{display: 'flex', flexDirection: 'row', pt: 2}}>
-              <Button
-                color="inherit"
-                disabled={activeStep === 0 || !backEnabled}
-                onClick={handleBack}
-                sx={{mr: 1}}
-              >
-                Back
-              </Button>
-              <Box sx={{flex: '1 1 auto'}} />
-              <Button onClick={handleNext} disabled={!nextStepEnabled}>
-                {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
-              </Button>
-            </Box>
-          </Stack>
-        </Container>
-      </HotKeys>
+          <Box sx={{display: 'flex', flexDirection: 'row', pt: 2}}>
+            <Button
+              color="inherit"
+              disabled={activeStep === 0 || !backEnabled}
+              onClick={handleBack}
+              sx={{mr: 1}}
+            >
+              Back
+            </Button>
+            <Box sx={{flex: '1 1 auto'}} />
+            <Button onClick={handleNext} disabled={!nextStepEnabled}>
+              {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
+            </Button>
+          </Box>
+        </Stack>
+      </Container>
     </form>
   );
 }
 
-function NetworkTypeStep(props: any) {
-  const isNextStepEnabled = props.networkType !== null;
+function NetworkTypeStep(props: AddOwnedDeviceStepProps) {
+  const isNextStepEnabled = props.connectionConfig.networkType !== null;
   useEffect(() => {
     props.setNextStepEnabled(isNextStepEnabled);
   });
-  const handleNetworkType = (nt: string) => {
-    props.setNetworkType(nt);
+  const handleNetworkType = (nt: model.DutNetworkType) => {
+    props.setConnectionConfig({...props.connectionConfig, networkType: nt});
   };
   return (
     <HotKeys
@@ -238,20 +221,20 @@ function NetworkTypeStep(props: any) {
       }}
       handlers={{
         office: () => {
-          handleNetworkType('office');
+          handleNetworkType(model.DutNetworkType.OFFICE);
         },
         home: () => {
-          handleNetworkType('home');
+          handleNetworkType(model.DutNetworkType.HOME);
         },
         p2p: () => {
-          handleNetworkType('p2p');
+          handleNetworkType(model.DutNetworkType.P2P);
         },
       }}
     >
       <p>Where is your DUT (device under test)?</p>
       <ToggleButtonGroup
         exclusive
-        value={props.networkType}
+        value={props.connectionConfig.networkType}
         onChange={(_e, v) => {
           if (v !== null) {
             handleNetworkType(v);
@@ -259,7 +242,7 @@ function NetworkTypeStep(props: any) {
         }}
       >
         <ToggleButton
-          value="office"
+          value={model.DutNetworkType.OFFICE}
           title="Your DUT (device under test) is connected to the office lab network"
         >
           <BusinessIcon />
@@ -267,7 +250,7 @@ function NetworkTypeStep(props: any) {
         </ToggleButton>
 
         <ToggleButton
-          value="home"
+          value={model.DutNetworkType.HOME}
           title="Your DUT (device under test) is connected to a remote network such as a home network"
         >
           <HomeIcon />
@@ -278,13 +261,18 @@ function NetworkTypeStep(props: any) {
   );
 }
 
-function IpAddressStep(props: any) {
-  const isIpAddressValid = props.ipAddress !== null && isIP(props.ipAddress);
+function IpAddressStep(props: AddOwnedDeviceStepProps) {
+  const isIpAddressValid =
+    props.connectionConfig.ipAddress !== null &&
+    isIP(props.connectionConfig.ipAddress);
   const isFormValid = isIpAddressValid;
   const handleIpAddressChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    props.setIpAddress(event.target.value);
+    props.setConnectionConfig({
+      ...props.connectionConfig,
+      ipAddress: event.target.value,
+    });
   };
   useEffect(() => {
     props.setNextStepEnabled(isFormValid);
@@ -297,7 +285,7 @@ function IpAddressStep(props: any) {
           id="ip-address"
           autoFocus
           aria-describedby="ip-address-helper-text"
-          value={props.ipAddress}
+          value={props.connectionConfig.ipAddress}
           placeholder="192.168.1.1"
           error={!isIpAddressValid}
           helperText={
@@ -322,18 +310,21 @@ function IpAddressStep(props: any) {
   );
 }
 
-function PortForwardingStep(props: any) {
-  const portNum = Number(props.port);
-  const isPortValid = portNum && portNum > 0 && portNum < 65536;
+function PortForwardingStep(props: AddOwnedDeviceStepProps) {
+  const portNum = Number(props.connectionConfig.forwardedPort);
+  const isPortValid: boolean = portNum > 0 && portNum < 65536;
   const isFormValid = isPortValid;
   useEffect(() => {
     props.setNextStepEnabled(isFormValid);
   });
   const handlePortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    props.setPort(event.target.value);
+    props.setConnectionConfig({
+      ...props.connectionConfig,
+      forwardedPort: Number(event.target.value),
+    });
   };
 
-  if (props.networkType !== 'home') {
+  if (props.connectionConfig.networkType !== model.DutNetworkType.HOME) {
     return (
       <>
         <p>No port forwarding necessary!</p>
@@ -365,11 +356,11 @@ function PortForwardingStep(props: any) {
           id="port"
           autoFocus
           aria-describedby="port-helper-text"
-          value={props.port}
+          defaultValue={props.connectionConfig.forwardedPort}
+          onChange={handlePortChange}
           placeholder="192.168.1.1"
           error={!isPortValid}
           helperText={isPortValid ? '' : 'Please enter a valid IP port number.'}
-          onChange={handlePortChange}
         />
       </FormControl>
 
@@ -396,8 +387,9 @@ function PortForwardingStep(props: any) {
                 corp laptop. Example:{' '}
                 <code>
                   ssh {props.context?.username ?? '<username>'}
-                  @&lt;workstation hostname&gt; -R {props.port}:
-                  {props.ipAddress}:22
+                  @&lt;workstation hostname&gt; -R{' '}
+                  {props.connectionConfig.forwardedPort}
+                  {props.connectionConfig.ipAddress}:22
                 </code>
               </li>
             </ol>
@@ -408,13 +400,16 @@ function PortForwardingStep(props: any) {
   );
 }
 
-function HostNameStep(props: any) {
-  const isHostnameValid = isValidHostname(props.hostname);
+function HostNameStep(props: AddOwnedDeviceStepProps) {
+  const isHostnameValid = isValidHostname(props.connectionConfig.hostname);
   useEffect(() => {
     props.setNextStepEnabled(isHostnameValid);
   });
   const handleHostnameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    props.setHostname(event.target.value);
+    props.setConnectionConfig({
+      ...props.connectionConfig,
+      hostname: event.target.value,
+    });
   };
   return (
     <Stack spacing={2}>
@@ -430,12 +425,12 @@ function HostNameStep(props: any) {
         <TextField
           id="hostname"
           autoFocus
-          value={props.hostname}
+          defaultValue={props.connectionConfig.hostname}
+          onChange={handleHostnameChange}
           aria-describedby="hostname-helper-text"
           placeholder="my-dut"
           error={!isHostnameValid}
           helperText={isHostnameValid ? '' : 'Please enter a valid hostname.'}
-          onChange={handleHostnameChange}
         />
       </FormControl>
 
@@ -444,9 +439,12 @@ function HostNameStep(props: any) {
           control={
             <Checkbox
               id="addToSshConfigCheckbox"
-              checked={props.addToSshConfig}
+              checked={props.connectionConfig.addToSshConfig}
               onChange={(_e, v) => {
-                props.setAddToSshConfig(v);
+                props.setConnectionConfig({
+                  ...props.connectionConfig,
+                  addToSshConfig: v,
+                });
               }}
               // Disabled because currently the device hostname must be in the
               // config. We leave the checkbox to show that it will be added.
@@ -478,11 +476,11 @@ function HostNameStep(props: any) {
   );
 }
 
-function ConnectionTestStep(props: any) {
+function ConnectionTestStep(props: AddOwnedDeviceStepProps) {
   const [error, setError] = useState('');
 
   // Connected device info
-  const [info, setInfo] = useState<object | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
     window.addEventListener('message', event => {
