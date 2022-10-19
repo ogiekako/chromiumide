@@ -4,7 +4,6 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as commonUtil from '../../../../common/common_util';
 import * as api from '../../../../features/gerrit/api';
 import {TEST_ONLY} from '../../../../features/gerrit/gerrit';
 import * as https from '../../../../features/gerrit/https';
@@ -178,50 +177,6 @@ const TWO_PATCHSETS_GERRIT_JSON = (commitId1: string, commitId2: string) => `)]}
 }
 `;
 
-//TODO(b:253536935): Move Git functions to a common location.
-
-async function gitInit(root: string) {
-  await commonUtil.execOrThrow('git', ['init'], {cwd: root});
-}
-
-async function gitAddAll(root: string) {
-  await commonUtil.execOrThrow('git', ['add', '.'], {cwd: root});
-}
-
-function cond(test: boolean | undefined, value: string): string[] {
-  return test ? [value] : [];
-}
-
-async function gitCheckout(
-  root: string,
-  name: string,
-  opts?: {createBranch?: boolean}
-) {
-  const args = ['checkout', ...cond(opts?.createBranch, '-b'), name];
-  await commonUtil.execOrThrow('git', args, {cwd: root});
-}
-
-async function gitCommit(
-  root: string,
-  message: string,
-  opts?: {amend?: boolean; all?: boolean}
-): Promise<string> {
-  const args = [
-    'commit',
-    '--allow-empty',
-    ...cond(opts?.amend, '--amend'),
-    ...cond(opts?.all, '--all'),
-    '-m',
-    message,
-  ];
-  await commonUtil.execOrThrow('git', args, {
-    cwd: root,
-  });
-  return (
-    await commonUtil.execOrThrow('git', ['rev-parse', 'HEAD'], {cwd: root})
-  ).stdout.trim();
-}
-
 describe('Gerrit', () => {
   const tempDir = testing.tempDir();
 
@@ -232,16 +187,16 @@ describe('Gerrit', () => {
     // Create a repo with two commits:
     //   1) The first simulates cros/main.
     //   2) The second is the commit on which Gerrit review is taking place.
-    await gitInit(root);
-    await gitCommit(root, 'First');
-    await gitCheckout(root, 'cros/main', {createBranch: true});
-    await gitCheckout(root, 'main');
-    await testing.putFiles(root, {
+    const git = new testing.Git(root);
+    await git.init();
+    await git.commit('First');
+    await git.checkout('cros/main', {createBranch: true});
+    await git.checkout('main');
+    await testing.putFiles(git.root, {
       'cryptohome/cryptohome.cc': 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n',
     });
-    await gitAddAll(root);
-    const commitId = await gitCommit(
-      root,
+    await git.addAll();
+    const commitId = await git.commit(
       'Second\nChange-Id: I23f50ecfe44ee28972aa640e1fa82ceabcc706a8'
     );
 
@@ -305,47 +260,42 @@ describe('Gerrit', () => {
     const abs = (relative: string) => path.join(root, relative);
 
     // Create a file that we'll be changing.
-    await gitInit(root);
-    await testing.putFiles(root, {
+    const git = new testing.Git(root);
+    await git.init();
+    await testing.putFiles(git.root, {
       'cryptohome/cryptohome.cc':
         'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6\n' +
         'Line 7\n' +
         'Line 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13\nLine 14\nLine 15\n',
     });
-    await gitAddAll(root);
-    await gitCommit(root, 'Initial file');
-    await gitCheckout(root, 'cros/main', {createBranch: true});
-    await gitCheckout(root, 'main');
+    await git.addAll();
+    await git.commit('Initial file');
+    await git.checkout('cros/main', {createBranch: true});
+    await git.checkout('main');
 
     // First review patchset.
     const changeId = 'I6adb56bd6f1998dde6b24af26881095292ac2620';
-    await testing.putFiles(root, {
+    await testing.putFiles(git.root, {
       'cryptohome/cryptohome.cc':
         'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6\n' +
         'ADDED 1.1\nADDED 1.2\nLine 7\n' +
         'Line 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13\nLine 14\nLine 15\n',
     });
-    const commitId1 = await gitCommit(
-      root,
-      `Change\nChange-Id: ${changeId}\n`,
-      {all: true}
-    );
+    const commitId1 = await git.commit(`Change\nChange-Id: ${changeId}\n`, {
+      all: true,
+    });
 
     // Second review patchset.
-    await testing.putFiles(root, {
+    await testing.putFiles(git.root, {
       'cryptohome/cryptohome.cc':
         'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6\n' +
         'ADDED 1.1\nADDED 1.2\nLine 7\nADDED 2.1\nADDED 2.2\n' +
         'Line 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13\nLine 14\nLine 15\n',
     });
-    const commitId2 = await gitCommit(
-      root,
-      `Amended\nChange-Id: ${changeId}\n`,
-      {
-        amend: true,
-        all: true,
-      }
-    );
+    const commitId2 = await git.commit(`Amended\nChange-Id: ${changeId}\n`, {
+      amend: true,
+      all: true,
+    });
 
     const commentController = jasmine.createSpyObj<vscode.CommentController>(
       'commentController',

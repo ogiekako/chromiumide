@@ -3,25 +3,8 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as commonUtil from '../../../../../common/common_util';
 import {Watcher} from '../../../../../services/watchers/git_dirs/head';
 import * as testing from '../../../../testing';
-
-async function gitInit(root: string) {
-  await commonUtil.execOrThrow('git', ['init'], {cwd: root});
-}
-
-// Run git commit and returns commit hash.
-async function gitCommit(root: string, message: string): Promise<string> {
-  await commonUtil.execOrThrow(
-    'git',
-    ['commit', '--allow-empty', '-m', message],
-    {cwd: root}
-  );
-  return (
-    await commonUtil.execOrThrow('git', ['rev-parse', 'HEAD'], {cwd: root})
-  ).stdout.trim();
-}
 
 describe('git.Watcher', () => {
   const tempDir = testing.tempDir();
@@ -35,10 +18,11 @@ describe('git.Watcher', () => {
   it('emits events on right timing', async () => {
     const root = tempDir.path;
 
-    await gitInit(root);
+    const git = new testing.Git(root);
+    await git.init();
     // Create initial commit before creating a watcher, because it cannot handle
     // empty git repository.
-    const firstHash = await gitCommit(root, 'First commit');
+    const firstHash = await git.commit('First commit');
 
     const watcher = new Watcher(root);
     subscriptions.push(watcher);
@@ -48,15 +32,15 @@ describe('git.Watcher', () => {
 
     expect(await reader.read()).toEqual({head: firstHash});
 
-    const secondHash = await gitCommit(root, 'Second commit');
+    const secondHash = await git.commit('Second commit');
 
     expect(await reader.read()).toEqual({head: secondHash});
 
-    const thirdHash = await gitCommit(root, 'Third commit');
+    const thirdHash = await git.commit('Third commit');
 
     expect(await reader.read()).toEqual({head: thirdHash});
 
-    await commonUtil.execOrThrow('git', ['checkout', 'HEAD~'], {cwd: root});
+    await git.checkout('HEAD~');
 
     expect(await reader.read()).toEqual({head: secondHash});
   });

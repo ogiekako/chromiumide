@@ -14,6 +14,7 @@ export {
 export {buildFakeChroot, getExtensionUri, putFiles, tempDir} from './fs';
 export {ThrottledJobRunner} from './parallelize';
 export {BlockingPromise} from './promises';
+export {Git} from './git';
 export {flushMicrotasks} from './tasks';
 export {Mutable} from './types';
 export {EventReader} from './events';

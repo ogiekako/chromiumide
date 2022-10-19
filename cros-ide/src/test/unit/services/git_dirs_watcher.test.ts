@@ -2,29 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as commonUtil from '../../../common/common_util';
 import * as services from '../../../services';
 import * as testing from '../../testing';
-
-async function gitInit(root: string) {
-  await fs.promises.mkdir(root, {recursive: true});
-  await commonUtil.execOrThrow('git', ['init'], {cwd: root});
-}
-
-// Run git commit and returns commit hash.
-async function gitCommit(root: string, message: string): Promise<string> {
-  await commonUtil.execOrThrow(
-    'git',
-    ['commit', '--allow-empty', '-m', message],
-    {cwd: root}
-  );
-  return (
-    await commonUtil.execOrThrow('git', ['rev-parse', 'HEAD'], {cwd: root})
-  ).stdout.trim();
-}
 
 function textDocument(fileName: string): vscode.TextDocument {
   const uri = vscode.Uri.file(fileName);
@@ -52,11 +33,13 @@ describe('services.GitDirsWatcher', () => {
     const platform2 = path.join(chromiumos, 'src/platform2');
     const chromite = path.join(chromiumos, 'chromite');
 
-    await gitInit(platform2);
-    const platform2FirstCommit = await gitCommit(platform2, 'Init platform2');
+    const gitPlatform2 = new testing.Git(platform2);
+    await gitPlatform2.init();
+    const platform2FirstCommit = await gitPlatform2.commit('Init platform2');
 
-    await gitInit(chromite);
-    const chromiteFirstCommit = await gitCommit(chromite, 'Init chromite');
+    const gitChromite = new testing.Git(chromite);
+    await gitChromite.init();
+    const chromiteFirstCommit = await gitChromite.commit('Init chromite');
 
     const platform2Foo = path.join(platform2, 'foo');
     const platform2Bar = path.join(platform2, 'bar');
@@ -143,11 +126,13 @@ describe('services.GitDirsWatcher', () => {
 
     const platform2 = path.join(chromiumos, 'src/platform2');
 
-    await gitInit(chromium);
-    await gitCommit(chromium, 'Init chromium');
+    const gitChromium = new testing.Git(chromium);
+    await gitChromium.init();
+    await gitChromium.commit('Init chromium');
 
-    await gitInit(platform2);
-    const platform2FirstCommit = await gitCommit(platform2, 'Init platform2');
+    const gitPlatform2 = new testing.Git(platform2);
+    await gitPlatform2.init();
+    const platform2FirstCommit = await gitPlatform2.commit('Init platform2');
 
     const chromiumFoo = path.join(chromium, 'foo');
     const platform2Bar = path.join(platform2, 'bar');
