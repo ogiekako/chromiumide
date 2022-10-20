@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {findChroot, sourceDir} from '../../../../common/common_util';
 import * as services from '../../../../services';
-import {KNOWN_PACKAGES} from './known_packages';
 import {generate} from './mapping';
 import {SourceDir, PackageInfo} from './types';
 
@@ -20,17 +19,8 @@ export class Packages {
    * the mapping from the current repository when it's needed.
    */
   constructor(
-    private readonly chrootService: services.chromiumos.ChrootService,
-    autoDetect?: boolean
-  ) {
-    if (autoDetect) {
-      return;
-    }
-    for (const packageInfo of KNOWN_PACKAGES) {
-      this.mapping.set(packageInfo.sourceDir, packageInfo);
-    }
-    this.generated = true;
-  }
+    private readonly chrootService: services.chromiumos.ChrootService
+  ) {}
 
   private async ensureGenerated() {
     if (this.generated) {

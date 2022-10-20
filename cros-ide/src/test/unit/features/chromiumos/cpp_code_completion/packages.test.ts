@@ -11,50 +11,11 @@ import * as testing from '../../../../testing';
 describe('Packages', () => {
   const tempDir = testing.tempDir();
 
-  it('returns package information using hard-coded mapping', async () => {
-    await testing.buildFakeChroot(tempDir.path);
-
-    const packages = new Packages(
-      services.chromiumos.ChrootService.maybeCreate(tempDir.path, false)!
-    );
-    // A file should exists in the filepath to get its absolute path.
-    await testing.putFiles(tempDir.path, {
-      'src/platform2/cros-disks/foo.cc': 'x',
-      'src/platform2/unknown_dir/foo.cc': 'x',
-    });
-
-    assert.deepStrictEqual(
-      await packages.fromFilepath(
-        path.join(tempDir.path, 'src/platform2/cros-disks/foo.cc')
-      ),
-      {
-        sourceDir: 'src/platform2/cros-disks',
-        atom: 'chromeos-base/cros-disks',
-      },
-      'success'
-    );
-
-    assert.deepStrictEqual(
-      await packages.fromFilepath(
-        path.join(tempDir.path, 'src/platform2/unknown_dir/foo.cc')
-      ),
-      null,
-      'unknown'
-    );
-
-    assert.deepStrictEqual(
-      await packages.fromFilepath(path.join(tempDir.path, 'not_exist')),
-      null,
-      'not exist'
-    );
-  });
-
   it('returns package information', async () => {
     await testing.buildFakeChroot(tempDir.path);
 
     const packages = new Packages(
-      services.chromiumos.ChrootService.maybeCreate(tempDir.path, false)!,
-      true
+      services.chromiumos.ChrootService.maybeCreate(tempDir.path, false)!
     );
     // A file should exists in the filepath to get its absolute path.
     await testing.putFiles(tempDir.path, {

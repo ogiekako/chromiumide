@@ -35,6 +35,6 @@ export function packagesInstance(): packages.Packages {
   if (packagesCache) {
     return packagesCache;
   }
-  packagesCache = new packages.Packages(chrootServiceInstance(), true);
+  packagesCache = new packages.Packages(chrootServiceInstance());
   return packagesCache;
 }
