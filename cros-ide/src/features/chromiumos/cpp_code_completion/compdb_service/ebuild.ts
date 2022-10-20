@@ -4,7 +4,7 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {Atom} from '../packages';
+import {Atom} from '../../../../services/chromiumos';
 import * as services from '../../../../services';
 import {MNT_HOST_SOURCE} from '../constants';
 import {Board, HOST} from './board';

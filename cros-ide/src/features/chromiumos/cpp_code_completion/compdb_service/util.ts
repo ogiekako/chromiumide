@@ -4,7 +4,7 @@
 
 import * as path from 'path';
 import * as commonUtil from '../../../../common/common_util';
-import {Atom, PackageInfo} from '../packages';
+import {Atom, PackageInfo} from '../../../../services/chromiumos';
 
 /**
  * Returns the destination on which the compilation database should be generated.

@@ -7,7 +7,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as uuid from 'uuid';
 import * as services from '../../../../services';
-import {PackageInfo} from '../packages';
+import {PackageInfo} from '../../../../services/chromiumos';
 import {CompdbService} from './compdb_service';
 import {Ebuild} from './ebuild';
 import {CompdbError, CompdbErrorKind} from './error';

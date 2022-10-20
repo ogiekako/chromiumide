@@ -9,7 +9,7 @@ import * as util from 'util';
 import * as vscode from 'vscode';
 import * as commander from 'commander';
 import * as glob from 'glob';
-import * as cppPackages from '../../../features/chromiumos/cpp_code_completion/packages';
+import * as services from '../../../services';
 import * as testing from '../../testing';
 import {CompilationDatabase} from '../../../features/chromiumos/cpp_code_completion/compdb_service/compilation_database_type';
 import * as clangd from './clangd';
@@ -119,7 +119,7 @@ class PackageJobsProvider {
   private generateCompdbError: Error | undefined = undefined;
   private readonly clangdErrors: Error[] = []; // updated when error occurs.
   constructor(
-    private readonly packageInfo: cppPackages.PackageInfo,
+    private readonly packageInfo: services.chromiumos.PackageInfo,
     readonly output: vscode.OutputChannel
   ) {}
 
@@ -357,7 +357,7 @@ class Tester {
   }
 
   private async packageOutputChannel(
-    packageInfo: cppPackages.PackageInfo
+    packageInfo: services.chromiumos.PackageInfo
   ): Promise<vscode.OutputChannel> {
     return await FileOutputChannel.create(
       path.join(this.logDir, packageInfo.atom, 'output.txt'),

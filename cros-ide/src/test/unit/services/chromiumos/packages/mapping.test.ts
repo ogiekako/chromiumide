@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as mapping from '../../../../../../features/chromiumos/cpp_code_completion/packages/mapping';
+import * as mapping from '../../../../../services/chromiumos/packages/mapping';
 
 const {extractPlatformSubdir} = mapping.TEST_ONLY;
 

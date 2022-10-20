@@ -3,3 +3,4 @@
 // found in the LICENSE file.
 
 export {ChrootService, type CrosFs, execInChroot} from './chroot';
+export {Packages, type Atom, type PackageInfo} from './packages';

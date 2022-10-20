@@ -15,7 +15,7 @@ import {
   CompdbServiceImpl,
   destination,
 } from '../compdb_service';
-import {Atom, Packages} from '../packages';
+import {Atom, Packages} from '../../../../services/chromiumos';
 import {CompdbGenerator, ErrorDetails} from '.';
 
 export class Platform2 implements CompdbGenerator {

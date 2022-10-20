@@ -5,7 +5,6 @@
 import * as path from 'path';
 import * as commonUtil from '../../../common/common_util';
 import * as services from '../../../services';
-import * as packages from '../../../features/chromiumos/cpp_code_completion/packages';
 
 let chrootServiceCache: services.chromiumos.ChrootService | undefined =
   undefined;
@@ -29,12 +28,12 @@ export function chrootServiceInstance(): services.chromiumos.ChrootService {
   return chrootServiceCache;
 }
 
-let packagesCache: packages.Packages | undefined = undefined;
+let packagesCache: services.chromiumos.Packages | undefined = undefined;
 
-export function packagesInstance(): packages.Packages {
+export function packagesInstance(): services.chromiumos.Packages {
   if (packagesCache) {
     return packagesCache;
   }
-  packagesCache = new packages.Packages(chrootServiceInstance());
+  packagesCache = new services.chromiumos.Packages(chrootServiceInstance());
   return packagesCache;
 }

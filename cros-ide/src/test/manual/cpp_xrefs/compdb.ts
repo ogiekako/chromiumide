@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import type * as vscode from 'vscode';
 import * as commander from 'commander';
 import * as cppCompdbService from '../../../features/chromiumos/cpp_code_completion/compdb_service';
-import * as cppPackages from '../../../features/chromiumos/cpp_code_completion/packages';
+import * as services from '../../../services';
 import * as fakes from '../../testing/fakes';
 import {chrootServiceInstance, packagesInstance} from './common';
 
@@ -37,7 +37,7 @@ async function main() {
  * Generates compdb for the given package.
  */
 export async function generate(
-  packageInfo: cppPackages.PackageInfo,
+  packageInfo: services.chromiumos.PackageInfo,
   output: vscode.OutputChannel,
   board?: string
 ): Promise<void> {

@@ -4,9 +4,9 @@
 
 import * as assert from 'assert';
 import * as path from 'path';
-import {Packages} from '../../../../../features/chromiumos/cpp_code_completion/packages';
-import * as services from '../../../../../services';
-import * as testing from '../../../../testing';
+import {Packages} from '../../../../services/chromiumos';
+import * as services from '../../../../services';
+import * as testing from '../../../testing';
 
 describe('Packages', () => {
   const tempDir = testing.tempDir();
