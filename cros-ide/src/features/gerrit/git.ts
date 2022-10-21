@@ -8,12 +8,40 @@ export type Hunks = {
   [filePath: string]: Hunk[];
 };
 
-export type Hunk = {
-  originalStartLine: number;
-  originalLineSize: number;
-  currentStartLine: number;
-  currentLineSize: number;
-};
+/** Data parsed from diff output such as "@@ -10,3 +15,15 @@"" */
+export class Hunk {
+  readonly originalEnd;
+  readonly currentEnd;
+
+  /** Current size minus the original. */
+  readonly sizeDelta;
+
+  constructor(
+    readonly originalStart: number,
+    readonly originalSize: number,
+    readonly currentStart: number,
+    readonly currentSize: number
+  ) {
+    this.originalEnd = originalStart + originalSize;
+    this.currentEnd = originalStart + originalSize;
+    this.sizeDelta = currentSize - originalSize;
+  }
+
+  // Simulates named parameters for readablility.
+  static of(data: {
+    originalStart: number;
+    originalSize: number;
+    currentStart: number;
+    currentSize: number;
+  }) {
+    return new Hunk(
+      data.originalStart,
+      data.originalSize,
+      data.currentStart,
+      data.currentSize
+    );
+  }
+}
 
 /**
  * Extracts diff hunks of changes made between the `originalCommitId`
@@ -62,12 +90,12 @@ function parseDiffHunks(gitDiffContent: string): Hunks {
       hunkFilePath = regexArray[1];
       hunksEachFile = [];
     } else {
-      const hunk: Hunk = {
-        originalStartLine: Number(regexArray[2] || '1'),
-        originalLineSize: Number(regexArray[3] || '1'),
-        currentStartLine: Number(regexArray[4] || '1'),
-        currentLineSize: Number(regexArray[5] || '1'),
-      };
+      const hunk = Hunk.of({
+        originalStart: Number(regexArray[2] || '1'),
+        originalSize: Number(regexArray[3] || '1'),
+        currentStart: Number(regexArray[4] || '1'),
+        currentSize: Number(regexArray[5] || '1'),
+      });
       hunksEachFile.push(hunk);
       hunksAllFiles[hunkFilePath] = hunksEachFile;
     }

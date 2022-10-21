@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import 'jasmine';
-import {TEST_ONLY} from '../../../../features/gerrit/git';
+import {Hunk, TEST_ONLY} from '../../../../features/gerrit/git';
 
 const {parseDiffHunks} = TEST_ONLY;
 
@@ -48,44 +48,44 @@ describe('Gerrit support', () => {
     const hunkRanges = parseDiffHunks(testDiff);
     expect(hunkRanges).toEqual({
       'ide_tooling/cros-ide/src/features/gerrit.ts': [
-        {
-          originalStartLine: 2,
-          originalLineSize: 1,
-          currentStartLine: 2,
-          currentLineSize: 1,
-        },
-        {
-          originalStartLine: 3,
-          originalLineSize: 1,
-          currentStartLine: 4,
-          currentLineSize: 1,
-        },
-        {
-          originalStartLine: 5,
-          originalLineSize: 2,
-          currentStartLine: 7,
-          currentLineSize: 3,
-        },
+        Hunk.of({
+          originalStart: 2,
+          originalSize: 1,
+          currentStart: 2,
+          currentSize: 1,
+        }),
+        Hunk.of({
+          originalStart: 3,
+          originalSize: 1,
+          currentStart: 4,
+          currentSize: 1,
+        }),
+        Hunk.of({
+          originalStart: 5,
+          originalSize: 2,
+          currentStart: 7,
+          currentSize: 3,
+        }),
       ],
       'ide_tooling/cros-ide/src/features/git.ts': [
-        {
-          originalStartLine: 3,
-          originalLineSize: 1,
-          currentStartLine: 3,
-          currentLineSize: 1,
-        },
-        {
-          originalStartLine: 4,
-          originalLineSize: 1,
-          currentStartLine: 5,
-          currentLineSize: 1,
-        },
-        {
-          originalStartLine: 6,
-          originalLineSize: 2,
-          currentStartLine: 8,
-          currentLineSize: 3,
-        },
+        Hunk.of({
+          originalStart: 3,
+          originalSize: 1,
+          currentStart: 3,
+          currentSize: 1,
+        }),
+        Hunk.of({
+          originalStart: 4,
+          originalSize: 1,
+          currentStart: 5,
+          currentSize: 1,
+        }),
+        Hunk.of({
+          originalStart: 6,
+          originalSize: 2,
+          currentStart: 8,
+          currentSize: 3,
+        }),
       ],
     });
   });

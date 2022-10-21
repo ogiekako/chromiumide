@@ -291,28 +291,22 @@ export function updateChangeComments(
 ) {
   for (const [hunkFilePath, hunksEachFile] of Object.entries(hunksAllFiles)) {
     for (const hunk of hunksEachFile) {
-      const hunkEndLine = hunk.originalStartLine + hunk.originalLineSize;
-      const hunkDelta = hunk.currentLineSize - hunk.originalLineSize;
       for (const [filePath, threads] of Object.entries(changeComments)) {
         if (filePath === hunkFilePath) {
           threads.forEach(thread => {
-            if (
+            if (threadWithinRange(thread, hunk.originalEnd, Infinity)) {
               // comment outside the hunk
-              threadWithinRange(thread, hunkEndLine, Infinity)
-            ) {
-              shiftThread(thread, hunkDelta);
+              shiftThread(thread, hunk.sizeDelta);
             } else if (
               // comment within the hunk
-              threadWithinRange(thread, hunk.originalStartLine, hunkEndLine)
+              threadWithinRange(thread, hunk.originalStart, hunk.originalEnd)
             ) {
               // Ensure the comment within the hunk still resides in the
               // hunk. If the hunk removes all the lines, the comment will
               // be moved to the line preceding the hunk.
-              if (hunkDelta < 0 && thread.line !== undefined) {
+              if (hunk.sizeDelta < 0 && thread.line !== undefined) {
                 const protrusion =
-                  thread.line -
-                  (hunk.originalStartLine + hunk.currentLineSize) +
-                  1;
+                  thread.line - (hunk.originalStart + hunk.currentSize) + 1;
                 if (protrusion > 0) {
                   shiftThread(thread, -1 * protrusion);
                 }

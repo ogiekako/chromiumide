@@ -11,20 +11,6 @@ import * as testing from '../../../testing';
 
 const {parseDiffHunks} = git.TEST_ONLY;
 
-function hunk(
-  originalStartLine: number,
-  originalLineSize: number,
-  currentStartLine: number,
-  currentLineSize: number
-): git.Hunk {
-  return {
-    originalStartLine,
-    originalLineSize,
-    currentStartLine,
-    currentLineSize,
-  };
-}
-
 function range(
   start_line: number,
   start_character: number,
@@ -61,15 +47,15 @@ describe('Comment shifting algorithm (hardcoded diff hunks)', () => {
   const testHunks: git.Hunks = {
     'foo.ts': [
       // First line added.
-      hunk(0, 0, 1, 1),
+      new git.Hunk(0, 0, 1, 1),
       // Third line removed.
-      hunk(3, 1, 3, 0),
+      new git.Hunk(3, 1, 3, 0),
       // Fifth line modified, sixth to seventh line removed.
-      hunk(5, 3, 5, 1),
+      new git.Hunk(5, 3, 5, 1),
     ],
     'bar.ts': [
       // First line added.
-      hunk(0, 0, 1, 1),
+      new git.Hunk(0, 0, 1, 1),
     ],
   };
 
