@@ -147,12 +147,9 @@ describe('Comment shifting algorithm (generated diff hunks)', () => {
     gerrit.updateChangeComments(diffHunks, changeThreads);
 
     expect(changeThreads['left.txt']).toEqual([
-      // should be 1
-      thread({line: 1, message: 'one'}, {shifted: 4}),
-      // should be 3
-      thread({line: 2, message: 'two'}, {shifted: 5}),
-      // should be 5
-      thread({line: 3, message: 'three'}, {shifted: 6}),
+      thread({line: 1, message: 'one'}, {shifted: 1}),
+      thread({line: 2, message: 'two'}, {shifted: 3}),
+      thread({line: 3, message: 'three'}, {shifted: 5}),
       thread({line: 4, message: 'four'}, {shifted: 7}),
     ]);
   });

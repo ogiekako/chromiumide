@@ -291,11 +291,12 @@ export function updateChangeComments(
 ) {
   for (const [filePath, threads] of Object.entries(changeComments)) {
     const hunks = hunksAllFiles[filePath] || [];
-    for (const hunk of hunks) {
-      for (const thread of threads) {
-        if (threadWithinRange(thread, hunk.originalEnd, Infinity)) {
+    for (const thread of threads) {
+      let cumulativeShift = 0;
+      for (const hunk of hunks) {
+        if (threadFollowsHunk(thread, hunk)) {
           // comment outside the hunk
-          shiftThread(thread, hunk.sizeDelta);
+          cumulativeShift += hunk.sizeDelta;
         } else if (
           // comment within the hunk
           threadWithinRange(thread, hunk.originalStart, hunk.originalEnd)
@@ -307,13 +308,34 @@ export function updateChangeComments(
             const protrusion =
               thread.line - (hunk.originalStart + hunk.currentSize) + 1;
             if (protrusion > 0) {
-              shiftThread(thread, -1 * protrusion);
+              cumulativeShift += -1 * protrusion;
             }
           }
         }
       }
+      shiftThread(thread, cumulativeShift);
     }
   }
+}
+
+/**
+ * True if a thread starts after the hunk ends. Such threads should be moved
+ * by the size change introduced by the hunk.
+ */
+function threadFollowsHunk(thread: Thread, hunk: git.Hunk) {
+  if (!thread.line) {
+    return false;
+  }
+
+  // Case 1: hunks that insert lines.
+  // The original side is `N,0` and the hunk inserts lines between N and N+1.
+  if (hunk.originalSize === 0) {
+    return thread.line > hunk.originalStart;
+  }
+
+  // Case 2: Modifications and deletions.
+  // The original side is `N,size` and the hunk modifies 'size' lines starting from N.
+  return thread.line >= hunk.originalStart + hunk.originalSize;
 }
 
 /**
