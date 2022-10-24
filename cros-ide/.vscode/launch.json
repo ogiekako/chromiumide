@@ -23,18 +23,19 @@
       "sourceMaps": true
     },
     {
-      "name": "Extension Tests",
+      "name": "Run Integration Tests",
       "type": "extensionHost",
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "--extensionTestsPath=${workspaceFolder}/out/test/index"
+        "--extensionTestsPath=${workspaceFolder}/out/test/integration/index"
       ],
       "outFiles": [
         "${workspaceFolder}/out/**/*.js",
         "${workspaceFolder}/dist/**/*.js"
       ],
-      "preLaunchTask": "npm build-all"
+      "preLaunchTask": "npm build-all",
+      "internalConsoleOptions": "openOnSessionStart"
     }
   ]
 }
