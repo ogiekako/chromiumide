@@ -12,7 +12,7 @@ import * as parser from './parser';
  */
 export class GtestFile implements vscode.Disposable {
   private readonly controller: vscode.TestController;
-  private readonly cases = new Map<vscode.TestItem, GtestCase>();
+  private readonly cases: GtestCase[] = [];
   private readonly item: vscode.TestItem;
 
   private constructor(
@@ -35,7 +35,7 @@ export class GtestFile implements vscode.Disposable {
 
     for (const {range, suite, name} of instances) {
       const testCase = new GtestCase(cfg, this.item, uri, range, suite, name);
-      this.cases.set(testCase.item, testCase);
+      this.cases.push(testCase);
     }
   }
 
@@ -52,10 +52,10 @@ export class GtestFile implements vscode.Disposable {
   }
 
   dispose() {
-    for (const testCase of this.cases.values()) {
+    for (const testCase of this.cases) {
       testCase.dispose();
     }
-    this.cases.clear();
+    this.cases.splice(0);
 
     if (this.item) {
       this.controller.items.delete(this.item.id);
@@ -75,7 +75,7 @@ export class GtestFile implements vscode.Disposable {
 
     const runAll = request.include?.includes(this.item);
 
-    for (const testCase of this.cases.values()) {
+    for (const testCase of this.cases) {
       if (
         !runAll &&
         request.include &&
