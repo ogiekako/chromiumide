@@ -13,6 +13,7 @@ import * as api from './api';
 import * as git from './git';
 import * as helpers from './helpers';
 import * as https from './https';
+import * as virtualDocument from './virtual_document';
 
 export function activate(
   context: vscode.ExtensionContext,
@@ -37,6 +38,8 @@ export function activate(
       title: 'Show Gerrit Log',
     },
   });
+
+  new virtualDocument.GerritDocumentProvider().activate(context);
 
   const controller = vscode.comments.createCommentController(
     'cros-ide-gerrit',
@@ -185,13 +188,7 @@ class Gerrit {
     for (const [filepath, threads] of Object.entries(changeThreads)) {
       threads.forEach(thread => {
         let uri;
-        if (filepath !== '/COMMIT_MSG') {
-          uri = vscode.Uri.file(path.join(gitDir, filepath));
-          const vscodeThread = thread.display(controller, uri);
-          if (vscodeThread) {
-            this.commentThreads.push(vscodeThread);
-          }
-        } else {
+        if (filepath === '/COMMIT_MSG') {
           uri = gitDocument.commitMessageUri(gitDir, 'HEAD');
           // Compensate the difference between commit message on Gerrit and Terminal
           if (thread.line !== undefined && thread.line > 6) {
@@ -199,10 +196,14 @@ class Gerrit {
           } else if (thread.line !== undefined) {
             shiftThread(thread, -1 * (thread.line - 1));
           }
-          const vscodeThread = thread.display(controller, uri);
-          if (vscodeThread) {
-            this.commentThreads.push(vscodeThread);
-          }
+        } else if (filepath === '/PATCHSET_LEVEL') {
+          uri = virtualDocument.patchSetUri(gitDir);
+        } else {
+          uri = vscode.Uri.file(path.join(gitDir, filepath));
+        }
+        const vscodeThread = thread.display(controller, uri);
+        if (vscodeThread) {
+          this.commentThreads.push(vscodeThread);
         }
       });
     }
