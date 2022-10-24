@@ -10,32 +10,47 @@ export type TestInstance = {
   name: string;
 };
 
-// Match with strings like "TEST(foo, bar)".
-//
-// TODO(oka): Support other test definitions like TEST_F and TEST_P.
-// TODO(oka): Support the TEST broken across multiple lines.
-// https://google.github.io/googletest/reference/testing.html
-const GTEST_RE = /^\s*TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)/;
-
 /**
  * Parse the given file content and finds gtest test cases.
  */
 export function parse(content: string): TestInstance[] {
   const res: TestInstance[] = [];
-  content.split('\n').forEach((line, lineNo) => {
-    const m = GTEST_RE.exec(line);
-    if (!m) {
-      return;
+
+  // Match with strings like "TEST(foo, bar)".
+  // https://google.github.io/googletest/reference/testing.html
+  const re = /^[^\S\n]*TEST(?:_F|_P)?\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)/gm;
+  let m;
+
+  let index = 0;
+  let row = 0;
+  let col = 0;
+
+  const proceed = (endIndex: number) => {
+    for (; index < endIndex; index++) {
+      if (content[index] === '\n') {
+        row++;
+        col = 0;
+      } else {
+        col++;
+      }
     }
-    const range = new vscode.Range(
-      new vscode.Position(lineNo, 0),
-      new vscode.Position(lineNo, m[0].length)
-    );
+  };
+
+  while ((m = re.exec(content)) !== null) {
+    proceed(m.index);
+    const start = new vscode.Position(row, col);
+
+    proceed(m.index + m[0].length);
+    const end = new vscode.Position(row, col);
+
+    const range = new vscode.Range(start, end);
+
     res.push({
       range,
       suite: m[1],
       name: m[2],
     });
-  });
+  }
+
   return res;
 }

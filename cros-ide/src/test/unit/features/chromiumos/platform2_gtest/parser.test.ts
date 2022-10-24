@@ -35,4 +35,35 @@ describe('platform2 gtest parser', () => {
       },
     ]);
   });
+
+  it('parses complex gtest cases', async () => {
+    const content = [
+      //                              v 31
+      '   TEST_F  (   foo  ,   bar   ) {', // Line 0
+      '}',
+      '',
+      'TEST_P(multiple,',
+      '  lines) {}', // Line 4
+      //       ^ 8
+    ].join('\n');
+
+    expect(parser.parse(content)).toEqual([
+      {
+        range: new vscode.Range(
+          new vscode.Position(0, 0),
+          new vscode.Position(0, 31)
+        ),
+        suite: 'foo',
+        name: 'bar',
+      },
+      {
+        range: new vscode.Range(
+          new vscode.Position(3, 0),
+          new vscode.Position(4, 8)
+        ),
+        suite: 'multiple',
+        name: 'lines',
+      },
+    ]);
+  });
 });
