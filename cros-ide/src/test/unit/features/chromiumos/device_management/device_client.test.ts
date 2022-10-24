@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import * as deviceClient from '../../../../../features/chromiumos/device_management/device_client';
+import {buildMinimalDeviceSshArgs} from '../../../../../features/chromiumos/device_management/ssh_util';
 import * as testing from '../../../../testing';
 import {FakeSshServer} from './fake_ssh_server';
 
@@ -12,9 +13,11 @@ describe('Device client', () => {
     const server = new FakeSshServer();
     await server.listen();
     const client = new deviceClient.DeviceClient(
-      `localhost:${server.listenPort}`,
-      testing.getExtensionUri(),
-      vscode.window.createOutputChannel('void')
+      vscode.window.createOutputChannel('void'),
+      buildMinimalDeviceSshArgs(
+        `localhost:${server.listenPort}`,
+        testing.getExtensionUri()
+      )
     );
     return {server, client};
   });
@@ -25,9 +28,9 @@ describe('Device client', () => {
 
   it('reads /etc/lsb-release', async () => {
     const lsbRelease = await state.client.readLsbRelease();
-    expect(lsbRelease).toEqual({
-      board: 'hatch',
-      builderPath: 'hatch-release/R104-14901.0.0',
-    });
+    expect(lsbRelease.chromeosReleaseBoard).toEqual('hatch');
+    expect(lsbRelease.chromeosReleaseBuilderPath).toEqual(
+      'hatch-release/R104-14901.0.0'
+    );
   });
 });

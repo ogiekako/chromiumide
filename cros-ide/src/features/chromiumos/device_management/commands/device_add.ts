@@ -7,9 +7,10 @@ import * as metrics from '../../../metrics/metrics';
 import {AddOwnedDeviceService} from '../owned/add_owned_device_service';
 import {AddOwnedDeviceViewContext} from '../owned/add_owned_device_model';
 import {AddOwnedDevicePanel} from '../owned/add_owned_device_panel';
-import * as ssh_config from '../ssh_config';
-import {underDevelopment} from './../../../../services/config';
+import * as sshConfig from '../ssh_config';
+import * as sshUtil from '../ssh_util';
 import {CommandContext, promptNewHostname} from './common';
+import {underDevelopment} from './../../../../services/config';
 
 export async function addDevice(context: CommandContext): Promise<void> {
   metrics.send({
@@ -22,8 +23,9 @@ export async function addDevice(context: CommandContext): Promise<void> {
     new AddOwnedDevicePanel(
       context.extensionContext.extensionUri,
       new AddOwnedDeviceService(
-        ssh_config.defaultConfigPath,
+        sshConfig.defaultConfigPath,
         '/etc/hosts',
+        sshUtil.getTestingRsaPath(context.extensionContext.extensionUri),
         context.output,
         context.deviceRepository.owned
       ),

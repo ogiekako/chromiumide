@@ -7,6 +7,7 @@ import * as metrics from '../../../metrics/metrics';
 import * as deviceClient from '../device_client';
 import * as provider from '../device_tree_data_provider';
 import * as prebuiltUtil from '../prebuilt_util';
+import * as sshUtil from '../ssh_util';
 import {CommandContext, promptKnownHostnameIfNeeded} from './common';
 
 // Path to the private credentials needed to access prebuilts, relative to
@@ -38,9 +39,11 @@ export async function flashPrebuiltImage(
   }
 
   const client = new deviceClient.DeviceClient(
-    hostname,
-    context.extensionContext.extensionUri,
-    context.output
+    context.output,
+    sshUtil.buildMinimalDeviceSshArgs(
+      hostname,
+      context.extensionContext.extensionUri
+    )
   );
 
   const defaultBoard = await vscode.window.withProgress(
@@ -50,7 +53,7 @@ export async function flashPrebuiltImage(
     },
     async () => {
       const lsbRelease = await client.readLsbRelease();
-      return lsbRelease.board;
+      return lsbRelease.chromeosReleaseBoard;
     }
   );
 

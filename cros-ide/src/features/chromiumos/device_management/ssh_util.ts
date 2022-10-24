@@ -5,6 +5,36 @@
 import * as vscode from 'vscode';
 
 /**
+ * Options of an entry in an OpenSSH config file.
+ *
+ * Not all available OpenSSH options are here; they can be added as needed.
+ */
+export type SshConfigHost = {
+  readonly Hostname?: string;
+  readonly Port?: number;
+  readonly CheckHostIP?: string;
+  readonly ControlMaster?: string;
+  readonly ControlPath?: string;
+  readonly ControlPersist?: string;
+  readonly IdentitiesOnly?: string;
+  readonly IdentityFile?: string;
+  readonly StrictHostKeyChecking?: string;
+  readonly User?: string;
+  readonly UserKnownHostsFile?: string;
+  readonly VerifyHostKeyDNS?: string;
+  readonly ProxyCommand?: string;
+  readonly HostKeyAlias?: string;
+};
+
+/**
+ * An entry in an OpenSSH config file (with a single host), including the Host part at the top.
+ * Currently this is designed for use with the ssh-config lib.
+ */
+export type SshConfigHostEntry = SshConfigHost & {
+  readonly Host?: string;
+};
+
+/**
  * Returns the path to the testing_rsa file bundled in the extension.
  *
  * The activation function of the device management feature ensures that the file
@@ -17,36 +47,78 @@ export function getTestingRsaPath(extensionUri: vscode.Uri): string {
 /**
  * Constructs a command line to run SSH for a host.
  *
- * @param host hostname, which can be in the format of 'hostname' or 'hostname:port'
+ * @param hostAndPort in the format of 'hostname' or 'hostname:port'
  * @param extensionUri extension's installation path
  * @param extraOptions additional SSH options for your command
  * @param cmd remote command to execute
  * @returns a command line
  */
 export function buildSshCommand(
-  host: string,
+  hostAndPort: string,
   extensionUri: vscode.Uri,
   extraOptions: string[] = [],
   cmd?: string
 ): string[] {
-  const [hostname, portname] = host.split(':');
-
-  const args = ['ssh', '-i', getTestingRsaPath(extensionUri)];
-  args.push(
-    '-o',
-    'StrictHostKeyChecking=no',
-    '-o',
-    'UserKnownHostsFile=/dev/null'
+  const sshCmd = ['ssh'].concat(
+    buildMinimalDeviceSshArgs(hostAndPort, extensionUri, extraOptions)
   );
-  if (portname) {
-    args.push('-p', portname);
-  }
-  if (extraOptions) {
-    args.push(...extraOptions);
-  }
-  args.push(`root@${hostname}`);
   if (cmd) {
-    args.push(cmd);
+    sshCmd.push(cmd);
   }
-  return args;
+  return sshCmd;
+}
+
+/**
+ * Builds the arguments needed to SSH to a DUT. Works with leased devices, but may not work for all
+ * owned device situations.
+ *
+ * @param hostAndPort Host name, or colon-separated host and port.
+ * @param extensionUri cros-ide extension URI.
+ * @returns string[] of the individual arguments.
+ */
+export function buildMinimalDeviceSshArgs(
+  hostAndPort: string,
+  extensionUri: vscode.Uri,
+  extraOptions: string[] = []
+): string[] {
+  const [host, port] = hostAndPort.split(':');
+  const testingRsaPath = getTestingRsaPath(extensionUri);
+  return buildSshArgs(
+    host,
+    port ? Number(port) : undefined,
+    {
+      StrictHostKeyChecking: 'no', // Prevent prompting whether to add new host to knowns.
+      UserKnownHostsFile: '/dev/null', // Don't modify the user's known_hosts file.
+    },
+    ['-i', testingRsaPath].concat(extraOptions)
+  );
+}
+
+/**
+ * Builds OpenSSH ssh args, for the given host, and optional port, SSH config options, and
+ * additional args.
+ *
+ * @param host Hostname (no port number)
+ * @param port Port number, or undefined (SSH defaults to 22)
+ * @param sshOptions SSH config options, which will add corresponding -o args.
+ * @return string[] of the individual arguments.
+ */
+export function buildSshArgs(
+  host: string,
+  port?: number,
+  sshOptions: SshConfigHost = {},
+  additionalSshArgs: string[] = []
+): string[] {
+  const sshArgs: string[] = [];
+  if (port) {
+    sshArgs.push('-p', port.toString());
+  }
+  sshArgs.push(...additionalSshArgs);
+  sshArgs.push(
+    ...Object.entries(sshOptions)
+      .filter(e => e[1])
+      .flatMap(e => ['-o', `${e[0]}=${e[1]}`])
+  );
+  sshArgs.push(`root@${host}`);
+  return sshArgs;
 }
