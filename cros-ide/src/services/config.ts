@@ -81,7 +81,6 @@ export const underDevelopment = {
     'underDevelopment.platform2GtestDebugging'
   ),
   platformEc: new ConfigValue<boolean>('underDevelopment.platformEC'),
-  runTastTests: new ConfigValue<boolean>('underDevelopment.runTastTests'),
   systemLogViewer: new ConfigValue<boolean>('underDevelopment.systemLogViewer'),
   testCoverage: new ConfigValue<boolean>('underDevelopment.testCoverage'),
 };

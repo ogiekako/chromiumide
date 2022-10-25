@@ -142,8 +142,7 @@
         "command": "cros-ide.deviceManagement.runTastTests",
         "category": "CrOS",
         "title": "Run tast tests",
-        "icon": "$(play)",
-        "enablement": "config.cros-ide.underDevelopment.runTastTests"
+        "icon": "$(play)"
       },
       {
         "command": "cros-ide.refreshBoardsPackages",
@@ -265,7 +264,7 @@
       "editor/title": [
         {
           "command": "cros-ide.deviceManagement.runTastTests",
-          "when": "config.cros-ide.underDevelopment.runTastTests && resourcePath =~ //src/platform/tast-tests[^/]*/src/chromiumos/tast/(local|remote)/bundles/[^/]+/[^/]+/[^/]+.go$/",
+          "when": "resourcePath =~ //src/platform/tast-tests[^/]*/src/chromiumos/tast/(local|remote)/bundles/[^/]+/[^/]+/[^/]+.go$/",
           "group": "navigation"
         }
       ],
@@ -503,11 +502,6 @@
           "type": "boolean",
           "description": "Enable Platform EC support (under development)",
           "default": false
-        },
-        "cros-ide.underDevelopment.runTastTests": {
-          "type": "boolean",
-          "description": "Enable running tast tests",
-          "default": true
         },
         "cros-ide.underDevelopment.systemLogViewer": {
           "type": "boolean",
