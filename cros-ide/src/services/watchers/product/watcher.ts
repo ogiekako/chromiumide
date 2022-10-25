@@ -2,8 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as metrics from '../../../features/metrics/metrics';
+import * as commonUtil from '../../../common/common_util';
 import * as chromiumos from './chromiumos';
 
 /**
@@ -40,14 +42,29 @@ export class ProductWatcher implements vscode.Disposable {
 
   // TODO(oka): Support more products.
   constructor(readonly product: 'chromiumos') {
-    vscode.workspace.onDidChangeWorkspaceFolders(async e => {
-      if (e.added.length > 0) {
-        await this.add(e.added);
-      }
-      if (e.removed.length > 0) {
-        await this.remove(e.removed);
-      }
-    });
+    this.subscriptions.push(
+      vscode.workspace.onDidChangeWorkspaceFolders(async e => {
+        if (e.added.length > 0) {
+          await this.add(e.added);
+        }
+        if (e.removed.length > 0) {
+          await this.remove(e.removed);
+        }
+      }),
+      vscode.workspace.onDidOpenTextDocument(async e => {
+        if (this.root) {
+          return;
+        }
+        if (e.uri.scheme !== 'file') {
+          return;
+        }
+        const root = await this.productRoot(e.uri);
+        if (!root) {
+          return;
+        }
+        await this.handleNoWorkspaceFolder(e.fileName, root);
+      })
+    );
 
     // Allow ones that subscribe this class immediately after its instantiation
     // to receive the events.
@@ -62,12 +79,10 @@ export class ProductWatcher implements vscode.Disposable {
     vscode.Disposable.from(...this.subscriptions).dispose();
   }
 
-  private async productRoot(
-    folder: vscode.WorkspaceFolder
-  ): Promise<string | undefined> {
+  private async productRoot(uri: vscode.Uri): Promise<string | undefined> {
     switch (this.product) {
       case 'chromiumos':
-        return await chromiumos.root(folder.uri.fsPath);
+        return await chromiumos.root(uri.fsPath);
     }
   }
 
@@ -75,7 +90,7 @@ export class ProductWatcher implements vscode.Disposable {
     const prevRoot = this.root;
 
     for (const folder of folders) {
-      const root = await this.productRoot(folder);
+      const root = await this.productRoot(folder.uri);
       if (!root) {
         continue;
       }
@@ -120,7 +135,7 @@ export class ProductWatcher implements vscode.Disposable {
     const prevRoot = this.root;
 
     for (const folder of folders) {
-      const root = await this.productRoot(folder);
+      const root = await this.productRoot(folder.uri);
       if (!root) {
         continue;
       }
@@ -145,6 +160,38 @@ export class ProductWatcher implements vscode.Disposable {
 
     if (prevRoot !== this.root) {
       this.onDidChangeRootEmitter.fire(this.root);
+    }
+  }
+
+  private noWorkspaceHandled = false;
+  private async handleNoWorkspaceFolder(fileName: string, productRoot: string) {
+    if (this.noWorkspaceHandled) {
+      return;
+    }
+    this.noWorkspaceHandled = true;
+
+    const gitFolder = commonUtil.findGitDir(fileName);
+
+    const openGitFolder = gitFolder
+      ? `Open ${path.relative(productRoot, gitFolder)}`
+      : undefined;
+    const openOtherFolder = gitFolder ? 'Open Other' : 'Open Folder';
+
+    const buttons = openGitFolder ? [openGitFolder] : [];
+    buttons.push(openOtherFolder);
+
+    const selection = await vscode.window.showErrorMessage(
+      `CrOS IDE expects a workspace folder with ${this.product} sources`,
+      ...buttons
+    );
+
+    if (selection === openOtherFolder) {
+      await vscode.commands.executeCommand('vscode.openFolder', undefined);
+    } else if (gitFolder && selection === openGitFolder) {
+      await vscode.commands.executeCommand(
+        'vscode.openFolder',
+        vscode.Uri.file(gitFolder)
+      );
     }
   }
 }

@@ -50,7 +50,7 @@ function workspaceFolder(fsPath: string): vscode.WorkspaceFolder {
 describe('Chromiumos product watcher', () => {
   const tempDir = testing.tempDir();
 
-  const {vscodeEmitters} = testing.installVscodeDouble();
+  const {vscodeEmitters, vscodeSpy} = testing.installVscodeDouble();
 
   const subscriptions: vscode.Disposable[] = [];
   let watcher: ProductWatcher;
@@ -118,5 +118,43 @@ describe('Chromiumos product watcher', () => {
     });
 
     expect(await eventReader.read()).toBeUndefined();
+  });
+
+  it('navigates user to open a workspace folder', async () => {
+    const cros = path.join(tempDir.path, 'cros');
+    const chromite = path.join(cros, 'chromite');
+
+    await repoInit(cros, PUBLIC_MANIFEST);
+
+    const git = new testing.Git(chromite);
+    await git.init();
+    await git.commit('init');
+
+    const chromiteFoo = path.join(chromite, 'foo.cc');
+
+    vscodeSpy.window.showErrorMessage.and.resolveTo('Open chromite');
+
+    vscodeEmitters.workspace.onDidOpenTextDocument.fire({
+      uri: vscode.Uri.file(chromiteFoo),
+      fileName: chromiteFoo,
+    } as vscode.TextDocument);
+
+    await new Promise<void>(resolve => {
+      vscodeSpy.commands.executeCommand.and.callFake(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (command: string, ...rest: any[]): Promise<any> => {
+          expect(command).toEqual('vscode.openFolder');
+          expect(rest[0]).toEqual(vscode.Uri.file(chromite));
+
+          resolve();
+        }
+      );
+    });
+
+    expect(vscodeSpy.window.showErrorMessage.calls.argsFor(0)).toEqual([
+      'CrOS IDE expects a workspace folder with chromiumos sources',
+      'Open chromite',
+      'Open Other',
+    ]);
   });
 });
