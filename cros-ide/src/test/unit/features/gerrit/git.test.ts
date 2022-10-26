@@ -51,8 +51,14 @@ Date:   Fri Oct 7 11:46:51 2022 +0900
 describe('parseChangeIds', () => {
   it('extracts commit ids from git log', () => {
     expect(parseChangeIds(gitLog)).toEqual([
-      'I6f1ec79d7b221bb7c7343cc953db1b6f6369fbb4',
-      'Ic7594ee4825feb488c12aac31bb879c03932fb45',
+      {
+        gitSha: '8c3682b20db653d55e4bb1e56294d4c16b95a5f5',
+        gerritChangeId: 'I6f1ec79d7b221bb7c7343cc953db1b6f6369fbb4',
+      },
+      {
+        gitSha: 'c3b2ca4da09c2452eefad3f3bf98f0f675ba8ad3',
+        gerritChangeId: 'Ic7594ee4825feb488c12aac31bb879c03932fb45',
+      },
     ]);
   });
 
@@ -62,7 +68,10 @@ describe('parseChangeIds', () => {
 
   it('ignores change id inside a commit message', () => {
     expect(parseChangeIds(gitLogWithSpuriousChangeId)).toEqual([
-      'Ic7594ee4825feb488c12aac31bb879c03932fb45',
+      {
+        gitSha: 'c3b2ca4da09c2452eefad3f3bf98f0f675ba8ad3',
+        gerritChangeId: 'Ic7594ee4825feb488c12aac31bb879c03932fb45',
+      },
     ]);
   });
 });

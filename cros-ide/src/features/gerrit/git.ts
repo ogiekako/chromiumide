@@ -107,6 +107,12 @@ function parseDiffHunks(gitDiffContent: string): Hunks {
   return hunksAllFiles;
 }
 
+/** Data extracted from `git log`. */
+export type GitLogInfo = {
+  readonly gitSha: string;
+  readonly gerritChangeId: string;
+};
+
 /**
  * Extracts change-ids from commit messages between cros/main to HEAD.
  *
@@ -124,17 +130,22 @@ export async function readChangeIds(
   if (branchLog instanceof Error) {
     return branchLog;
   }
-  return parseChangeIds(branchLog.stdout);
+  return parseChangeIds(branchLog.stdout).map(item => item.gerritChangeId);
 }
 
-function parseChangeIds(log: string): string[] {
-  const foundIds = [];
-  const changeIdRegex = /^\s*Change-Id: (I[0-9a-z]*)/gm;
+function parseChangeIds(log: string): GitLogInfo[] {
+  const result = [];
+  // Matches the entire commit message from the line with SHA to Gerrit's Change-Id.
+  const messageRegex =
+    /^commit (?<sha>[0-9a-f]+)[\s\S]*?\n\s*?Change-Id: (?<gerrit>I[0-9a-z]+)/gm;
   let match: RegExpExecArray | null;
-  while ((match = changeIdRegex.exec(log)) !== null) {
-    foundIds.push(match[1]);
+  while ((match = messageRegex.exec(log)) !== null) {
+    result.push({
+      gitSha: match.groups!['sha'],
+      gerritChangeId: match.groups!['gerrit'],
+    });
   }
-  return foundIds;
+  return result;
 }
 
 export const TEST_ONLY = {parseChangeIds, parseDiffHunks};
