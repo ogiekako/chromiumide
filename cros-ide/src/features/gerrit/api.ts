@@ -12,6 +12,17 @@ export type ChangeComments = {
 };
 
 /**
+ * Special identifiers that can be used instead of a path to a file.
+ *
+ * https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html
+ */
+export const MAGIC_PATHS = Object.freeze([
+  '/COMMIT_MSG',
+  '/MERGE_LIST',
+  '/PATCHSET_LEVEL',
+]);
+
+/**
  * https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#comment-info
  */
 export type CommentInfo = {

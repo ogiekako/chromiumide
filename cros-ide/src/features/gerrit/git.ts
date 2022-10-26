@@ -51,11 +51,12 @@ export class Hunk {
 export async function readDiffHunks(
   dir: string,
   originalCommitId: string,
+  files: string[],
   logger?: vscode.OutputChannel
 ): Promise<Hunks | Error> {
   const gitDiff = await commonUtil.exec(
     'git',
-    ['diff', '-U0', originalCommitId],
+    ['diff', '-U0', originalCommitId, '--', ...files],
     {
       cwd: dir,
       logger,

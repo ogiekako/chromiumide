@@ -217,9 +217,16 @@ class Gerrit {
     originalCommitId: string,
     changeThreads: ChangeThreads
   ): Promise<void> {
+    // If the local branch is rebased after uploading it for review,
+    // unrestricted `git diff` will include everything that changed
+    // in the entire repo. This can have performance implications.
+    const relevantFiles = Object.getOwnPropertyNames(changeThreads).filter(
+      path => !api.MAGIC_PATHS.includes(path)
+    );
     const hunks = await git.readDiffHunks(
       gitDir,
       originalCommitId,
+      relevantFiles,
       this.outputChannel
     );
     if (hunks instanceof Error) {
