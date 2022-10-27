@@ -84,6 +84,7 @@ const optionsGA = {
 type FeatureGroup =
   | 'codesearch'
   | 'cppxrefs'
+  | 'debugging'
   | 'device'
   | 'gerrit'
   | 'lint'

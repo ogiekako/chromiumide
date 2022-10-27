@@ -7,6 +7,7 @@ import * as net from 'net';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as services from '../../../services';
+import * as metrics from '../../metrics/metrics';
 // TODO(oka): Move ebuild under src/services/chromiumos.
 import * as ebuild from '../cpp_code_completion/compdb_service/ebuild';
 import {GtestCase} from './gtest_case';
@@ -44,6 +45,21 @@ export class Runner {
 
   async run() {
     const atomToTests = await this.atomToTests();
+
+    metrics.send({
+      category: 'interactive',
+      group: 'debugging',
+      action:
+        this.request.profile?.kind === vscode.TestRunProfileKind.Run
+          ? 'run platform2 gtests'
+          : 'debug platform2 gtests',
+      // Package names.
+      label: [...atomToTests.keys()].sort().join(' '),
+      // Number of tests to run.
+      value: [...atomToTests.values()]
+        .map(x => x.length)
+        .reduce((x, y) => x + y),
+    });
 
     // Run tests per package.
     for (const [atom, tests] of atomToTests.entries()) {
