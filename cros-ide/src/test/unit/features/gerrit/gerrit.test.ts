@@ -8,6 +8,7 @@ import * as api from '../../../../features/gerrit/api';
 import {TEST_ONLY} from '../../../../features/gerrit/gerrit';
 import * as https from '../../../../features/gerrit/https';
 import * as metrics from '../../../../features/metrics/metrics';
+import * as bgTaskStatus from '../../../../ui/bg_task_status';
 import * as testing from '../../../testing';
 
 const {formatGerritTimestamp, Gerrit, partitionThreads} = TEST_ONLY;
@@ -233,10 +234,16 @@ describe('Gerrit', () => {
       statusBarShown = true;
     };
 
+    const statusManager = jasmine.createSpyObj<bgTaskStatus.StatusManager>(
+      'statusManager',
+      ['setStatus']
+    );
+
     const gerrit = new Gerrit(
       commentController,
       vscode.window.createOutputChannel('gerrit'),
-      statusBar
+      statusBar,
+      statusManager
     );
 
     const fileName = abs('cryptohome/cryptohome.cc');
@@ -269,6 +276,11 @@ describe('Gerrit', () => {
       action: 'update comments',
       value: 1,
     });
+
+    expect(statusManager.setStatus).toHaveBeenCalledOnceWith(
+      'Gerrit',
+      bgTaskStatus.TaskStatus.OK
+    );
   });
 
   it('handles special comment types (line, file, commit msg, patchset)', async () => {
@@ -353,7 +365,8 @@ describe('Gerrit', () => {
     const gerrit = new Gerrit(
       commentController,
       vscode.window.createOutputChannel('gerrit'),
-      statusBar
+      statusBar,
+      new bgTaskStatus.TEST_ONLY.StatusManagerImpl()
     );
 
     spyOn(https, 'get')
@@ -474,7 +487,8 @@ describe('Gerrit', () => {
     const gerrit = new Gerrit(
       commentController,
       vscode.window.createOutputChannel('gerrit'),
-      vscode.window.createStatusBarItem()
+      vscode.window.createStatusBarItem(),
+      new bgTaskStatus.TEST_ONLY.StatusManagerImpl()
     );
 
     const fileName = abs('cryptohome/cryptohome.cc');
@@ -591,7 +605,8 @@ describe('Gerrit', () => {
     const gerrit = new Gerrit(
       commentController,
       vscode.window.createOutputChannel('gerrit'),
-      statusBar
+      statusBar,
+      new bgTaskStatus.TEST_ONLY.StatusManagerImpl()
     );
 
     await expectAsync(

@@ -16,6 +16,9 @@ import * as helpers from './helpers';
 import * as https from './https';
 import * as virtualDocument from './virtual_document';
 
+// Task name in the status manager.
+const GERRIT = 'Gerrit';
+
 export function activate(
   context: vscode.ExtensionContext,
   statusManager: bgTaskStatus.StatusManager,
@@ -32,7 +35,7 @@ export function activate(
   );
   // We don't use the status itself. The task provides an easy way
   // to find the log.
-  statusManager.setTask('Gerrit', {
+  statusManager.setTask(GERRIT, {
     status: bgTaskStatus.TaskStatus.OK,
     command: {
       command: SHOW_LOG_CMD,
@@ -69,7 +72,12 @@ export function activate(
   );
   statusBar.command = focusCommentsPanel;
 
-  const gerrit = new Gerrit(controller, outputChannel, statusBar);
+  const gerrit = new Gerrit(
+    controller,
+    outputChannel,
+    statusBar,
+    statusManager
+  );
 
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(document => {
@@ -106,7 +114,8 @@ class Gerrit {
   constructor(
     private readonly controller: vscode.CommentController,
     private readonly outputChannel: vscode.OutputChannel,
-    private readonly statusBar: vscode.StatusBarItem
+    private readonly statusBar: vscode.StatusBarItem,
+    private readonly statusManager: bgTaskStatus.StatusManager
   ) {}
 
   /**
@@ -143,6 +152,7 @@ class Gerrit {
         this.displayCommentThreads(this.controller, changeThreads, gitDir);
       }
       this.updateStatusBar();
+      this.statusManager.setStatus(GERRIT, bgTaskStatus.TaskStatus.OK);
       if (doFetch) {
         this.sendMetrics();
       }
@@ -250,6 +260,7 @@ class Gerrit {
 
   private showErrorMessage(message: string) {
     this.outputChannel.appendLine(message);
+    this.statusManager.setStatus(GERRIT, bgTaskStatus.TaskStatus.ERROR);
   }
 
   clearCommentThreads() {
