@@ -102,117 +102,89 @@ describe('formatGerritTimestaps', () => {
   });
 });
 
-// From crrev.com/c/3951631
-// JSON was simplified by leaving out some avatars, leading )]}\n was preserved
-const SIMPLE_COMMENT_GERRIT_JSON = (commitId1: string) => `)]}
-{
-  "cryptohome/cryptohome.cc": [
-    {
-      "author": {
-        "_account_id": 1355869,
-        "name": "Tomasz Tylenda",
-        "email": "ttylenda@chromium.org",
-        "avatars": [
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s32-p/photo.jpg",
-            "height": 32
-          }
-        ]
-      },
-      "change_message_id": "592dcb09ed96952012e147fe621d264db460cd6f",
-      "unresolved": true,
-      "patch_set": 1,
-      "id": "b2698729_8e2b9e9a",
-      "line": 3,
-      "updated": "2022-10-13 05:27:40.000000000",
-      "message": "Unresolved comment on the added line.",
-      "commit_id": "${commitId1}"
-    }
-  ]
+/** Build Gerrit API response from typed input. */
+function apiString(changeComments: api.ChangeComments): string {
+  return ')]}\n' + JSON.stringify(changeComments);
 }
-`;
+
+const AUTHOR = Object.freeze({
+  _account_id: 1355869,
+  name: 'Tomasz Tylenda',
+  email: 'ttylenda@chromium.org',
+  avatars: [
+    {
+      url: 'https://lh3.googleusercontent.com/photo.jpg',
+      height: 32,
+    },
+  ],
+});
+
+const COMMENT_INFO = Object.freeze({
+  author: AUTHOR,
+  change_message_id: '592dcb09ed96952012e147fe621d264db460cd6f',
+  unresolved: true,
+  patch_set: 1,
+  updated: '2022-10-13 05:27:40.000000000',
+});
+
+// Based on crrev.com/c/3951631
+const SIMPLE_CHANGE_COMMENTS = (commitId1: string): api.ChangeComments => {
+  return {
+    'cryptohome/cryptohome.cc': [
+      {
+        ...COMMENT_INFO,
+        id: 'b2698729_8e2b9e9a',
+        line: 3,
+        message: 'Unresolved comment on the added line.',
+        commit_id: commitId1,
+      },
+    ],
+  };
+};
 
 // Based on crrev.com/c/3980425
 // For testing chains of changes
-const SECOND_COMMIT_IN_CHAIN = (commitId: string) => `)]}
-{
-  "cryptohome/cryptohome.cc": [
-    {
-      "author": {
-        "_account_id": 1355869,
-        "name": "Tomasz Tylenda",
-        "email": "ttylenda@chromium.org",
-        "avatars": [
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s32-p/photo.jpg",
-            "height": 32
-          }
-        ]
+const SECOND_COMMIT_IN_CHAIN = (commitId: string): api.ChangeComments => {
+  return {
+    'cryptohome/cryptohome.cc': [
+      {
+        ...COMMENT_INFO,
+        id: '91ffb8ea_d3594fb4',
+        line: 6,
+        message: 'Comment on the second change',
+        commit_id: commitId,
       },
-      "change_message_id": "9ebb20d4049951302c6f80e591364d9f8bd1d790",
-      "unresolved": true,
-      "patch_set": 1,
-      "id": "91ffb8ea_d3594fb4",
-      "line": 6,
-      "updated": "2022-10-26 08:07:05.000000000",
-      "message": "Comment on the second change",
-      "commit_id": "${commitId}"
-    }
-  ]
-}
-`;
+    ],
+  };
+};
 
 // Based on crrev.com/c/3954724, important bits are:
 //   "Comment on termios" on line 15 (1-base) of the first patch set
 //   "Comment on unistd" on line 18 (1-base) of the second patch set
-const TWO_PATCHSETS_GERRIT_JSON = (commitId1: string, commitId2: string) => `)]}
-{
-  "cryptohome/cryptohome.cc": [
-    {
-      "author": {
-        "_account_id": 1355869,
-        "name": "Tomasz Tylenda",
-        "email": "ttylenda@chromium.org",
-        "avatars": [
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s32-p/photo.jpg",
-            "height": 32
-          }
-        ]
+const TWO_PATCHSETS_CHANGE_COMMENTS = (
+  commitId1: string,
+  commitId2: string
+): api.ChangeComments => {
+  return {
+    'cryptohome/cryptohome.cc': [
+      {
+        ...COMMENT_INFO,
+        // Note, that we use commit_id to identify distinct patchset, not the patch_set.
+        id: '3d3c9023_4550daf0',
+        line: 15,
+        message: 'Comment on termios',
+        commit_id: commitId1,
       },
-      "change_message_id": "d2e2365a4832e8d38a99d4d6d24fc4937dddb6de",
-      "unresolved": true,
-      "patch_set": 1,
-      "id": "3d3c9023_4550daf0",
-      "line": 15,
-      "updated": "2022-10-14 05:46:56.000000000",
-      "message": "Comment on termios",
-      "commit_id": "${commitId1}"
-    },
-    {
-      "author": {
-        "_account_id": 1355869,
-        "name": "Tomasz Tylenda",
-        "email": "ttylenda@chromium.org",
-        "avatars": [
-          {
-            "url": "https://lh3.googleusercontent.com/-9a8_POyNIEg/AAAAAAAAAAI/AAAAAAAAAAA/XD1eDsycuww/s32-p/photo.jpg",
-            "height": 32
-          }
-        ]
+      {
+        ...COMMENT_INFO,
+        id: '9845ccec_3e772fd4',
+        line: 18,
+        message: 'Comment on unistd',
+        commit_id: commitId2,
       },
-      "change_message_id": "4e12822a1acbaefaf43a4e63504cf55fd044b3fa",
-      "unresolved": true,
-      "patch_set": 2,
-      "id": "9845ccec_3e772fd4",
-      "line": 18,
-      "updated": "2022-10-14 05:49:02.000000000",
-      "message": "Comment on unistd",
-      "commit_id": "${commitId2}"
-    }
-  ]
-}
-`;
+    ],
+  };
+};
 
 describe('Gerrit', () => {
   const tempDir = testing.tempDir();
@@ -268,7 +240,9 @@ describe('Gerrit', () => {
       .withArgs(
         'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments'
       )
-      .and.returnValue(Promise.resolve(SIMPLE_COMMENT_GERRIT_JSON(commitId)));
+      .and.returnValue(
+        Promise.resolve(apiString(SIMPLE_CHANGE_COMMENTS(commitId)))
+      );
 
     spyOn(metrics, 'send');
 
@@ -363,7 +337,9 @@ describe('Gerrit', () => {
         `https://chromium-review.googlesource.com/changes/${changeId}/comments`
       )
       .and.returnValue(
-        Promise.resolve(TWO_PATCHSETS_GERRIT_JSON(commitId1, commitId2))
+        Promise.resolve(
+          apiString(TWO_PATCHSETS_CHANGE_COMMENTS(commitId1, commitId2))
+        )
       );
 
     await expectAsync(gerrit.showComments(fileName)).toBeResolved();
@@ -438,11 +414,15 @@ describe('Gerrit', () => {
       .withArgs(
         'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments'
       )
-      .and.returnValue(Promise.resolve(SIMPLE_COMMENT_GERRIT_JSON(commitId1)))
+      .and.returnValue(
+        Promise.resolve(apiString(SIMPLE_CHANGE_COMMENTS(commitId1)))
+      )
       .withArgs(
         'https://chromium-review.googlesource.com/changes/Iecc86ab5691709978e6b171795c95e538aec1a47/comments'
       )
-      .and.returnValue(Promise.resolve(SECOND_COMMIT_IN_CHAIN(commitId2)));
+      .and.returnValue(
+        Promise.resolve(apiString(SECOND_COMMIT_IN_CHAIN(commitId2)))
+      );
 
     spyOn(metrics, 'send');
 
