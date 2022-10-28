@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as vscode from 'vscode';
+import * as metrics from './features/metrics/metrics';
 
 // outputChannel for log output, and command to show it.
 export interface LoggingBundle {
@@ -36,9 +37,14 @@ function createLoggingBundle(
     title: commandTitle,
   };
   context.subscriptions.push(
-    vscode.commands.registerCommand(showLogCommand.command, () =>
-      channel.show()
-    )
+    vscode.commands.registerCommand(showLogCommand.command, () => {
+      channel.show();
+      metrics.send({
+        category: 'interactive',
+        group: 'idestatus',
+        action: 'show linter log',
+      });
+    })
   );
   return {
     channel: channel,

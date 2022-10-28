@@ -73,9 +73,14 @@ async function postMetricsActivate(
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(ideUtil.SHOW_UI_LOG.command, () =>
-      ideUtil.getUiLogger().show()
-    )
+    vscode.commands.registerCommand(ideUtil.SHOW_UI_LOG.command, () => {
+      ideUtil.getUiLogger().show();
+      metrics.send({
+        category: 'interactive',
+        group: 'idestatus',
+        action: 'show ui actions log',
+      });
+    })
   );
 
   // The logger that should be used by linters/code-formatters.

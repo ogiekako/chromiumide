@@ -40,9 +40,14 @@ export class CppCodeCompletion implements vscode.Disposable {
 
   private readonly subscriptions: vscode.Disposable[] = [
     this.output,
-    vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () =>
-      this.output.show()
-    ),
+    vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => {
+      this.output.show();
+      metrics.send({
+        category: 'interactive',
+        group: 'idestatus',
+        action: 'show cpp log',
+      });
+    }),
     vscode.window.onDidChangeActiveTextEditor(async editor => {
       if (editor?.document) {
         await this.maybeGenerate(editor.document);

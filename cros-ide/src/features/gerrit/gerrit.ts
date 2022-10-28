@@ -31,6 +31,11 @@ export function activate(
   context.subscriptions.push(
     vscode.commands.registerCommand(SHOW_LOG_CMD, () => {
       outputChannel.show();
+      metrics.send({
+        category: 'interactive',
+        group: 'idestatus',
+        action: 'show gerrit log',
+      });
     })
   );
   // We don't use the status itself. The task provides an easy way

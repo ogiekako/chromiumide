@@ -87,6 +87,7 @@ type FeatureGroup =
   | 'debugging'
   | 'device'
   | 'gerrit'
+  | 'idestatus'
   | 'lint'
   | 'package'
   | 'spellchecker'

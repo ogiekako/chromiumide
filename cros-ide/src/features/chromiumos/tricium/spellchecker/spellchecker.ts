@@ -40,9 +40,14 @@ export async function activate(
 ) {
   const outputChannel = vscode.window.createOutputChannel('CrOS IDE: Tricium');
   context.subscriptions.push(
-    vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () =>
-      outputChannel.show()
-    )
+    vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => {
+      outputChannel.show();
+      metrics.send({
+        category: 'interactive',
+        group: 'idestatus',
+        action: 'show tricium log',
+      });
+    })
   );
 
   let triciumSpellchecker: string;

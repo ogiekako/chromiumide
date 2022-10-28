@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as ideUtil from '../ide_util';
+import * as metrics from '../features/metrics/metrics';
 
 /**
  * Manages UI elements showing task status: two status bar items, which are created here,
@@ -12,16 +12,22 @@ import * as ideUtil from '../ide_util';
  * @returns `StatusManager` which allows other packages to create tasks with a status.
  */
 export function activate(context: vscode.ExtensionContext): StatusManager {
+  const showIdeStatusCommand = 'cros-ide.showIdeStatus';
   context.subscriptions.push(
-    vscode.commands.registerCommand('cros-ide.showIdeLog', () => {
-      ideUtil.getUiLogger().show();
+    vscode.commands.registerCommand(showIdeStatusCommand, () => {
+      void vscode.commands.executeCommand('cros-ide-status.focus');
+      metrics.send({
+        category: 'interactive',
+        group: 'idestatus',
+        action: 'show ide status',
+      });
     })
   );
 
   const statusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right
   );
-  statusBarItem.command = 'cros-ide-status.focus';
+  statusBarItem.command = showIdeStatusCommand;
   statusBarItem.show();
 
   const progressItem = vscode.window.createStatusBarItem(

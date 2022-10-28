@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import * as glob from 'glob';
 import * as services from '../../services';
 import * as bgTaskStatus from '../../ui/bg_task_status';
+import * as metrics from '../metrics/metrics';
 import {Package} from './boards_packages';
 
 // Highlight colors were copied from Code Search.
@@ -50,9 +51,14 @@ export class Coverage {
         'cros-ide.coverage.showReport',
         (pkg: Package) => this.showReport(pkg)
       ),
-      vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () =>
-        this.output.show()
-      )
+      vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => {
+        this.output.show();
+        metrics.send({
+          category: 'interactive',
+          group: 'idestatus',
+          action: 'show coverage log',
+        });
+      })
     );
 
     this.activeEditor = vscode.window.activeTextEditor;
