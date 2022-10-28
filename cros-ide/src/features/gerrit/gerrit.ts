@@ -101,8 +101,7 @@ export function activate(
     ),
     gitDirsWatcher.onDidChangeHead(async event => {
       if (event.head) {
-        // TODO(b:216048068): Clean up the hack with placeholder file name.
-        await gerrit.showComments(path.join(event.gitDir, 'placeholder.cc'));
+        await gerrit.showComments(event.gitDir);
       } else {
         gerrit.clearCommentThreads();
         gerrit.updateStatusBar();
@@ -124,24 +123,25 @@ class Gerrit {
   ) {}
 
   /**
-   * Fetches comments given to the file and shows them with
+   * Fetches comments on changes in the Git repo which contains `path`
+   * (file or directory) and shows them with
    * proper repositioning based on the local diff. It caches the response
    * from Gerrit and uses it unless opts.fetch is true.
    */
-  async showComments(fileName: string, opts?: {noFetch: boolean}) {
+  async showComments(path: string, opts?: {noFetch: boolean}) {
     try {
-      const doFetch = !opts?.noFetch;
-      if (doFetch) {
-        await this.fetchComments(fileName);
-        this.clearCommentThreads();
-      }
-      if (!this.partitionedThreads) {
+      const gitDir = commonUtil.findGitDir(path);
+      if (!gitDir) {
+        this.showErrorMessage('Git directory not found');
         return;
       }
 
-      const gitDir = commonUtil.findGitDir(fileName);
-      if (!gitDir) {
-        this.showErrorMessage('Git directory not found');
+      const doFetch = !opts?.noFetch;
+      if (doFetch) {
+        await this.fetchComments(gitDir);
+        this.clearCommentThreads();
+      }
+      if (!this.partitionedThreads) {
         return;
       }
 
@@ -200,13 +200,10 @@ class Gerrit {
    * to partition it into threads and by commit id. The data is then
    * stored in `this.partitionedThreads`.
    */
-  private async fetchComments(fileName: string) {
-    const gitLogInfos = await git.readChangeIds(
-      path.dirname(fileName),
-      this.outputChannel
-    );
+  private async fetchComments(gitDir: string) {
+    const gitLogInfos = await git.readChangeIds(gitDir, this.outputChannel);
     if (gitLogInfos instanceof Error) {
-      this.showErrorMessage(`Failed to detect a commits for ${fileName}`);
+      this.showErrorMessage(`Failed to detect a commits in ${gitDir}`);
       return undefined;
     }
     if (gitLogInfos.length === 0) {
