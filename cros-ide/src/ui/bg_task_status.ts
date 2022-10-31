@@ -6,6 +6,14 @@ import * as vscode from 'vscode';
 import * as metrics from '../features/metrics/metrics';
 
 /**
+ * Shows `OutputChannel` attached to a tree item. Arguments:
+ *   `taskName` - name of the task whose status will be shown
+ *   `taskStatus` - enum describing the status of the task
+ *   `outputChannel` - output channel that will be focused in the UI
+ */
+const STATUS_TREE_ITEM_CLICKED = 'cros-ide.status-tree-item-clicked';
+
+/**
  * Manages UI elements showing task status: two status bar items, which are created here,
  * and `cros-ide-status` view, which is defined in `package.json`.
  *
@@ -21,7 +29,25 @@ export function activate(context: vscode.ExtensionContext): StatusManager {
         group: 'idestatus',
         action: 'show ide status',
       });
-    })
+    }),
+    vscode.commands.registerCommand(
+      STATUS_TREE_ITEM_CLICKED,
+      (
+        taskName: string,
+        taskStatus: TaskStatus,
+        outputChannel?: vscode.OutputChannel
+      ) => {
+        if (outputChannel) {
+          outputChannel.show();
+        }
+        metrics.send({
+          category: 'interactive',
+          group: 'idestatus',
+          action: 'show log for ' + taskName,
+          label: TaskStatus[taskStatus], // string representation of the enum
+        });
+      }
+    )
   );
 
   const statusBarItem = vscode.window.createStatusBarItem(
@@ -76,8 +102,17 @@ export interface TaskData {
   /**
    * Command to be executed when the task is clicked in the UI. It can, for instance,
    * open a UI panel with logs.
+   *
+   * @deprecated use `outputChannel` instead
    */
   command?: vscode.Command;
+
+  /**
+   * Log channel to be opened when the task is clicked in the UI.
+   *
+   * It is ignored if `command` is set.
+   */
+  outputChannel?: vscode.OutputChannel;
 }
 
 /**
@@ -205,7 +240,12 @@ class StatusTreeData implements vscode.TreeDataProvider<TaskName> {
   getTreeItem(element: TaskName): vscode.TreeItem | Thenable<vscode.TreeItem> {
     const statusManagerImp = this.statusManagerImpl!;
     const taskData = statusManagerImp.getTaskData(element)!;
-    return new TaskTreeItem(element, taskData.status, taskData.command);
+    return new TaskTreeItem(
+      element,
+      taskData.status,
+      taskData.command,
+      taskData.outputChannel
+    );
   }
 
   getChildren(_element?: TaskName): vscode.ProviderResult<TaskName[]> {
@@ -222,11 +262,20 @@ class TaskTreeItem extends vscode.TreeItem {
   constructor(
     readonly title: string,
     status: TaskStatus,
-    command?: vscode.Command
+    command?: vscode.Command,
+    outputChannel?: vscode.OutputChannel
   ) {
     super(title, vscode.TreeItemCollapsibleState.None);
     this.iconPath = new vscode.ThemeIcon(getIcon(status));
-    this.command = command;
+    if (command) {
+      this.command = command;
+    } else if (outputChannel) {
+      this.command = {
+        title: 'Show Details',
+        command: STATUS_TREE_ITEM_CLICKED,
+        arguments: [title, status, outputChannel],
+      };
+    }
   }
 }
 

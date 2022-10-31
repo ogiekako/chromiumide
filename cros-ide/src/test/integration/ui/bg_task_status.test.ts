@@ -9,6 +9,7 @@ import {
   TaskStatus,
   TEST_ONLY,
 } from '../../../ui/bg_task_status';
+import {VoidOutputChannel} from '../../testing/fakes';
 
 const {StatusManagerImpl, StatusBarHandler, StatusTreeData} = TEST_ONLY;
 
@@ -178,6 +179,22 @@ describe('Background Task Status', () => {
 
     let treeItem = statusTreeData.getTreeItem('task-1') as vscode.TreeItem;
     expect(treeItem.command).toEqual(command);
+
+    statusManager.deleteTask('task-1');
+    statusManager.setTask('task-1', {status: TaskStatus.OK});
+    treeItem = statusTreeData.getTreeItem('task-1') as vscode.TreeItem;
+    expect(treeItem.command).toBeUndefined();
+  });
+
+  it('provides TreeItems with command to show an output channel', () => {
+    statusManager.setTask('task-1', {
+      status: TaskStatus.OK,
+      outputChannel: new VoidOutputChannel('channel-1'),
+    });
+
+    let treeItem = statusTreeData.getTreeItem('task-1') as vscode.TreeItem;
+    const outputChannel = <VoidOutputChannel>treeItem.command?.arguments?.[2];
+    expect(outputChannel.name).toEqual('channel-1');
 
     statusManager.deleteTask('task-1');
     statusManager.setTask('task-1', {status: TaskStatus.OK});

@@ -27,25 +27,9 @@ export function activate(
 ) {
   const outputChannel = vscode.window.createOutputChannel('CrOS IDE: Gerrit');
   context.subscriptions.push(outputChannel);
-  const SHOW_LOG_CMD = 'cros-ide.showGerritLog';
-  context.subscriptions.push(
-    vscode.commands.registerCommand(SHOW_LOG_CMD, () => {
-      outputChannel.show();
-      metrics.send({
-        category: 'interactive',
-        group: 'idestatus',
-        action: 'show gerrit log',
-      });
-    })
-  );
-  // We don't use the status itself. The task provides an easy way
-  // to find the log.
   statusManager.setTask(GERRIT, {
     status: bgTaskStatus.TaskStatus.OK,
-    command: {
-      command: SHOW_LOG_CMD,
-      title: 'Show Gerrit Log',
-    },
+    outputChannel,
   });
 
   new virtualDocument.GerritDocumentProvider().activate(context);
