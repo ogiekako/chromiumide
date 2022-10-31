@@ -248,7 +248,7 @@ describe('Gerrit', () => {
 
     const fileName = abs('cryptohome/cryptohome.cc');
 
-    spyOn(https, 'get')
+    spyOn(https, 'getOrThrow')
       .withArgs(
         'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments'
       )
@@ -369,7 +369,7 @@ describe('Gerrit', () => {
       new bgTaskStatus.TEST_ONLY.StatusManagerImpl()
     );
 
-    spyOn(https, 'get')
+    spyOn(https, 'getOrThrow')
       .withArgs(
         'https://chromium-review.googlesource.com/changes/Iba73f448e0da2a814f7303d1456049bb3554676e/comments'
       )
@@ -493,7 +493,7 @@ describe('Gerrit', () => {
 
     const fileName = abs('cryptohome/cryptohome.cc');
 
-    spyOn(https, 'get')
+    spyOn(https, 'getOrThrow')
       .withArgs(
         `https://chromium-review.googlesource.com/changes/${changeId}/comments`
       )
@@ -571,7 +571,7 @@ describe('Gerrit', () => {
       'Second uploaded\nChange-Id: Iecc86ab5691709978e6b171795c95e538aec1a47'
     );
 
-    spyOn(https, 'get')
+    spyOn(https, 'getOrThrow')
       .withArgs(
         'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments'
       )

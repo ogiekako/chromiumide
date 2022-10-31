@@ -214,7 +214,7 @@ class Gerrit {
 
     for (const gitLogInfo of gitLogInfos) {
       const commentsUrl = `https://chromium-review.googlesource.com/changes/${gitLogInfo.gerritChangeId}/comments`;
-      const commentsContent = await https.get(commentsUrl);
+      const commentsContent = await https.getOrThrow(commentsUrl);
       const commentsJson = commentsContent.substring(')]}\n'.length);
       const changeComments = JSON.parse(commentsJson) as api.ChangeComments;
       const combinedChangeThreads = partitionThreads(

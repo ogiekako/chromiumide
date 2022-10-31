@@ -7,10 +7,13 @@ import * as https from 'https';
 /**
  * Fetches raw data from Gerrit API over https.
  */
-export async function get(url: string): Promise<string> {
+export async function getOrThrow(
+  url: string,
+  optionsForTesting: https.RequestOptions = {}
+): Promise<string> {
   return new Promise((resolve, reject) => {
     https
-      .get(url, res => {
+      .get(url, optionsForTesting, res => {
         if (res.statusCode !== 200) {
           reject(new Error(`status code: ${res.statusCode}`));
         }
