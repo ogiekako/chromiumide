@@ -166,7 +166,7 @@ const SECOND_COMMIT_IN_CHAIN = (commitId: string): api.ChangeComments => {
 
 // Based on crrev.com/c/3954724, important bits are:
 //   "Comment on termios" on line 15 (1-base) of the first patch set
-//   "Comment on unistd" on line 18 (1-base) of the second patch set
+//   "Comment on unistd" on line 18 (1-base) of the second patch set, resolved
 const TWO_PATCHSETS_CHANGE_COMMENTS = (
   commitId1: string,
   commitId2: string
@@ -187,6 +187,7 @@ const TWO_PATCHSETS_CHANGE_COMMENTS = (
         line: 18,
         message: 'Comment on unistd',
         commit_id: commitId2,
+        unresolved: false,
       },
     ],
   };
@@ -484,10 +485,14 @@ describe('Gerrit', () => {
       {} as vscode.CommentThread
     );
 
+    const statusBar = vscode.window.createStatusBarItem();
+    spyOn(statusBar, 'hide');
+    spyOn(statusBar, 'show');
+
     const gerrit = new Gerrit(
       commentController,
       vscode.window.createOutputChannel('gerrit'),
-      vscode.window.createStatusBarItem(),
+      statusBar,
       new bgTaskStatus.TEST_ONLY.StatusManagerImpl()
     );
 
@@ -521,6 +526,13 @@ describe('Gerrit', () => {
     // but we convert 1-based number to 0-based.
     expect(callData[1].args[1].start.line).toEqual(17);
     expect(callData[1].args[2][0].body).toEqual('Comment on unistd');
+
+    expect(statusBar.show).toHaveBeenCalled();
+    expect(statusBar.hide).not.toHaveBeenCalled();
+    expect(statusBar.tooltip).toEqual(
+      'Gerrit comments: 1 unresolved (2 total)'
+    );
+    expect(statusBar.text).toEqual('$(comment) 1');
   });
 
   it('shows all comments in a chain', async () => {

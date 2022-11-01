@@ -136,6 +136,19 @@ class Gerrit {
     private readonly statusManager: bgTaskStatus.StatusManager
   ) {}
 
+  /** Generator for iterating over all Threads. */
+  *threads(): Generator<Thread> {
+    if (this.partitionedThreads) {
+      for (const [, changeThreads] of this.partitionedThreads) {
+        for (const [, threads] of Object.entries(changeThreads)) {
+          for (const thread of threads) {
+            yield thread;
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Fetches comments on changes in the Git repo which contains `path`
    * (file or directory) and shows them with
@@ -188,12 +201,17 @@ class Gerrit {
   }
 
   updateStatusBar() {
-    const nThreads = this.commentThreads.length;
-    if (nThreads > 0) {
-      // TODO(b:216048068): show number of unresolved comments rather than the total
-      this.statusBar.text = `$(comment) ${nThreads}`;
-      this.statusBar.tooltip =
-        nThreads > 1 ? `${nThreads} Gerrit comments` : '1 Gerrit comment';
+    let total = 0;
+    let unresolved = 0;
+    for (const thread of this.threads()) {
+      total++;
+      if (thread.unresolved) {
+        unresolved++;
+      }
+    }
+    if (total > 0) {
+      this.statusBar.text = `$(comment) ${unresolved}`;
+      this.statusBar.tooltip = `Gerrit comments: ${unresolved} unresolved (${total} total)`;
       this.statusBar.show();
     } else {
       this.statusBar.hide();
@@ -505,8 +523,11 @@ export class Thread {
     return this.comments[0].commit_id!;
   }
 
-  lastComment(): api.CommentInfo {
-    return this.comments[this.comments.length - 1];
+  /** A thread is unresolved if its last comment is unresolved. */
+  get unresolved() {
+    // Unresolved can be undefined according the the API documentation,
+    // but Gerrit always sent it on the changes the we inspected.
+    return this.comments[this.comments.length - 1].unresolved;
   }
 
   /** Shows the thread in the UI and returns vscode.CommentThread, if it was created. */
@@ -603,13 +624,12 @@ function createCommentThread(
     thread.comments.map(c => toVscodeComment(c))
   );
   // TODO(b:216048068): We should indicate resolved/unresolved with UI style.
-  const unresolved = thread.lastComment().unresolved;
-  // Unresolved can be undefined according the the API documentation,
-  // but Gerrit always sent it on the changes the we inspected.
-  vscodeThread.label = unresolved ? 'Unresolved' : 'Resolved';
-  if (unresolved) {
+  if (thread.unresolved) {
+    vscodeThread.label = 'Unresolved';
     vscodeThread.collapsibleState =
       vscode.CommentThreadCollapsibleState.Expanded;
+  } else {
+    vscodeThread.label = 'Resolved';
   }
   vscodeThread.canReply = false;
   return vscodeThread;
