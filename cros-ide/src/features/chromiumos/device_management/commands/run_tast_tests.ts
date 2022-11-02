@@ -2,12 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as path from 'path';
+// TODO(oka): Move this file and registration of the command to the
+// features/chromiumos/tast component.
+
 import * as vscode from 'vscode';
 import * as shutil from '../../../../common/shutil';
 import * as ssh from '../ssh_session';
 import * as netUtil from '../../../../common/net_util';
 import * as metrics from '../../../metrics/metrics';
+import * as parser from '../../tast/parser';
 import {CommandContext, promptKnownHostnameIfNeeded} from './common';
 
 export async function runTastTests(context: CommandContext): Promise<void> {
@@ -22,11 +25,8 @@ export async function runTastTests(context: CommandContext): Promise<void> {
   if (document === undefined) {
     return;
   }
-  const category = path.basename(path.dirname(document.uri.fsPath));
-  const testFuncRE = /^\s*Func:\s*(\w+),/m;
-  // Check if it is possible to run a test from the file.
-  const testFuncName = document.getText().match(testFuncRE);
-  if (testFuncName === null) {
+  const testCase = parser.parseTestCase(document);
+  if (!testCase) {
     const choice = await vscode.window.showErrorMessage(
       'Could not find test to run from file. Was the test registered?',
       'Test registration'
@@ -83,11 +83,10 @@ export async function runTastTests(context: CommandContext): Promise<void> {
   }
 
   // Get list of available tests.
-  const testName = `${category}.${testFuncName[1]}`;
   const target = `localhost:${port}`;
   let testList = undefined;
   try {
-    testList = await getAvailableTests(context, target, testName);
+    testList = await getAvailableTests(context, target, testCase.name);
   } catch (err: unknown) {
     const choice = await vscode.window.showErrorMessage(
       'Error finding available tests.',

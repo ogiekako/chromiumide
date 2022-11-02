@@ -3,27 +3,19 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import {RunProfile} from './run_profile';
 
 /**
  * Holds shared test controller instance. It creates the test controller lazily
  * when requested.
- *
- * TODO(oka): Consider disposing the controller once all the gtest files are
- * closed.
  */
-export class TestControllerSingleton implements vscode.Disposable {
-  private readonly onDidCreateEmitter =
-    new vscode.EventEmitter<vscode.TestController>();
-  /**
-   * Fires when the controller is created.
-   */
-  readonly onDidCreate = this.onDidCreateEmitter.event;
-
+export class LazyTestController implements vscode.Disposable {
   private controller?: vscode.TestController;
+  private runProfile?: RunProfile;
 
   dispose() {
+    this.runProfile?.dispose();
     this.controller?.dispose();
-    this.onDidCreateEmitter.dispose();
   }
 
   /**
@@ -32,10 +24,10 @@ export class TestControllerSingleton implements vscode.Disposable {
   getOrCreate(): vscode.TestController {
     if (!this.controller) {
       this.controller = vscode.tests.createTestController(
-        'cros-ide.platform2Gtest',
-        'platform2 gtest'
+        'cros-ide.tastTest',
+        'Tast (CrOS IDE)'
       );
-      this.onDidCreateEmitter.fire(this.controller);
+      this.runProfile = new RunProfile(this.controller);
     }
     return this.controller;
   }

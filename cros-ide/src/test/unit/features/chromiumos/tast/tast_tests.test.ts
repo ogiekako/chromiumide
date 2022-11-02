@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import * as testing from '../../../../testing';
 import * as services from '../../../../../services';
 import {TastTests} from '../../../../../features/chromiumos/tast/tast_tests';
+import {FakeTextDocument} from '../../../../testing/fakes/text_document';
 
 function workspaceFolder(fsPath: string): vscode.WorkspaceFolder {
   return {
@@ -15,7 +16,7 @@ function workspaceFolder(fsPath: string): vscode.WorkspaceFolder {
 }
 
 describe('TastTests', () => {
-  const {vscodeSpy} = testing.installVscodeDouble();
+  const {vscodeEmitters, vscodeSpy} = testing.installVscodeDouble();
 
   const tempDir = testing.tempDir();
 
@@ -26,6 +27,17 @@ describe('TastTests', () => {
     subscriptions.splice(0);
   });
 
+  const GOOD_GOPATHS: readonly string[] = [
+    'src/platform/tast',
+    'src/platform/tast-tests',
+    'chroot/usr/lib/gopath',
+  ];
+
+  const GOOD_WORKSPACE_FOLDERS: readonly string[] = [
+    'src/platform/tast',
+    'src/platform/tast-tests',
+  ];
+
   type TestCase = {
     readonly name: string;
     readonly hasGolangExtension: boolean;
@@ -34,14 +46,76 @@ describe('TastTests', () => {
     readonly wantSuccess: boolean;
   };
 
+  it('creates test item from visible test editor', async () => {
+    const root = tempDir.path;
+
+    await testing.buildFakeChroot(root);
+    const chrootService = services.chromiumos.ChrootService.maybeCreate(root)!;
+
+    vscodeSpy.extensions.getExtension
+      .withArgs('golang.Go')
+      .and.returnValue({} as vscode.Extension<void>);
+
+    vscodeSpy.commands.executeCommand
+      .withArgs('go.gopath')
+      .and.resolveTo(GOOD_SETUP.gopaths.map(x => path.join(root, x)).join(':'));
+
+    const tastTests = new TastTests(chrootService, () =>
+      GOOD_SETUP.workspaceFolders.map(x => workspaceFolder(path.join(root, x)))
+    );
+    subscriptions.push(tastTests);
+
+    const initializeEvents = new testing.EventReader(tastTests.onDidInitialize);
+    const changeEvents = new testing.EventReader(tastTests.onDidChange);
+    subscriptions.push(initializeEvents, changeEvents);
+
+    expect(await initializeEvents.read()).toBeTrue();
+
+    // Golang uses tab for indentation and spaces for vertical alignment.
+    const tastTestContent = `
+func init() {
+\ttesting.AddTest(&testing.Test{
+\t\tFunc:         LocalPass,
+\t\tDesc:         "Always passes",
+\t})
+}
+
+func LocalPass(ctx context.Context, s *testing.State) {
+}
+`;
+
+    const fileName = path.join(
+      root,
+      'src/platform/tast-tests/path/to/local_pass.go'
+    );
+
+    const firstDocument: vscode.TextDocument = new FakeTextDocument({
+      uri: vscode.Uri.file(fileName),
+      text: tastTestContent,
+      languageId: 'go',
+    });
+
+    vscodeEmitters.window.onDidChangeVisibleTextEditors.fire([
+      {
+        document: firstDocument,
+      } as vscode.TextEditor,
+    ]);
+
+    await changeEvents.read();
+
+    expect(tastTests.lazyTestController.getOrCreate().items.size).toEqual(1);
+
+    vscodeEmitters.window.onDidChangeVisibleTextEditors.fire([]);
+
+    await changeEvents.read();
+
+    expect(tastTests.lazyTestController.getOrCreate().items.size).toEqual(0);
+  });
+
   const GOOD_SETUP: Omit<TestCase, 'name' | 'wantSuccess'> = {
     hasGolangExtension: true,
-    gopaths: [
-      'src/platform/tast',
-      'src/platform/tast-tests',
-      'chroot/usr/lib/gopath',
-    ],
-    workspaceFolders: ['src/platform/tast', 'src/platform/tast-tests'],
+    gopaths: GOOD_GOPATHS,
+    workspaceFolders: GOOD_WORKSPACE_FOLDERS,
   };
 
   for (const testCase of [

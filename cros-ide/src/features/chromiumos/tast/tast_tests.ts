@@ -6,6 +6,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as services from '../../../services';
 import * as config from '../../../services/config';
+import {TestCase} from './test_case';
+import {LazyTestController} from './lazy_test_controller';
 
 /**
  * Provides tast-tests support.
@@ -16,13 +18,30 @@ import * as config from '../../../services/config';
 export class TastTests implements vscode.Disposable {
   private readonly onDidInitializeEmitter = new vscode.EventEmitter<boolean>();
   /**
-   * Fires with a boolean value indicating whether initialization succeeded.
+   * Fires when the component is initialized with a value indicating whether the
+   * initialization is successful.
    */
   readonly onDidInitialize = this.onDidInitializeEmitter.event;
 
+  private readonly onDidChangeEmitter = new vscode.EventEmitter<void>();
+  /**
+   * Fires when the test cases this component manages change.
+   */
+  readonly onDidChange = this.onDidChangeEmitter.event;
+
+  readonly lazyTestController = new LazyTestController();
+
   private readonly subscriptions: vscode.Disposable[] = [
     this.onDidInitializeEmitter,
+    this.onDidChangeEmitter,
+    this.lazyTestController,
   ];
+
+  // Maps URI of documents to TestCases
+  private readonly visibleTestCases = new Map<string, TestCase>();
+  get testCases(): TestCase[] {
+    return [...this.visibleTestCases.values()];
+  }
 
   constructor(
     private readonly chrootService: services.chromiumos.ChrootService,
@@ -30,7 +49,8 @@ export class TastTests implements vscode.Disposable {
       vscode.workspace.workspaceFolders
   ) {
     void (async () => {
-      this.onDidInitializeEmitter.fire(await this.initialize());
+      const success = await this.initialize();
+      this.onDidInitializeEmitter.fire(success);
     })();
   }
 
@@ -44,7 +64,7 @@ export class TastTests implements vscode.Disposable {
   );
 
   private static checkPrerequisiteFailed = false;
-  private async initialize() {
+  private async initialize(): Promise<boolean> {
     if (TastTests.checkPrerequisiteFailed) {
       // Avoid showing the same warnings when a tast-tests file is closed and
       // then opened again.
@@ -54,11 +74,58 @@ export class TastTests implements vscode.Disposable {
       TastTests.checkPrerequisiteFailed = true;
       return false;
     }
-    // TODO(oka): Initialize debugging support.
+
+    this.subscriptions.push(
+      vscode.window.onDidChangeVisibleTextEditors(editors => {
+        this.updateVisibleTestCases(editors);
+      })
+    );
+    this.updateVisibleTestCases(vscode.window.visibleTextEditors);
+
     return true;
   }
 
-  private async checkPrerequisiteSatisfied() {
+  private updateVisibleTestCases(visibleEditors: readonly vscode.TextEditor[]) {
+    const visibleEditorUris = new Set(
+      visibleEditors.map(editor => editor.document.uri.toString())
+    );
+
+    let changed = false;
+
+    // Remove no longer visible test cases.
+    for (const [uri, testCase] of [...this.visibleTestCases.entries()]) {
+      if (!visibleEditorUris.has(uri)) {
+        this.visibleTestCases.delete(uri);
+        testCase.dispose();
+        changed = true;
+      }
+    }
+
+    // Add newly visible test cases.
+    for (const editor of visibleEditors) {
+      const uri = editor.document.uri.toString();
+
+      if (this.visibleTestCases.has(uri)) {
+        continue;
+      }
+
+      const testCase = TestCase.maybeCreate(
+        this.lazyTestController,
+        editor.document
+      );
+
+      if (testCase) {
+        this.visibleTestCases.set(uri, testCase);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      this.onDidChangeEmitter.fire();
+    }
+  }
+
+  private async checkPrerequisiteSatisfied(): Promise<boolean> {
     if (!(await checkGolangExtensionInstalled())) {
       return false;
     }
@@ -70,7 +137,7 @@ export class TastTests implements vscode.Disposable {
     return await this.checkGopathSetup();
   }
 
-  private async checkWorkspaceSetup() {
+  private async checkWorkspaceSetup(): Promise<boolean> {
     const foldersToAdd = this.missingWorkspaceFolders();
     if (foldersToAdd.length === 0) {
       return true;
@@ -177,6 +244,9 @@ export class TastTests implements vscode.Disposable {
   }
 
   dispose() {
+    for (const testCase of this.visibleTestCases.values()) {
+      testCase.dispose();
+    }
     vscode.Disposable.from(...this.subscriptions.reverse()).dispose();
   }
 
