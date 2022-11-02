@@ -89,9 +89,14 @@ type FeatureGroup =
   | 'gerrit'
   | 'idestatus'
   | 'lint'
+  | 'misc'
   | 'package'
   | 'spellchecker'
-  | 'misc';
+  // 'virtualdocument' should be used in features that rely on virtual documents,
+  // such as Gerrit and spellchecker, when the user interacts with such a document.
+  // Event label should be chosen carefully to simplify building a dashboard
+  // in Google Analytics
+  | 'virtualdocument';
 
 // Fields common to InteractiveEvent and BackgroundEvent.
 interface EventBase {

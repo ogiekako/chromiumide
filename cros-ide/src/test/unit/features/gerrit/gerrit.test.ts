@@ -391,7 +391,9 @@ describe('Gerrit', () => {
     const callData = commentController.createCommentThread.calls.all();
 
     expect(callData[0].args[0]).toEqual(
-      vscode.Uri.parse(`gitmsg://${git.root}/COMMIT MESSAGE?${amendedCommitId}`)
+      vscode.Uri.parse(
+        `gitmsg://${git.root}/COMMIT MESSAGE?${amendedCommitId}#gerrit commit msg`
+      )
     );
     // Gerrit returns line 7, but our virtual documents don't have some headers,
     // so we shift the message by 6 lines and convert it to 0-based.

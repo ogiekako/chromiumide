@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as commonUtil from '../common/common_util';
+import * as metrics from '../features/metrics/metrics';
 
 const GIT_MSG_SCHEME = 'gitmsg';
 const COMMIT_MESSAGE = 'COMMIT MESSAGE';
@@ -13,13 +14,15 @@ const COMMIT_MESSAGE = 'COMMIT MESSAGE';
  * Creates a URI for which GitDocumentProvider provides a document containing
  * the commit message of the specified revision. The dir should be a directory
  * containing a git repository and the ref should be a revision
- * in the repository (for example, SHA or 'HEAD').
+ * in the repository (for example, SHA or 'HEAD'). `feature` is used to identify
+ * the origin of the Uri in metrics.
  */
-export function commitMessageUri(dir: string, ref: string) {
+export function commitMessageUri(dir: string, ref: string, feature: string) {
   return vscode.Uri.from({
     scheme: GIT_MSG_SCHEME,
     path: path.join(dir, COMMIT_MESSAGE),
     query: ref,
+    fragment: feature,
   });
 }
 
@@ -55,6 +58,13 @@ export class GitDocumentProvider implements vscode.TextDocumentContentProvider {
 
   async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
     const file = path.basename(uri.path);
+
+    metrics.send({
+      category: 'interactive',
+      group: 'virtualdocument',
+      action: 'open git document',
+      label: uri.fragment,
+    });
 
     if (file === COMMIT_MESSAGE) {
       return this.getCommitMessageCached(uri.path, uri.query);

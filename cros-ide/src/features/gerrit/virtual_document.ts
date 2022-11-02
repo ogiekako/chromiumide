@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as metrics from '../metrics/metrics';
 
 const SCHEME = 'gerrit';
 
@@ -31,6 +32,13 @@ export class GerritDocumentProvider
   }
 
   async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
+    metrics.send({
+      category: 'interactive',
+      group: 'virtualdocument',
+      action: 'open gerrit document',
+      // For consistency with git_document, which also send a label.
+      label: 'gerrit patchset level',
+    });
     return `Patchset level comments on Change-Id: ${uri.query}`;
   }
 }

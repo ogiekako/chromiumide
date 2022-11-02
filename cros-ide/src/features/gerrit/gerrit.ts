@@ -338,7 +338,11 @@ class Gerrit {
       threads.forEach(thread => {
         let uri;
         if (filepath === '/COMMIT_MSG') {
-          uri = gitDocument.commitMessageUri(gitDir, thread.gitLogInfo.gitSha);
+          uri = gitDocument.commitMessageUri(
+            gitDir,
+            thread.gitLogInfo.gitSha,
+            'gerrit commit msg'
+          );
           // Compensate the difference between commit message on Gerrit and Terminal
           if (thread.line !== undefined && thread.line > 6) {
             shiftThread(thread, -6);

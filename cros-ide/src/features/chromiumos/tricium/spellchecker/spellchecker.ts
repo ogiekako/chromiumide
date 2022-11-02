@@ -153,7 +153,7 @@ class Spellchecker {
   }
 
   private commitMessageUri(dir: string) {
-    return gitDocument.commitMessageUri(dir, 'HEAD');
+    return gitDocument.commitMessageUri(dir, 'HEAD', 'spellchecker');
   }
 
   /** Execute Tricium binary and refresh diagnostics for the commit message. */
