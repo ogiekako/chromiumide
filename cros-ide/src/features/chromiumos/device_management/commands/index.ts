@@ -16,6 +16,7 @@ import {connectToDeviceForScreen} from './connect_vnc';
 import {copyHostname} from './copy_hostname';
 import {crosfleetLogin} from './crosfleet_login';
 import {addDevice} from './device_add';
+import {addExistingHostsCommand} from './add_existing_hosts';
 import {deleteDevice} from './device_delete';
 import {flashPrebuiltImage} from './flash_prebuilt_image';
 import {abandonLease} from './lease_abandon';
@@ -52,6 +53,10 @@ export function registerCommands(
   return vscode.Disposable.from(
     vscode.commands.registerCommand('cros-ide.deviceManagement.addDevice', () =>
       addDevice(context)
+    ),
+    vscode.commands.registerCommand(
+      'cros-ide.deviceManagement.addExistingHosts',
+      () => addExistingHostsCommand(context)
     ),
     vscode.commands.registerCommand(
       'cros-ide.deviceManagement.deleteDevice',

@@ -76,11 +76,7 @@ export class AddOwnedDevicePanel extends ReactPanel<AddOwnedDeviceViewContext> {
   }
 
   async addExistingHosts() {
-    const hostnames = this.service.getUnaddedSshConfigHostnames();
-    const hostsToAdd = await vscode.window.showQuickPick(hostnames, {
-      canPickMany: true,
-    });
-    hostsToAdd?.forEach(h => void this.service.addDeviceToRepository(h));
+    await this.service.addExistingHosts();
   }
 
   private async tryConfigureAndTestConnection(

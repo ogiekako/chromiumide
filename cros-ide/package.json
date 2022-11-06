@@ -24,6 +24,7 @@
     "onCommand:cros-ide.chrome.Build",
     "onCommand:cros-ide.chrome.iBuild",
     "onCommand:cros-ide.deviceManagement.addDevice",
+    "onCommand:cros-ide.deviceManagement.addExistingHosts",
     "onCommand:cros-ide.deviceManagement.deleteDevice",
     "onCommand:cros-ide.deviceManagement.connectToDeviceForScreen",
     "onCommand:cros-ide.deviceManagement.connectToDeviceForShell",
@@ -96,6 +97,12 @@
         "command": "cros-ide.deviceManagement.addDevice",
         "category": "CrOS",
         "title": "Add New Device",
+        "icon": "$(add)"
+      },
+      {
+        "command": "cros-ide.deviceManagement.addExistingHosts",
+        "category": "CrOS",
+        "title": "Add Existing Device Host Names from the SSH Config File",
         "icon": "$(add)"
       },
       {
