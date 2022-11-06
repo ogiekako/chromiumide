@@ -255,7 +255,7 @@ function FlashConfirmationStep(props: {
     }
   };
 
-  const handleKeydown = (e: any) => {
+  const handleKeydown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleFlash();
     } else if (e.key === 'Esc') {
@@ -280,6 +280,7 @@ function FlashConfirmationStep(props: {
             with build:
           </p>
         </Typography>
+
         <BuildVersionInfo state={props.state} setState={props.setState} />
 
         <FlashFlags state={props.state} setState={props.setState} />

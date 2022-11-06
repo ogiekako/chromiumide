@@ -126,7 +126,7 @@ export function AddOwnedDeviceView(props: {
     setNextStepEnabled: setNextStepEnabled,
     setBackEnabled: setBackEnabled,
   };
-  const handleKeydown = (e: any) => {
+  const handleKeydown = (e: React.KeyboardEvent) => {
     if (
       nextStepEnabled &&
       (e.key === 'Enter' ||
@@ -245,7 +245,7 @@ function NetworkTypeStep(props: AddOwnedDeviceStepProps) {
   const handleNetworkType = (nt: model.DutNetworkType) => {
     props.setConnectionConfig({...props.connectionConfig, networkType: nt});
   };
-  const handleKeydown = (e: any) => {
+  const handleKeydown = (e: React.KeyboardEvent) => {
     if (e.key === 'l') {
       handleNetworkType(model.DutNetworkType.LAB);
     } else if (e.key === 's') {
@@ -471,8 +471,8 @@ function PortForwardingStep(props: AddOwnedDeviceStepProps) {
                 <code>
                   ssh {props.context?.username ?? '<username>'}
                   @&lt;workstation hostname&gt; -R{' '}
-                  {props.connectionConfig.forwardedPort}
-                  &lt;DUT IP address&gt;:22
+                  {props.connectionConfig.forwardedPort}:&lt;DUT IP
+                  address&gt;:22
                 </code>
               </li>
             </ol>

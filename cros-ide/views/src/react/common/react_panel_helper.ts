@@ -25,7 +25,9 @@ export function receiveInitialData<T>(
     window.addEventListener('message', handleContextMessage);
     vscodeApi.postMessage({command: 'reactPanel.getInitialData'});
 
-    function handleContextMessage(event: MessageEvent<any>) {
+    function handleContextMessage(
+      event: MessageEvent<{command: string; data: T}>
+    ) {
       const message = event.data;
       if (message.command === 'reactPanel.getInitialData.response') {
         resolve(message.data);
