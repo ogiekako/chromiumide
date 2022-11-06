@@ -145,9 +145,9 @@ export class DeviceTreeDataProvider
       switch (parent.category) {
         case repository.DeviceCategory.OWNED:
           items.push(
-            ...this.deviceRepository.owned
-              .getDevices()
-              .map(d => new OwnedDeviceItem(d))
+            ...(await this.deviceRepository.owned.getDevices()).map(
+              d => new OwnedDeviceItem(d)
+            )
           );
           break;
         case repository.DeviceCategory.LEASED:

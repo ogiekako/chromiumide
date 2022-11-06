@@ -3,10 +3,10 @@
 // found in the LICENSE file.
 
 import * as fs from 'fs';
+import * as mockFs from 'mock-fs';
 import 'jasmine';
-import * as path from 'path';
 import * as sshConfig from '../../../../../features/chromiumos/device_management/ssh_config';
-import * as testing from '../../../../testing';
+import {FakeDeviceRepository} from './fake_device_repository';
 
 const TEST_CONFIG_FILE = `
 # Comments are ignored
@@ -19,27 +19,49 @@ HOST dut4
 # Host dutX
 `;
 
-describe('SSH config parser', () => {
-  const tempDir = testing.tempDir();
+const CONFIG_PATH = '/test/.ssh/config';
 
-  it('can parse simple configs', async () => {
-    const configPath = path.join(tempDir.path, 'ssh_config');
-    await fs.promises.writeFile(configPath, TEST_CONFIG_FILE);
-    expect(await sshConfig.readConfiguredSshHosts(configPath)).toEqual([
-      'dut1',
-      'dut2',
-      'dut3',
-      'dut4',
-    ]);
+describe('SSH config parser', () => {
+  beforeEach(() => {
+    mockFs({
+      [CONFIG_PATH]: TEST_CONFIG_FILE,
+    });
   });
 
-  it('can check if lab access is configured', async () => {
-    const configPath = path.join(tempDir.path, 'ssh_config');
+  afterEach(() => {
+    mockFs.restore();
+  });
 
-    await fs.promises.writeFile(configPath, 'Host chromeos*');
-    expect(await sshConfig.isLabAccessConfigured(configPath)).toBeTrue();
+  describe('readConfiguredSshHosts', () => {
+    it('can parse simple configs', async () => {
+      const result = await sshConfig.readConfiguredSshHosts(CONFIG_PATH);
+      expect(result).toEqual(['dut1', 'dut2', 'dut3', 'dut4']);
+    });
+  });
 
-    await fs.promises.writeFile(configPath, 'Host android*');
-    expect(await sshConfig.isLabAccessConfigured(configPath)).toBeFalse();
+  describe('isLabAccessConfigured', () => {
+    it('can check if lab access is configured', async () => {
+      await fs.promises.writeFile(CONFIG_PATH, 'Host chromeos*');
+      expect(await sshConfig.isLabAccessConfigured(CONFIG_PATH)).toBeTrue();
+
+      await fs.promises.writeFile(CONFIG_PATH, 'Host android*');
+      expect(await sshConfig.isLabAccessConfigured(CONFIG_PATH)).toBeFalse();
+    });
+  });
+
+  describe('readUnaddedSshHosts', () => {
+    it('returns hosts from the config that do not exist in the repository', async () => {
+      const deviceRepository = new FakeDeviceRepository([
+        {hostname: 'dut2'},
+        {hostname: 'dut4'},
+      ]);
+
+      const result = await sshConfig.readUnaddedSshHosts(
+        deviceRepository,
+        CONFIG_PATH
+      );
+
+      expect(result).toEqual(['dut1', 'dut3']);
+    });
   });
 });

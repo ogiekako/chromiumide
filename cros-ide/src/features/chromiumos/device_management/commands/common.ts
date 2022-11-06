@@ -30,16 +30,9 @@ export async function promptNewHostname(
   title: string,
   ownedDeviceRepository: repository.OwnedDeviceRepository
 ): Promise<string | undefined> {
-  // Suggest hosts in ~/.ssh/config not added yet.
-  const sshHosts = await sshConfig.readConfiguredSshHosts();
-  const knownHosts = ownedDeviceRepository
-    .getDevices()
-    .map(device => device.hostname);
-  const knownHostSet = new Set(knownHosts);
-  const suggestedHosts = sshHosts.filter(
-    hostname => !knownHostSet.has(hostname)
+  const suggestedHosts = await sshConfig.readUnaddedSshHosts(
+    ownedDeviceRepository
   );
-
   return await showInputBoxWithSuggestions(suggestedHosts, {
     title,
     placeholder: 'host[:port]',

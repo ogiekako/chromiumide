@@ -21,8 +21,15 @@ interface FinishMessage {
   command: 'finish';
 }
 
+interface AddExistingHosts {
+  command: 'addExistingHosts';
+}
+
 /** A message from the webview. */
-type ViewMessage = TestDeviceConnectionMessage | FinishMessage;
+type ViewMessage =
+  | TestDeviceConnectionMessage
+  | FinishMessage
+  | AddExistingHosts;
 
 export class AddOwnedDevicePanel extends ReactPanel<AddOwnedDeviceViewContext> {
   constructor(
@@ -38,8 +45,12 @@ export class AddOwnedDevicePanel extends ReactPanel<AddOwnedDeviceViewContext> {
       case 'testDeviceConnection':
         void this.tryConfigureAndTestConnection(message.config);
         break;
+      case 'addExistingHosts':
+        void this.addExistingHosts();
+        break;
       case 'finish':
         void this.finish();
+        break;
     }
   }
 
@@ -62,6 +73,14 @@ export class AddOwnedDevicePanel extends ReactPanel<AddOwnedDeviceViewContext> {
       // TODO(joelbecker): this.addToHostsFile(config); // but with execSudo() or the like
     }
     await this.service.addDeviceToRepository(config.hostname);
+  }
+
+  async addExistingHosts() {
+    const hostnames = this.service.getUnaddedSshConfigHostnames();
+    const hostsToAdd = await vscode.window.showQuickPick(hostnames, {
+      canPickMany: true,
+    });
+    hostsToAdd?.forEach(h => void this.service.addDeviceToRepository(h));
   }
 
   private async tryConfigureAndTestConnection(

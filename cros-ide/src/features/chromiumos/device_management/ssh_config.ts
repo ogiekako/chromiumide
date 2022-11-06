@@ -5,6 +5,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import {Device, IDeviceRepository} from './device_repository';
 
 export const defaultConfigPath = path.join(os.homedir(), '.ssh', 'config');
 
@@ -48,4 +49,20 @@ export async function isLabAccessConfigured(
   const hosts = await readAllHosts(configPath);
   // If lab access is configured, there should be "chromeos*" host.
   return hosts.includes('chromeos*');
+}
+
+/**
+ * Returns the hosts found in the ssh config file that do not exist in the given device
+ * repository.
+ */
+export async function readUnaddedSshHosts<TDevice extends Device>(
+  deviceRepository: IDeviceRepository<TDevice>,
+  configPath: string = defaultConfigPath
+): Promise<string[]> {
+  const sshHosts = await readConfiguredSshHosts(configPath);
+  const knownHosts = (await deviceRepository.getDevices()).map(
+    device => device.hostname
+  );
+  const knownHostSet = new Set(knownHosts);
+  return sshHosts.filter(hostname => !knownHostSet.has(hostname));
 }

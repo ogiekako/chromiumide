@@ -11,6 +11,7 @@ import {
 } from '../../../../../../features/chromiumos/device_management/owned/add_owned_device_model';
 import {VoidOutputChannel} from './../../../../../testing/fakes/output_channel';
 import {AddOwnedDeviceService} from './../../../../../../features/chromiumos/device_management/owned/add_owned_device_service';
+import * as deviceRepository from './../../../../../../features/chromiumos/device_management/device_repository';
 
 describe('AddOwnedDeviceService', () => {
   describe('addHostToSshConfig', () => {
@@ -82,6 +83,50 @@ Host preexisting-entry
       const newContents = fs.readFileSync('/test/.ssh/config').toString();
       expect(newContents).toBe(configContentsAfter);
       expect(backupContents).toBe(configContentsBefore);
+    });
+  });
+
+  describe('getExistingHostnames', () => {
+    beforeEach(() => {
+      mockFs({
+        '/test/.ssh/config': `
+Host host1
+  Hostname 1.2.3.4
+  Port 4321
+
+Host host2 host3
+  Hostname 1.2.3.4
+  Port 4321
+
+Host host4 host5
+  Hostname 1.2.3.4
+  Port 4321
+`,
+      });
+    });
+
+    afterEach(() => {
+      mockFs.restore();
+    });
+
+    it('reads all hosts from the ssh config file that are not already in the device repository', async () => {
+      const ownedDeviceRepo = new OwnedDeviceRepository();
+      spyOn(ownedDeviceRepo, 'getDevices').and.returnValue(
+        Promise.resolve([
+          {hostname: 'host4', category: deviceRepository.DeviceCategory.OWNED},
+        ])
+      );
+      const svc = new AddOwnedDeviceService(
+        '/test/.ssh/config',
+        '/test/etc/hosts',
+        '/test/rsa',
+        new VoidOutputChannel(),
+        ownedDeviceRepo
+      );
+
+      const result = await svc.getUnaddedSshConfigHostnames();
+
+      expect(result).toEqual(['host1', 'host2', 'host3', 'host5']);
     });
   });
 });

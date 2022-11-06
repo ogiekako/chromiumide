@@ -9,6 +9,7 @@ import {OwnedDeviceRepository} from '../device_repository';
 import {buildSshArgs, SshConfigHostEntry} from '../ssh_util';
 import {DeviceClient} from './../device_client';
 import {DutConnectionConfig, DutNetworkType} from './add_owned_device_model';
+import * as sshConfigModule from './../ssh_config';
 
 // TODO(joelbecker): import normally once tsconfig esModuleInterop=true doesn't break a lot of
 // other things.
@@ -26,6 +27,17 @@ export class AddOwnedDeviceService {
   /** Adds the given device to the device repository. */
   async addDeviceToRepository(hostname: string): Promise<void> {
     await this.deviceRepository.addDevice(hostname);
+  }
+
+  /**
+   * Gets the hostnames from the ssh config file that have not yet been added to the user's
+   * devices.
+   */
+  async getUnaddedSshConfigHostnames(): Promise<string[]> {
+    return await sshConfigModule.readUnaddedSshHosts(
+      this.deviceRepository,
+      this.sshConfigPath
+    );
   }
 
   /**

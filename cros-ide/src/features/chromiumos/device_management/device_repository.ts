@@ -31,11 +31,17 @@ export interface LeasedDevice extends Device {
   readonly deadline: Date | undefined;
 }
 
+export interface IDeviceRepository<TDevice> {
+  getDevices(): Promise<TDevice[]>;
+}
+
 /**
  * Maintains a list of owned devices available for the device management feature.
  * The list is backed by a user setting.
  */
-export class OwnedDeviceRepository implements vscode.Disposable {
+export class OwnedDeviceRepository
+  implements IDeviceRepository<OwnedDevice>, vscode.Disposable
+{
   private readonly onDidChangeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.onDidChangeEmitter.event;
 
@@ -51,16 +57,18 @@ export class OwnedDeviceRepository implements vscode.Disposable {
     );
   }
 
-  dispose() {
+  dispose(): void {
     vscode.Disposable.from(...this.subscriptions).dispose();
   }
 
-  getDevices(): OwnedDevice[] {
+  getDevices(): Promise<OwnedDevice[]> {
     const hostnames = this.getHostnames();
-    return hostnames.map(hostname => ({
-      category: DeviceCategory.OWNED,
-      hostname,
-    }));
+    return Promise.resolve(
+      hostnames.map(hostname => ({
+        category: DeviceCategory.OWNED,
+        hostname,
+      }))
+    );
   }
 
   async addDevice(hostname: string): Promise<void> {
@@ -94,7 +102,9 @@ export class OwnedDeviceRepository implements vscode.Disposable {
  * Maintains a list of leased devices available for the device management feature.
  * The list is backed by the crosfleet command.
  */
-export class LeasedDeviceRepository implements vscode.Disposable {
+export class LeasedDeviceRepository
+  implements IDeviceRepository<LeasedDevice>, vscode.Disposable
+{
   private readonly onDidChangeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.onDidChangeEmitter.event;
 
@@ -207,7 +217,9 @@ export class LeasedDeviceRepository implements vscode.Disposable {
  * Provides a merged view of OwnedDeviceRepository and LeasedDeviceRepository.
  * It is still possible to access child device repositories via read-only fields.
  */
-export class DeviceRepository {
+export class DeviceRepository
+  implements IDeviceRepository<OwnedDevice | LeasedDevice>
+{
   private readonly onDidChangeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.onDidChangeEmitter.event;
 
@@ -242,7 +254,7 @@ export class DeviceRepository {
   }
 
   async getDevices(): Promise<(OwnedDevice | LeasedDevice)[]> {
-    const ownedDevices = this.owned.getDevices();
+    const ownedDevices = await this.owned.getDevices();
     const leasedDevices = await this.leased.getDevices();
     return [...ownedDevices, ...leasedDevices];
   }

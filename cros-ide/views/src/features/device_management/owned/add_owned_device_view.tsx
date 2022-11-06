@@ -32,6 +32,7 @@ import {
   Container,
   Checkbox,
   FormControlLabel,
+  Link,
 } from '@mui/material';
 import * as colors from '@mui/material/colors';
 import TabPanel from '@mui/lab/TabPanel';
@@ -127,7 +128,6 @@ export function AddOwnedDeviceView(props: {
     setBackEnabled: setBackEnabled,
   };
   const handleKeydown = (e: any) => {
-    console.log('keydown e.key = ' + e.key);
     if (
       nextStepEnabled &&
       (e.key === 'Enter' ||
@@ -238,34 +238,40 @@ function NetworkTypeStep(props: AddOwnedDeviceStepProps) {
       handleNetworkType(model.DutNetworkType.HOME);
     }
   };
+  const handleAddExistingHosts = () => {
+    vscodeApi.postMessage({command: 'addExistingHosts'});
+  };
   return (
     <div tabIndex={-1} onKeyDown={handleKeydown} ref={elem => elem?.focus()}>
-      <p>Where is your DUT (device under test)?</p>
-      <ToggleButtonGroup
-        exclusive
-        value={props.connectionConfig.networkType}
-        onChange={(_e, v) => {
-          if (v !== null) {
-            handleNetworkType(v);
-          }
-        }}
-      >
-        <ToggleButton
-          value={model.DutNetworkType.OFFICE}
-          title="Your DUT (device under test) is connected to the office lab network"
+      <Stack spacing={2} style={centerStyle}>
+        <p>Where is your DUT (device under test)?</p>
+        <ToggleButtonGroup
+          exclusive
+          value={props.connectionConfig.networkType}
+          onChange={(_e, v) => {
+            if (v !== null) {
+              handleNetworkType(v);
+            }
+          }}
         >
-          <BusinessIcon />
-          Office
-        </ToggleButton>
+          <ToggleButton
+            value={model.DutNetworkType.OFFICE}
+            title="Your DUT (device under test) is connected to the office lab network"
+          >
+            <BusinessIcon />
+            Office
+          </ToggleButton>
 
-        <ToggleButton
-          value={model.DutNetworkType.HOME}
-          title="Your DUT (device under test) is connected to a remote network such as a home network"
-        >
-          <HomeIcon />
-          Home
-        </ToggleButton>
-      </ToggleButtonGroup>
+          <ToggleButton
+            value={model.DutNetworkType.HOME}
+            title="Your DUT (device under test) is connected to a remote network such as a home network"
+          >
+            <HomeIcon />
+            Home
+          </ToggleButton>
+        </ToggleButtonGroup>
+        <Link onClick={handleAddExistingHosts}>Add Existing Hostnames</Link>
+      </Stack>
     </div>
   );
 }
