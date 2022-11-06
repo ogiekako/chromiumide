@@ -72,6 +72,16 @@ describe('Metrics config', () => {
 
 describe('getUserIdAgeInDays', () => {
   const tempDir = testing.tempDir();
+  const now = new Date(2022, 0, 2, 3, 4, 5); // Jan 2, 3:04:05am
+
+  beforeEach(() => {
+    jasmine.clock().install();
+    jasmine.clock().mockDate(now);
+  });
+
+  afterEach(() => {
+    jasmine.clock().uninstall();
+  });
 
   it('returns 0 for freshly initialized user ID', async () => {
     const configPath = path.join(tempDir.path, 'config.json');
@@ -85,10 +95,9 @@ describe('getUserIdAgeInDays', () => {
 
   it('returns correct age for user ID with random update time', async () => {
     const configPath = path.join(tempDir.path, 'config.json');
-    // Random age in between 0 to 180 days old, in number of days (integer).
-    const age = Math.floor(Math.random() * 180);
+    const age = 30; // days
 
-    const createDate = new Date(Date.now() - age * 24 * 60 * 60 * 1000);
+    const createDate = new Date(now.getTime() - age * 24 * 60 * 60 * 1000);
     // Create user ID with the random create date.
     await metricsConfig.generateValidUserId(configPath, createDate);
     // Verify that the user ID has correct age.
