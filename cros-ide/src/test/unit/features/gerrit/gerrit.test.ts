@@ -660,4 +660,28 @@ describe('Gerrit', () => {
       bgTaskStatus.TaskStatus.OK
     );
   });
+
+  it('does not retrieve comments for internal repos', async () => {
+    const git = new testing.Git(tempDir.path);
+    await git.init({internal: true});
+    await git.commit('First');
+    await git.checkout('cros/main', {createBranch: true});
+    await git.checkout('main');
+    await git.commit(
+      'Local commit\nChange-Id: I23f50ecfe44ee28972aa640e1fa82ceabcc706a8'
+    );
+
+    const gerrit = new Gerrit(
+      state.commentController,
+      vscode.window.createOutputChannel('gerrit'),
+      state.statusBarItem,
+      state.statusManager
+    );
+
+    await expectAsync(
+      gerrit.showComments(abs('cryptohome/cryptohome.cc'))
+    ).toBeResolved();
+
+    expect(state.commentController.createCommentThread).not.toHaveBeenCalled();
+  });
 });

@@ -14,9 +14,18 @@ export class Git {
   constructor(readonly root: string) {}
 
   /** Creates the root directory and runs `git init`. */
-  async init() {
+  async init(opts?: {internal: boolean}) {
     await fs.promises.mkdir(this.root, {recursive: true});
     await commonUtil.execOrThrow('git', ['init'], {cwd: this.root});
+    const remote = opts?.internal
+      ? [
+          'cros-internal',
+          'https://chrome-internal.googlesource.com/chromeos/internal-project',
+        ]
+      : ['cros', 'https://chromium.googlesource.com/chromiumos/chromite'];
+    await commonUtil.execOrThrow('git', ['remote', 'add', ...remote], {
+      cwd: this.root,
+    });
   }
 
   async addAll() {

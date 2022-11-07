@@ -214,6 +214,25 @@ class Gerrit {
    * stored in `this.partitionedThreads`.
    */
   private async fetchComments(gitDir: string) {
+    const remote = await commonUtil.exec('git', ['remote', '-v'], {
+      cwd: gitDir,
+      logStdout: true,
+      logger: this.outputChannel,
+    });
+    if (remote instanceof Error) {
+      this.showErrorMessage({
+        log: `'git remote' failed: ${remote}`,
+        metrics: 'git remote failed',
+      });
+      return undefined;
+    }
+    if (!remote.stdout.includes('chromium.googlesource.com')) {
+      this.outputChannel.appendLine(
+        'Only public git repos are supported, so Gerrit comments will not be shown.'
+      );
+      return undefined;
+    }
+
     const gitLogInfos = await git.readChangeIds(gitDir, this.outputChannel);
     if (gitLogInfos instanceof Error) {
       this.showErrorMessage({
