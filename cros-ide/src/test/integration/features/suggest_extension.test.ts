@@ -20,7 +20,7 @@ describe('Suggest extension module', () => {
     subscriptions.push(
       activateSingle(
         {
-          languageId: 'cpp',
+          languageIds: ['cpp'],
           extensionId: 'foo',
           message:
             'It is recommended to install Foo extension for C++. Proceed?',
@@ -59,7 +59,7 @@ describe('Suggest extension module', () => {
   it('does not suggest if languages do not match', async () => {
     activateSingle(
       {
-        languageId: 'cpp',
+        languageIds: ['cpp'],
         extensionId: 'foo',
         message: 'It is recommended to install Foo extension for C++. Proceed?',
         availableForCodeServer: true,
@@ -80,7 +80,7 @@ describe('Suggest extension module', () => {
     subscriptions.push(
       activateSingle(
         {
-          languageId: 'gn',
+          languageIds: ['gn'],
           extensionId: 'msedge-dev.gnls',
           message:
             'GN Language Server extension provides syntax highlighting and code navigation for GN build files. ' +
@@ -104,7 +104,7 @@ describe('Suggest extension module', () => {
     subscriptions.push(
       activateSingle(
         {
-          languageId: 'cpp',
+          languageIds: ['cpp'],
           extensionId: 'foo',
           message:
             'It is recommended to install Foo extension for C++. Proceed?',

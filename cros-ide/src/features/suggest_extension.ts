@@ -8,15 +8,15 @@ import * as ideUtil from '../ide_util';
 export function activate(context: vscode.ExtensionContext): void {
   const recommendations: Recommendation[] = [
     {
-      languageId: 'cpp',
+      languageIds: ['cpp', 'c'],
       extensionId: 'llvm-vs-code-extensions.vscode-clangd',
       message:
-        'Clangd extension provides cross references and autocompletion in C++. ' +
+        'Clangd extension provides cross references and autocompletion in C/C++. ' +
         'Would you like to install it?',
       availableForCodeServer: true,
     },
     {
-      languageId: 'gn',
+      languageIds: ['gn'],
       extensionId: 'msedge-dev.gnls',
       message:
         'GN Language Server extension provides syntax highlighting and code navigation for GN build files. ' +
@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext): void {
       availableForCodeServer: false,
     },
     {
-      languageId: 'go',
+      languageIds: ['go'],
       extensionId: 'golang.Go',
       message:
         'Go extension provides rich language support for the Go programming language. ' +
@@ -41,7 +41,7 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 interface Recommendation {
-  languageId: string;
+  languageIds: string[];
   extensionId: string;
   message: string;
 
@@ -102,7 +102,7 @@ class Recommender implements vscode.Disposable {
     // Suggest only when the language ID matches.
     if (
       !editor ||
-      editor.document.languageId !== this.recommendation.languageId
+      !this.recommendation.languageIds.includes(editor.document.languageId)
     ) {
       return;
     }
