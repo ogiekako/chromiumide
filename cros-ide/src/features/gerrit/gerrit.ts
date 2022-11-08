@@ -143,7 +143,9 @@ class Gerrit {
     try {
       const gitDir = commonUtil.findGitDir(path);
       if (!gitDir) {
-        this.showErrorMessage('Git directory not found');
+        // When settings are changed onDidSaveTextDocument is called with
+        // ~/.config/Code/User/settings.json, which is triggers repositioning.
+        this.outputChannel.appendLine('Git directory not found for ' + path);
         return;
       }
 

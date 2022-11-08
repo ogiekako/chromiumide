@@ -684,4 +684,17 @@ describe('Gerrit', () => {
 
     expect(state.commentController.createCommentThread).not.toHaveBeenCalled();
   });
+
+  it('does not throw errors when repositioning is triggered outside a Git repo', async () => {
+    const gerrit = new Gerrit(
+      state.commentController,
+      vscode.window.createOutputChannel('gerrit'),
+      state.statusBarItem,
+      state.statusManager
+    );
+
+    await expectAsync(gerrit.showComments(tempDir.path)).toBeResolved();
+
+    expect(state.statusManager.setStatus).not.toHaveBeenCalled();
+  });
 });
