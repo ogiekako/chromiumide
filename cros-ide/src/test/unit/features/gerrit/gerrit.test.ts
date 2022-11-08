@@ -653,12 +653,7 @@ describe('Gerrit', () => {
     expect(state.statusBarItem.show).not.toHaveBeenCalled();
     expect(state.statusBarItem.hide).toHaveBeenCalled();
 
-    expect(metrics.send).toHaveBeenCalledOnceWith({
-      category: 'background',
-      group: 'gerrit',
-      action: 'update comments',
-      value: 0,
-    });
+    expect(metrics.send).not.toHaveBeenCalled();
 
     expect(state.statusManager.setStatus).toHaveBeenCalledOnceWith(
       'Gerrit',

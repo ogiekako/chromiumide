@@ -163,7 +163,7 @@ class Gerrit {
       }
       this.updateStatusBar();
       this.statusManager.setStatus(GERRIT, bgTaskStatus.TaskStatus.OK);
-      if (doFetch) {
+      if (doFetch && this.commentThreads.length > 0) {
         this.sendMetrics();
       }
     } catch (err) {
