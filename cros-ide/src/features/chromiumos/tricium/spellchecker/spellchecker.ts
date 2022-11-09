@@ -20,10 +20,6 @@ import * as executor from './executor';
 // in the IDE.
 
 const STATUS_BAR_TASK_ID = 'Tricium';
-const SHOW_LOG_COMMAND: vscode.Command = {
-  command: 'cros-ide.showTriciumLog',
-  title: 'Show Tricium Log',
-};
 
 /**
  * Activate should handle the errors instead of throwing them.
@@ -38,16 +34,10 @@ export async function activate(
   gitDirsWatcher: services.GitDirsWatcher
 ) {
   const outputChannel = vscode.window.createOutputChannel('CrOS IDE: Tricium');
-  context.subscriptions.push(
-    vscode.commands.registerCommand(SHOW_LOG_COMMAND.command, () => {
-      outputChannel.show();
-      metrics.send({
-        category: 'interactive',
-        group: 'idestatus',
-        action: 'show tricium log',
-      });
-    })
-  );
+  statusManager.setTask(STATUS_BAR_TASK_ID, {
+    status: bgTaskStatus.TaskStatus.OK,
+    outputChannel,
+  });
 
   let triciumSpellchecker: string;
   try {
@@ -56,6 +46,7 @@ export async function activate(
     );
   } catch (err) {
     outputChannel.append(`Could not download Tricium spellchecker: ${err}`);
+    statusManager.setStatus(STATUS_BAR_TASK_ID, bgTaskStatus.TaskStatus.ERROR);
     return;
   }
 
@@ -238,10 +229,7 @@ class Spellchecker {
   }
 
   private setStatus(status: bgTaskStatus.TaskStatus) {
-    this.statusManager.setTask(STATUS_BAR_TASK_ID, {
-      status,
-      command: SHOW_LOG_COMMAND,
-    });
+    this.statusManager.setStatus(STATUS_BAR_TASK_ID, status);
   }
 
   /** Clear diagnostics for the specified uri. */
