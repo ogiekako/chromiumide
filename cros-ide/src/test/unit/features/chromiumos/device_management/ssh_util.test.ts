@@ -108,5 +108,15 @@ describe('SSH utility', () => {
         '-i /path/to/extension/resources/testing_rsa'
       );
     });
+
+    it('does not add the Host SSH config entry in the -o args', () => {
+      const config = {
+        Host: 'host1',
+        Hostname: 'hostname1',
+      };
+      const result = sshUtil.buildSshArgs('host1', undefined, config);
+      const args = result.join(' ');
+      expect(args).not.toContain('-o Host=');
+    });
   });
 });

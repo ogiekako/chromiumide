@@ -49,8 +49,8 @@ export class AddOwnedDeviceService {
     const client = new DeviceClient(
       this.output,
       buildSshArgs(
-        config.hostname,
-        config.forwardedPort ?? undefined,
+        config.ipAddress,
+        undefined, // port is specified in the config
         this.sshConfigHostTemplate(config)
       )
     );

@@ -34,6 +34,24 @@ export type SshConfigHostEntry = SshConfigHost & {
   readonly Host?: string;
 };
 
+// Used to prevent any extra object properties from being used as -o on ssh cli.
+const SUPPORTED_SSH_HYPHEN_O_OPTIONS: (keyof SshConfigHost)[] = [
+  'Hostname',
+  'Port',
+  'CheckHostIP',
+  'ControlMaster',
+  'ControlPath',
+  'ControlPersist',
+  'IdentitiesOnly',
+  'IdentityFile',
+  'StrictHostKeyChecking',
+  'User',
+  'UserKnownHostsFile',
+  'VerifyHostKeyDNS',
+  'ProxyCommand',
+  'HostKeyAlias',
+];
+
 /**
  * Returns the path to the testing_rsa file bundled in the extension.
  *
@@ -116,7 +134,11 @@ export function buildSshArgs(
   sshArgs.push(...additionalSshArgs);
   sshArgs.push(
     ...Object.entries(sshOptions)
-      .filter(e => e[1])
+      .filter(
+        e =>
+          e[1] &&
+          SUPPORTED_SSH_HYPHEN_O_OPTIONS.includes(e[0] as keyof SshConfigHost)
+      )
       .flatMap(e => ['-o', `${e[0]}=${e[1]}`])
   );
   sshArgs.push(`root@${host}`);
