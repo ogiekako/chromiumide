@@ -22,6 +22,7 @@ import * as feedback from './features/metrics/feedback';
 import * as metrics from './features/metrics/metrics';
 import * as metricsConfig from './features/metrics/metrics_config';
 import * as shortLinkProvider from './features/short_link_provider';
+import * as showHelp from './features/show_help';
 import * as suggestExtension from './features/suggest_extension';
 import * as upstart from './features/upstart';
 import * as ideUtil from './ide_util';
@@ -101,6 +102,7 @@ async function postMetricsActivate(
   feedback.activate(context);
   upstart.activate(context);
   hints.activate(context);
+  showHelp.activate(context);
 
   if (config.underDevelopment.crosFormat.get()) {
     crosFormat.activate(context);
