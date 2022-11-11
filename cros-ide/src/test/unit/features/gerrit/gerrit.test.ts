@@ -697,4 +697,81 @@ describe('Gerrit', () => {
 
     expect(state.statusManager.setStatus).not.toHaveBeenCalled();
   });
+
+  it('shows a specific error when a commit is not available locally', async () => {
+    const git = new testing.Git(tempDir.path);
+    await git.init();
+    await git.commit('Mainline');
+    await git.checkout('cros/main', {createBranch: true});
+    await git.checkout('main');
+    await git.addAll();
+    const commitId = await git.commit(
+      'Under review\nChange-Id: Iaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa12345'
+    );
+
+    const gerrit = new Gerrit(
+      state.commentController,
+      vscode.window.createOutputChannel('gerrit'),
+      state.statusBarItem,
+      state.statusManager
+    );
+
+    spyOn(https, 'getOrThrow')
+      .withArgs(
+        'https://chromium-review.googlesource.com/changes/Iaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa12345/comments'
+      )
+      .and.returnValue(
+        Promise.resolve(
+          apiString(
+            TWO_PATCHSETS_CHANGE_COMMENTS(
+              commitId,
+              '1111111111111111111111111111111111111111'
+            )
+          )
+        )
+      );
+
+    await expectAsync(
+      gerrit.showComments(abs('cryptohome/cryptohome.cc'))
+    ).toBeResolved();
+
+    expect(state.commentController.createCommentThread).toHaveBeenCalledTimes(
+      2
+    );
+    const callData = state.commentController.createCommentThread.calls.all();
+
+    expect(callData[0].args[0].fsPath).toEqual(abs('cryptohome/cryptohome.cc'));
+    // The comment is on line 15 and there are no local changes.
+    expect(callData[0].args[1].start.line).toEqual(14);
+    expect(callData[0].args[2][0].body).toEqual('Comment on termios');
+
+    expect(callData[1].args[0].fsPath).toEqual(abs('cryptohome/cryptohome.cc'));
+    expect(callData[1].args[1].start.line).toEqual(17);
+    expect(callData[1].args[2][0].body).toEqual('Comment on unistd');
+
+    expect(state.statusBarItem.show).toHaveBeenCalled();
+    expect(state.statusBarItem.hide).not.toHaveBeenCalled();
+    expect(state.statusBarItem.tooltip).toEqual(
+      'Gerrit comments: 1 unresolved (2 total)'
+    );
+    expect(state.statusBarItem.text).toEqual('$(comment) 1');
+
+    expect(metrics.send).toHaveBeenCalledTimes(2);
+    expect(metrics.send).toHaveBeenCalledWith({
+      category: 'error',
+      group: 'gerrit',
+      description: 'commit not available locally',
+    });
+    expect(metrics.send).toHaveBeenCalledWith({
+      category: 'background',
+      group: 'gerrit',
+      action: 'update comments',
+      value: 2,
+    });
+
+    expect(state.statusManager.setStatus).toHaveBeenCalledOnceWith(
+      'Gerrit',
+      bgTaskStatus.TaskStatus.ERROR
+    );
+  });
 });

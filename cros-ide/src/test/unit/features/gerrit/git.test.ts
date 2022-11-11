@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {TEST_ONLY} from '../../../../features/gerrit/git';
+import * as testing from '../../../testing';
+import {shaExists, TEST_ONLY} from '../../../../features/gerrit/git';
 
 const {parseChangeIds} = TEST_ONLY;
 
@@ -73,5 +74,20 @@ describe('parseChangeIds', () => {
         gerritChangeId: 'Ic7594ee4825feb488c12aac31bb879c03932fb45',
       },
     ]);
+  });
+});
+
+describe('Git helper', () => {
+  const tempDir = testing.tempDir();
+
+  it('detects which SHA is available locally', async () => {
+    const repo = new testing.Git(tempDir.path);
+    await repo.init();
+    const existingCommitId = await repo.commit('Hello');
+
+    expect(await shaExists(existingCommitId, repo.root)).toBeTrue();
+    expect(
+      await shaExists('08f5019f534c2c5075c5de4425b7902d7517342e', repo.root)
+    ).toBeFalse();
   });
 });

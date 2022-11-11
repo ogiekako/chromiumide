@@ -158,13 +158,43 @@ class Gerrit {
         return;
       }
 
+      // TODO(b:216048068): Refactor how we handle errors.
+      let status = bgTaskStatus.TaskStatus.OK;
+
+      const localCommitIds = await this.filterLocalCommitIds(
+        this.partitionedThreads.map(commitThreads => commitThreads[0]),
+        gitDir
+      );
+      if (localCommitIds instanceof Error) {
+        this.showErrorMessage('Checking if SHA is available locally failed.');
+        return;
+      }
+      if (localCommitIds.length !== this.partitionedThreads.length) {
+        status = bgTaskStatus.TaskStatus.ERROR;
+        this.outputChannel.appendLine(
+          'Some commits are not available locally. This happens when ' +
+            'some patchsets were uploaded to Gerrit from a different chroot.'
+        );
+        metrics.send({
+          category: 'error',
+          group: 'gerrit',
+          description: 'commit not available locally',
+        });
+      }
+
       for (const [originalCommitId, changeThreads] of this.partitionedThreads) {
-        // TODO(b:216048068): Handle original commit not available locally.
-        await this.shiftChangeComments(gitDir, originalCommitId, changeThreads);
+        // We still want to show comments that cannot be repositioned correctly.
+        if (localCommitIds.includes(originalCommitId)) {
+          await this.shiftChangeComments(
+            gitDir,
+            originalCommitId,
+            changeThreads
+          );
+        }
         this.displayCommentThreads(this.controller, changeThreads, gitDir);
       }
       this.updateStatusBar();
-      this.statusManager.setStatus(GERRIT, bgTaskStatus.TaskStatus.OK);
+      this.statusManager.setStatus(GERRIT, status);
       if (doFetch && this.commentThreads.length > 0) {
         this.sendMetrics();
       }
@@ -269,6 +299,23 @@ class Gerrit {
     }
 
     this.partitionedThreads = partitionedThreads;
+  }
+
+  /** Returns Git commit ids which are available in the local repo. */
+  private async filterLocalCommitIds(
+    allCommitIds: string[],
+    gitDir: string
+  ): Promise<string[] | Error> {
+    const local = [];
+    for (const commitId of allCommitIds) {
+      const exists = await git.shaExists(commitId, gitDir, this.outputChannel);
+      if (exists instanceof Error) {
+        return exists;
+      } else if (exists) {
+        local.push(commitId);
+      }
+    }
+    return local;
   }
 
   /**

@@ -44,6 +44,23 @@ export class Hunk {
   }
 }
 
+/** Checks if a SHA is available locally. */
+export async function shaExists(
+  sha: string,
+  dir: string,
+  logger?: vscode.OutputChannel
+): Promise<boolean | Error> {
+  const result = await commonUtil.exec('git', ['cat-file', '-e', sha], {
+    cwd: dir,
+    logger,
+    ignoreNonZeroExit: true,
+  });
+  if (result instanceof Error) {
+    return result;
+  }
+  return result.exitStatus === 0;
+}
+
 /**
  * Extracts diff hunks of changes made between the `originalCommitId`
  * and the working tree.
