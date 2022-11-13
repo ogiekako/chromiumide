@@ -3,11 +3,14 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import {underDevelopment} from '../../../../services/config';
 import * as metrics from '../../../metrics/metrics';
 import * as deviceClient from '../device_client';
 import * as provider from '../device_tree_data_provider';
 import * as prebuiltUtil from '../prebuilt_util';
 import * as sshUtil from '../ssh_util';
+import {FlashDeviceService} from './../flash/flash_device_service';
+import {FlashDevicePanel} from './../flash/flash_device_panel';
 import {CommandContext, promptKnownHostnameIfNeeded} from './common';
 
 // Path to the private credentials needed to access prebuilts, relative to
@@ -46,16 +49,12 @@ export async function flashPrebuiltImage(
     )
   );
 
-  const defaultBoard = await vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: 'Flash Prebuilt Image: Auto-detecting board name',
-    },
-    async () => {
-      const lsbRelease = await client.readLsbRelease();
-      return lsbRelease.chromeosReleaseBoard;
-    }
-  );
+  const defaultBoard = await retrieveBoardWithProgress(client);
+
+  if (underDevelopment.deviceManagementFlashV2.get()) {
+    flashDeviceV2(context, hostname, defaultBoard);
+    return;
+  }
 
   const board = await vscode.window.showInputBox({
     title: 'Board Name to Flash',
@@ -95,4 +94,33 @@ export async function flashPrebuiltImage(
     `env BOTO_CONFIG=${source.root}/${BOTO_PATH} cros flash ssh://${hostname} xbuddy://remote/${board}-release/${version}/test`
   );
   terminal.show();
+}
+
+async function retrieveBoardWithProgress(
+  client: deviceClient.DeviceClient
+): Promise<string> {
+  return vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Window,
+      title: 'Flash Prebuilt Image: Auto-detecting board name',
+    },
+    async () => {
+      const lsbRelease = await client.readLsbRelease();
+      return lsbRelease.chromeosReleaseBoard;
+    }
+  );
+}
+
+function flashDeviceV2(
+  context: CommandContext,
+  hostname: string,
+  board: string
+) {
+  const service = new FlashDeviceService(context.chrootService, context.output);
+  new FlashDevicePanel(
+    context.extensionContext.extensionUri,
+    hostname,
+    board,
+    service
+  );
 }

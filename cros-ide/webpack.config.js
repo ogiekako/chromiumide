@@ -95,6 +95,8 @@ const viewsConfig = {
     syslog: './views/src/syslog.ts',
     add_owned_device_view:
       './views/src/features/device_management/owned/add_owned_device_view.tsx',
+    flash_device_view:
+      './views/src/features/device_management/flash_device_view.tsx',
   },
   output: {
     path: path.resolve(__dirname, 'dist', 'views'),
