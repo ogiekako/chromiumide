@@ -26,6 +26,10 @@ const USAGE = `
 
   --pre-release
      Run the command for pre-release.
+
+  --remote-branch
+     Specify the remote release branch such as refs/ide/0.4.0 .
+     This option is meaningful only for the publish command.
 `;
 
 async function execute(
@@ -59,14 +63,26 @@ async function currentVersion(): Promise<semver.SemVer> {
 /**
  * Verify that HEAD change is merged and it updated the version in package.json
  */
-async function assertHeadUpdatesVersion() {
-  // IDE_CROS_MAIN_FOR_TESTING substitutes cros/main for manual testing.
-  const crosMain = process.env.IDE_CROS_MAIN_FOR_TESTING || 'cros/main';
+async function assertHeadUpdatesVersion(remoteBranch?: string) {
+  let mergedRevision: string;
+  if (remoteBranch) {
+    await execute('git', [
+      'fetch',
+      'https://chromium.googlesource.com/chromiumos/chromite',
+      remoteBranch,
+    ]);
+    mergedRevision = 'FETCH_HEAD';
+  } else {
+    mergedRevision = 'cros/main';
+  }
+
+  // IDE_CROS_MAIN_FOR_TESTING substitutes the branch for manual testing.
+  const revision = process.env.IDE_CROS_MAIN_FOR_TESTING || mergedRevision;
   try {
-    // Assert HEAD is already merged, i.e. an ancestor of cros/main.
-    await execute('git', ['merge-base', '--is-ancestor', 'HEAD', crosMain]);
+    // Assert HEAD is already merged, i.e. an ancestor a remote branch.
+    await execute('git', ['merge-base', '--is-ancestor', 'HEAD', revision]);
   } catch (_e) {
-    throw new Error('HEAD should be an ancestor of cros/main');
+    throw new Error(`HEAD should be an ancestor of ${revision}`);
   }
 
   // HEAD commit should update version in package.json .
@@ -251,6 +267,8 @@ const ALL_COMMANDS: Command[] = ['publish', 'update', 'help'];
 type Config = {
   command: Command;
   preRelease: boolean;
+  // Name of the remote branch for patch release. e.g. refs/ide/0.4.0
+  remoteBranch?: string;
 };
 
 /**
@@ -271,11 +289,15 @@ export function parseArgs(args: string[]): Config {
   }
 
   let preRelease = false;
+  let remoteBranch = undefined;
   while (args.length > 0) {
     const flag = args.shift();
     switch (flag) {
       case '--pre-release':
         preRelease = true;
+        break;
+      case '--remote-branch':
+        remoteBranch = args.shift();
         break;
       default:
         throw new Error(`Unknown flag ${flag}; see help`);
@@ -284,9 +306,11 @@ export function parseArgs(args: string[]): Config {
   return {
     command,
     preRelease,
+    remoteBranch,
   };
 }
 
+// TODO(oka): Refactor the module and add tests.
 async function main() {
   const config = parseArgs(process.argv);
   switch (config.command) {
