@@ -651,7 +651,7 @@ function toVscodeComment(c: api.CommentInfo): vscode.Comment {
       name: c.author.name,
     },
     label: formatGerritTimestamp(c.updated),
-    body: c.message,
+    body: new vscode.MarkdownString(c.message),
     mode: vscode.CommentMode.Preview,
   };
 }

@@ -277,7 +277,7 @@ describe('Gerrit', () => {
     expect(callData.args[0].fsPath).toEqual(abs('cryptohome/cryptohome.cc'));
     expect(callData.args[1].start.line).toEqual(2);
     expect(callData.args[2][0].body).toEqual(
-      'Unresolved comment on the added line.'
+      new vscode.MarkdownString('Unresolved comment on the added line.')
     );
 
     expect(state.statusBarItem.show).toHaveBeenCalled();
@@ -392,7 +392,9 @@ describe('Gerrit', () => {
     // Gerrit returns line 7, but our virtual documents don't have some headers,
     // so we shift the message by 6 lines and convert it to 0-based.
     expect(callData[0].args[1].start.line).toEqual(0);
-    expect(callData[0].args[2][0].body).toEqual('Commit message comment');
+    expect(callData[0].args[2][0].body).toEqual(
+      new vscode.MarkdownString('Commit message comment')
+    );
 
     expect(callData[1].args[0]).toEqual(
       vscode.Uri.parse(
@@ -401,17 +403,23 @@ describe('Gerrit', () => {
     );
     // Patchset level comments should always be shown on the first line.
     expect(callData[1].args[1].start.line).toEqual(0);
-    expect(callData[1].args[2][0].body).toEqual('Patchset level comment.');
+    expect(callData[1].args[2][0].body).toEqual(
+      new vscode.MarkdownString('Patchset level comment.')
+    );
 
     expect(callData[2].args[0].fsPath).toEqual(abs('cryptohome/crypto.h'));
     // File comments should always be shown on the first line.
     expect(callData[2].args[1].start.line).toEqual(0);
-    expect(callData[2].args[2][0].body).toEqual('File comment.');
+    expect(callData[2].args[2][0].body).toEqual(
+      new vscode.MarkdownString('File comment.')
+    );
 
     expect(callData[3].args[0].fsPath).toEqual(abs('cryptohome/crypto.h'));
     // No shift, but we convert 1-based to 0-based.
     expect(callData[3].args[1].start.line).toEqual(10);
-    expect(callData[3].args[2][0].body).toEqual('Line comment.');
+    expect(callData[3].args[2][0].body).toEqual(
+      new vscode.MarkdownString('Line comment.')
+    );
 
     expect(state.statusBarItem.show).toHaveBeenCalled();
     expect(state.statusBarItem.hide).not.toHaveBeenCalled();
@@ -501,13 +509,17 @@ describe('Gerrit', () => {
     // The original comment is on line 15. It is shifted by 2 lines (+2)
     // and represented in zero-based (-1).
     expect(callData[0].args[1].start.line).toEqual(16);
-    expect(callData[0].args[2][0].body).toEqual('Comment on termios');
+    expect(callData[0].args[2][0].body).toEqual(
+      new vscode.MarkdownString('Comment on termios')
+    );
 
     expect(callData[1].args[0].fsPath).toEqual(abs('cryptohome/cryptohome.cc'));
     // The comment on the second patchset stays on line 18,
     // but we convert 1-based number to 0-based.
     expect(callData[1].args[1].start.line).toEqual(17);
-    expect(callData[1].args[2][0].body).toEqual('Comment on unistd');
+    expect(callData[1].args[2][0].body).toEqual(
+      new vscode.MarkdownString('Comment on unistd')
+    );
 
     expect(state.statusBarItem.show).toHaveBeenCalled();
     expect(state.statusBarItem.hide).not.toHaveBeenCalled();
@@ -598,7 +610,9 @@ describe('Gerrit', () => {
     // but we convert 1-based number (Gerrit) to 0-based (VScode).
     // There are no local modification that require shifting the comment.
     expect(calls[0].args[1].start.line).toEqual(5);
-    expect(calls[0].args[2][0].body).toEqual('Comment on the second change');
+    expect(calls[0].args[2][0].body).toEqual(
+      new vscode.MarkdownString('Comment on the second change')
+    );
 
     expect(calls[1].args[0].fsPath).toMatch(/cryptohome\/cryptohome.cc/);
     // The comment in the second Gerrit change is on line 3,
@@ -607,7 +621,7 @@ describe('Gerrit', () => {
     // so shifting is not needed.
     expect(calls[1].args[1].start.line).toEqual(2);
     expect(calls[1].args[2][0].body).toEqual(
-      'Unresolved comment on the added line.'
+      new vscode.MarkdownString('Unresolved comment on the added line.')
     );
 
     expect(state.statusBarItem.show).toHaveBeenCalled();
@@ -743,11 +757,15 @@ describe('Gerrit', () => {
     expect(callData[0].args[0].fsPath).toEqual(abs('cryptohome/cryptohome.cc'));
     // The comment is on line 15 and there are no local changes.
     expect(callData[0].args[1].start.line).toEqual(14);
-    expect(callData[0].args[2][0].body).toEqual('Comment on termios');
+    expect(callData[0].args[2][0].body).toEqual(
+      new vscode.MarkdownString('Comment on termios')
+    );
 
     expect(callData[1].args[0].fsPath).toEqual(abs('cryptohome/cryptohome.cc'));
     expect(callData[1].args[1].start.line).toEqual(17);
-    expect(callData[1].args[2][0].body).toEqual('Comment on unistd');
+    expect(callData[1].args[2][0].body).toEqual(
+      new vscode.MarkdownString('Comment on unistd')
+    );
 
     expect(state.statusBarItem.show).toHaveBeenCalled();
     expect(state.statusBarItem.hide).not.toHaveBeenCalled();

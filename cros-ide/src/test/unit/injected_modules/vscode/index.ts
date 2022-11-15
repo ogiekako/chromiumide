@@ -14,6 +14,7 @@ export {ConfigurationTarget} from './configuration';
 export {Disposable} from './disposable';
 export {EventEmitter} from './event';
 export {ExtensionMode} from './extension_mode';
+export {MarkdownString} from './markdown_string';
 export {Position} from './position';
 export {Range} from './range';
 export {StatusBarAlignment, StatusBarItem} from './status_bar';
