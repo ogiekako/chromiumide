@@ -635,6 +635,55 @@ describe('Gerrit', () => {
     });
   });
 
+  it('positions comments on valid line nubers', async () => {
+    const git = new testing.Git(tempDir.path);
+    await git.init();
+    await git.commit('Mainline');
+    await git.checkout('cros/main', {createBranch: true});
+    await git.checkout('main');
+    await testing.putFiles(git.root, {
+      'cryptohome/cryptohome.cc': 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n',
+    });
+    await git.addAll();
+    const commitId = await git.commit(
+      'Under review\nChange-Id: I23f50ecfe44ee28972aa640e1fa82ceabcc706a8'
+    );
+    await testing.putFiles(git.root, {
+      'cryptohome/cryptohome.cc': 'Line 4\nLine 5\n',
+    });
+
+    const gerrit = new Gerrit(
+      state.commentController,
+      vscode.window.createOutputChannel('gerrit'),
+      state.statusBarItem,
+      state.statusManager
+    );
+
+    spyOn(https, 'getOrThrow')
+      .withArgs(
+        'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments'
+      )
+      .and.returnValue(
+        Promise.resolve(apiString(SIMPLE_CHANGE_COMMENTS(commitId)))
+      );
+
+    await expectAsync(
+      gerrit.showComments(abs('cryptohome/cryptohome.cc'))
+    ).toBeResolved();
+
+    expect(state.commentController.createCommentThread).toHaveBeenCalledTimes(
+      1
+    );
+    const callData = state.commentController.createCommentThread.calls.first();
+    expect(callData.args[0].fsPath).toEqual(abs('cryptohome/cryptohome.cc'));
+    // The comment was on line 3 (1-based) and the first three lines were deleted.
+    // It should be placed on line 0 (0-based), but there is a bug.
+    expect(callData.args[1].start.line).toEqual(-1);
+    expect(callData.args[2][0].body).toEqual(
+      'Unresolved comment on the added line.'
+    );
+  });
+
   it('does not throw errors when the change is not in Gerrit', async () => {
     const git = new testing.Git(tempDir.path);
     await git.init();
