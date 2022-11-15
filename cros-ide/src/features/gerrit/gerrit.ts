@@ -245,7 +245,7 @@ class Gerrit {
    * to partition it into threads and by commit id. The data is then
    * stored in `this.partitionedThreads`.
    */
-  private async fetchComments(gitDir: string) {
+  private async fetchComments(gitDir: string): Promise<void> {
     const remote = await commonUtil.exec('git', ['remote', '-v'], {
       cwd: gitDir,
       logStdout: true,
@@ -256,13 +256,13 @@ class Gerrit {
         log: `'git remote' failed: ${remote}`,
         metrics: 'git remote failed',
       });
-      return undefined;
+      return;
     }
     if (!remote.stdout.includes('chromium.googlesource.com')) {
       this.outputChannel.appendLine(
         'Only public git repos are supported, so Gerrit comments will not be shown.'
       );
-      return undefined;
+      return;
     }
 
     const gitLogInfos = await git.readChangeIds(gitDir, this.outputChannel);
@@ -271,10 +271,10 @@ class Gerrit {
         log: `Failed to detect commits in ${gitDir}`,
         metrics: 'FetchComments failed to detect commits',
       });
-      return undefined;
+      return;
     }
     if (gitLogInfos.length === 0) {
-      return undefined;
+      return;
     }
 
     const partitionedThreads: [string, ChangeThreads][] = [];
