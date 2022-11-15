@@ -187,6 +187,9 @@ const languageToLintConfigs = new Map<string, LintConfig[]>([
             ? path.dirname(path.dirname(exePath))
             : undefined,
         env: (execPath: string) => goLintEnv(execPath),
+        // run_lint.sh exits with non-zero status when the file cannot be parsed,
+        // which happens often when the code is edited.
+        ignoreEmptyDiagnostics: true,
       },
     ],
   ],
