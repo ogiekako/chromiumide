@@ -11,7 +11,7 @@ import * as path from 'path';
 const CHROMIUMOS_REPO_CONFIG_RE =
   /^\s*url\s*=\s*(https:\/\/chrome-internal\.googlesource\.com\/chromeos\/manifest-internal|https:\/\/chromium\.googlesource\.com\/chromiumos\/manifest)(\.git)?\s*$/m;
 
-async function isChromiumosRoot(dir: string): Promise<boolean> {
+async function hasStandardManifest(dir: string): Promise<boolean> {
   const repoConfig = path.join(dir, '.repo/manifests.git/config');
   try {
     const content = await fs.promises.readFile(repoConfig, 'utf8');
@@ -20,6 +20,29 @@ async function isChromiumosRoot(dir: string): Promise<boolean> {
   } catch (_e) {
     return false;
   }
+}
+
+const WELL_KNOWN_FILES = ['.repo', 'chromite', 'src/platform2'];
+
+function hasAllWellKnownFiles(dir: string): boolean {
+  for (const p of WELL_KNOWN_FILES) {
+    const file = path.join(dir, p);
+    if (!fs.existsSync(file)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+async function isChromiumosRoot(dir: string): Promise<boolean> {
+  if (await hasStandardManifest(dir)) {
+    return true;
+  }
+  // The user might have an irregular manifest and the check above produce a
+  // false negative (b:259163795). The check below could produce a false
+  // positive if a non chromiumos repository happens to have all the well-known
+  // files, but it should be better than a false negative.
+  return hasAllWellKnownFiles(dir);
 }
 
 /**
