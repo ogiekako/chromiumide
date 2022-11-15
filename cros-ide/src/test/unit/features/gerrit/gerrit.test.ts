@@ -677,8 +677,8 @@ describe('Gerrit', () => {
     const callData = state.commentController.createCommentThread.calls.first();
     expect(callData.args[0].fsPath).toEqual(abs('cryptohome/cryptohome.cc'));
     // The comment was on line 3 (1-based) and the first three lines were deleted.
-    // It should be placed on line 0 (0-based), but there is a bug.
-    expect(callData.args[1].start.line).toEqual(-1);
+    // It should be placed on line 0 (0-based).
+    expect(callData.args[1].start.line).toEqual(0);
     expect(callData.args[2][0].body).toEqual(
       'Unresolved comment on the added line.'
     );

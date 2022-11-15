@@ -499,6 +499,15 @@ export function updateChangeComments(
           }
         }
       }
+      // Make sure we do not shift comments before the first line
+      // because it causes errors (lines beyond the end of file are fine though).
+      //
+      // Note, that line numbers are 1-based. The code that shifts comments within
+      // deleted hunks may put comments on line 0 (we use `<=` in case of unknown bugs),
+      // so we adjust `shift` so that `originalLine + shift == 1`.
+      if (thread.originalLine && thread.originalLine + thread.shift <= 0) {
+        thread.shift = -(thread.originalLine - 1);
+      }
     }
   }
 }
