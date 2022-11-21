@@ -73,7 +73,7 @@ const trackingIdReal = 'UA-221509619-2';
 
 const optionsGA = {
   hostname: 'www.google-analytics.com',
-  path: '/collect',
+  path: '/batch',
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -167,50 +167,63 @@ export class Analytics {
   }
 
   /**
-   * Creates query from event for Google Analytics measurement protocol, see
+   * Creates a batch query from event for Google Analytics measurement protocol, see
    * https://developers.google.com/analytics/devguides/collection/protocol/v1/devguide
    *
    * See go/cros-ide-metrics for the memo on what values are assigned to GA parameters.
    */
   private eventToQuery(event: Event, gitRepo: string | undefined): string {
-    const data: Record<string, string | number> = {
-      v: '1',
-      tid: this.trackingId,
-      cid: this.userId,
-      // Document: Git repository info.
-      dh: 'cros',
-      dp: '/' + (gitRepo ?? 'unknown'),
-      dt: gitRepo ?? 'unknown',
-      // User agent: OS + VSCode version.
-      ua: `${os.type()}-${vscode.env.appName}-${vscode.version}`,
-      // Custom dimensions.
-      cd1: os.type(),
-      cd2: vscode.env.appName,
-      cd3: vscode.version,
-      cd4: extensionVersion ?? 'unknown',
-      cd5: event.group,
+    const baseData = () => {
+      return {
+        v: '1',
+        tid: this.trackingId,
+        cid: this.userId,
+        // Document: Git repository info.
+        dh: 'cros',
+        dp: '/' + (gitRepo ?? 'unknown'),
+        dt: gitRepo ?? 'unknown',
+        // User agent: OS + VSCode version.
+        ua: `${os.type()}-${vscode.env.appName}-${vscode.version}`,
+        // Custom dimensions.
+        cd1: os.type(),
+        cd2: vscode.env.appName,
+        cd3: vscode.version,
+        cd4: extensionVersion ?? 'unknown',
+        cd5: event.group,
+      } as Record<string, string | number>;
     };
 
+    const queries: string[] = [];
     if (event.category === 'error') {
-      Object.assign(data, {
+      const data = Object.assign(baseData(), {
         t: 'exception',
         exd: `${event.group}: ${event.description}`,
       });
-    } else {
-      Object.assign(data, {
-        t: 'event',
-        ec: event.category,
-        ea: `${event.group}: ${event.action}`,
-      });
-      if (event.label !== undefined) {
-        data.el = event.label;
-      }
-      if (event.value !== undefined) {
-        data.ev = event.value;
-      }
+      queries.push(queryString.stringify(data));
     }
+    // For an error, we send an event not only an exception. If we only send
+    // exception hits we cannot see how many users are impacted per exception
+    // description because exception hits are not associated with sessions or
+    // users (b/25110142).
 
-    return queryString.stringify(data);
+    const description =
+      event.category === 'error' ? event.description : event.action;
+
+    const data = baseData();
+    Object.assign(data, {
+      t: 'event',
+      ec: event.category,
+      ea: `${event.group}: ${description}`,
+    });
+    if (event.category !== 'error' && event.label !== undefined) {
+      data.el = event.label;
+    }
+    if (event.category !== 'error' && event.value !== undefined) {
+      data.ev = event.value;
+    }
+    queries.push(queryString.stringify(data));
+
+    return queries.join('\n');
   }
 
   /**
