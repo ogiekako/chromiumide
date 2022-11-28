@@ -68,40 +68,40 @@ export class AddOwnedDeviceService {
   private sshConfigHostTemplate(
     config: DutConnectionConfig
   ): SshConfigHostEntry {
-    if (config.networkType === DutNetworkType.OFFICE) {
-      return {
-        Host: config.hostname,
-        Hostname:
-          config.networkType === DutNetworkType.OFFICE
-            ? config.ipAddress
-            : '127.0.0.1',
-        Port:
-          config.networkType === DutNetworkType.OFFICE
-            ? 22
-            : config.forwardedPort ?? undefined,
-        CheckHostIP: 'no',
-        ControlMaster: 'auto',
-        ControlPath: '/tmp/ssh-%r%h%p',
-        ControlPersist: '3600',
-        IdentitiesOnly: 'yes',
-        IdentityFile: this.testingRsaPath,
-        StrictHostKeyChecking: 'no',
-        User: 'root',
-        UserKnownHostsFile: '/dev/null',
-        VerifyHostKeyDNS: 'no',
-        ProxyCommand: 'corp-ssh-helper -dest4 %h %p', // corp-ssh-helper is installed by default on gLinux and gMac
-        // HostKeyAlias
-      };
-    } else {
-      return {
-        Host: config.hostname,
-        Hostname: '127.0.0.1',
-        Port: config.forwardedPort ?? undefined,
-        User: 'root',
-        IdentitiesOnly: 'yes',
-        IdentityFile: '%d/.ssh/testing_rsa',
-        StrictHostKeyChecking: 'no',
-      };
+    switch (config.networkType) {
+      case DutNetworkType.LAB:
+      case DutNetworkType.SHORTLEASH:
+        return {
+          Host: config.hostname,
+          Hostname: config.ipAddress,
+          Port: 22,
+          CheckHostIP: 'no',
+          ControlMaster: 'auto',
+          ControlPath: '/tmp/ssh-%r%h%p',
+          ControlPersist: '3600',
+          IdentitiesOnly: 'yes',
+          IdentityFile: this.testingRsaPath,
+          StrictHostKeyChecking: 'no',
+          User: 'root',
+          UserKnownHostsFile: '/dev/null',
+          VerifyHostKeyDNS: 'no',
+          ProxyCommand:
+            config.networkType === DutNetworkType.LAB
+              ? 'corp-ssh-helper -dest4 %h %p' // corp-ssh-helper is installed by default on gLinux and gMac
+              : undefined,
+        };
+      case DutNetworkType.HOME:
+        return {
+          Host: config.hostname,
+          Hostname: '127.0.0.1',
+          Port: config.forwardedPort ?? undefined,
+          User: 'root',
+          IdentitiesOnly: 'yes',
+          IdentityFile: '%d/.ssh/testing_rsa',
+          StrictHostKeyChecking: 'no',
+        };
+      default:
+        throw new Error('Network type not implemented');
     }
   }
 }

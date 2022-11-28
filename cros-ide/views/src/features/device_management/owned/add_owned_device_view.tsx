@@ -8,6 +8,7 @@ import {useEffect, useState} from 'react';
 import BusinessIcon from '@mui/icons-material/Business';
 import HomeIcon from '@mui/icons-material/Home';
 import CheckIcon from '@mui/icons-material/Check';
+import CableIcon from '@mui/icons-material/Cable';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import {
@@ -86,7 +87,7 @@ export function AddOwnedDeviceView(props: {
 
   const [connectionConfig, setConnectionConfig] =
     useState<model.DutConnectionConfig>({
-      networkType: model.DutNetworkType.OFFICE,
+      networkType: model.DutNetworkType.LAB,
       ipAddress: '',
       forwardedPort: DEFAULT_PORT,
       hostname: '',
@@ -164,7 +165,13 @@ export function AddOwnedDeviceView(props: {
   };
 
   const stepsByNetworkType = {
-    [model.DutNetworkType.OFFICE]: [
+    [model.DutNetworkType.LAB]: [
+      networkTypeStep,
+      ipAddressStep,
+      hostnameStep,
+      connectionTestStep,
+    ],
+    [model.DutNetworkType.SHORTLEASH]: [
       networkTypeStep,
       ipAddressStep,
       hostnameStep,
@@ -236,8 +243,10 @@ function NetworkTypeStep(props: AddOwnedDeviceStepProps) {
     props.setConnectionConfig({...props.connectionConfig, networkType: nt});
   };
   const handleKeydown = (e: any) => {
-    if (e.key === 'o') {
-      handleNetworkType(model.DutNetworkType.OFFICE);
+    if (e.key === 'l') {
+      handleNetworkType(model.DutNetworkType.LAB);
+    } else if (e.key === 's') {
+      handleNetworkType(model.DutNetworkType.SHORTLEASH);
     } else if (e.key === 'h') {
       handleNetworkType(model.DutNetworkType.HOME);
     }
@@ -248,7 +257,7 @@ function NetworkTypeStep(props: AddOwnedDeviceStepProps) {
   return (
     <div tabIndex={-1} onKeyDown={handleKeydown} ref={elem => elem?.focus()}>
       <Stack spacing={2} style={centerStyle}>
-        <p>Where is your DUT (device under test)?</p>
+        <p>To which network is your DUT (device under test) connected?</p>
         <ToggleButtonGroup
           exclusive
           value={props.connectionConfig.networkType}
@@ -259,11 +268,19 @@ function NetworkTypeStep(props: AddOwnedDeviceStepProps) {
           }}
         >
           <ToggleButton
-            value={model.DutNetworkType.OFFICE}
+            value={model.DutNetworkType.LAB}
             title="Your DUT (device under test) is connected to the office lab network"
           >
             <BusinessIcon />
-            Office
+            Lab
+          </ToggleButton>
+
+          <ToggleButton
+            value={model.DutNetworkType.SHORTLEASH}
+            title="Your DUT (device under test) is connected to your workstation via Shortleash"
+          >
+            <CableIcon />
+            Shortleash
           </ToggleButton>
 
           <ToggleButton

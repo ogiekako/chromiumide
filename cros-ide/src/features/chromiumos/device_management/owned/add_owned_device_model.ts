@@ -3,7 +3,8 @@
 // found in the LICENSE file.
 
 export enum DutNetworkType {
-  OFFICE,
+  LAB,
+  SHORTLEASH,
   HOME,
   P2P,
 }

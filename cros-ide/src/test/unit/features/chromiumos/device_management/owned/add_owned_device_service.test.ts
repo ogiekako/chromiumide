@@ -40,7 +40,7 @@ Host preexisting-entry
   Port 4242
 `;
     const dutConnectionConfig: DutConnectionConfig = {
-      networkType: DutNetworkType.OFFICE,
+      networkType: DutNetworkType.LAB,
       ipAddress: '1.2.3.4',
       hostname: 'FakeDut',
       forwardedPort: null,
