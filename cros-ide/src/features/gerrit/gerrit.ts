@@ -596,7 +596,7 @@ export class Thread {
 
   /** A thread is unresolved if its last comment is unresolved. */
   get unresolved() {
-    // Unresolved can be undefined according the the API documentation,
+    // Unresolved can be undefined according to the API documentation,
     // but Gerrit always sent it on the changes the we inspected.
     return this.comments[this.comments.length - 1].unresolved;
   }
