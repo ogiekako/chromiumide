@@ -45,9 +45,21 @@ export type CommentInfo = {
  * https://gerrit-review.googlesource.com/Documentation/rest-api-accounts.html#account-info
  */
 export type AccountInfo = {
-  // TODO(b:216048068): name is optional in the API
-  readonly name: string;
+  readonly _account_id: number;
+  readonly name?: string;
+  readonly display_name?: string;
+  readonly email?: string;
+  readonly status?: string;
 };
+
+/**
+ * Turn api.AccountInfo into the name string
+ */
+export function accountName(a: AccountInfo): string {
+  if (a.display_name) return a.display_name;
+  if (a.name) return a.name;
+  return 'id' + a._account_id;
+}
 
 /**
  * https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#comment-range

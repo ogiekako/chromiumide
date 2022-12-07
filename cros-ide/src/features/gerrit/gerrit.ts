@@ -682,10 +682,13 @@ function formatGerritTimestamp(timestamp: string) {
   }
 }
 
+/**
+ * Turn api.CommentInfo into vscode.Comment
+ */
 function toVscodeComment(c: api.CommentInfo): vscode.Comment {
   return {
     author: {
-      name: c.author.name,
+      name: api.accountName(c.author),
     },
     label: formatGerritTimestamp(c.updated),
     body: new vscode.MarkdownString(c.message),
