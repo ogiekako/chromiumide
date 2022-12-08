@@ -20,6 +20,7 @@ export {Position} from './position';
 export {Range} from './range';
 export {StatusBarAlignment, StatusBarItem} from './status_bar';
 export {TestRunProfileKind} from './test_run_profile_kind';
+export {TextEdit} from './text_edit';
 export {Uri} from './uri';
 
 export class TreeItem {}
