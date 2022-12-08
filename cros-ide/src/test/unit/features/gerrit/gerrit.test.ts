@@ -5,6 +5,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as api from '../../../../features/gerrit/api';
+import * as auth from '../../../../features/gerrit/auth';
 import {TEST_ONLY} from '../../../../features/gerrit/gerrit';
 import * as https from '../../../../features/gerrit/https';
 import * as metrics from '../../../../features/metrics/metrics';
@@ -193,6 +194,14 @@ const TWO_PATCHSETS_CHANGE_COMMENTS = (
   };
 };
 
+const GITCOOKIES_PATH = path.join(
+  __dirname,
+  '../../../../../src/test/testdata/gerrit/gitcookies'
+);
+const AUTH_COOKIE =
+  'o=git-ymat.google.com=0123abc,o=git-ymat.google.com=4567def';
+const AUTH_OPTIONS = {headers: {cookie: AUTH_COOKIE}};
+
 describe('Gerrit', () => {
   const tempDir = testing.tempDir();
 
@@ -202,6 +211,7 @@ describe('Gerrit', () => {
 
   beforeEach(() => {
     spyOn(metrics, 'send');
+    spyOn(auth, 'getGitcookiesPath').and.resolveTo(GITCOOKIES_PATH);
   });
 
   const state = testing.cleanState(() => {
@@ -260,11 +270,10 @@ describe('Gerrit', () => {
 
     spyOn(https, 'getOrThrow')
       .withArgs(
-        'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments'
+        'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments',
+        AUTH_OPTIONS
       )
-      .and.returnValue(
-        Promise.resolve(apiString(SIMPLE_CHANGE_COMMENTS(commitId)))
-      );
+      .and.resolveTo(apiString(SIMPLE_CHANGE_COMMENTS(commitId)));
 
     await expectAsync(
       gerrit.showComments(abs('cryptohome/cryptohome.cc'))
@@ -366,11 +375,10 @@ describe('Gerrit', () => {
 
     spyOn(https, 'getOrThrow')
       .withArgs(
-        'https://chromium-review.googlesource.com/changes/Iba73f448e0da2a814f7303d1456049bb3554676e/comments'
+        'https://chromium-review.googlesource.com/changes/Iba73f448e0da2a814f7303d1456049bb3554676e/comments',
+        AUTH_OPTIONS
       )
-      .and.returnValue(
-        Promise.resolve(apiString(SPECIAL_COMMENT_TYPES(reviewCommitId)))
-      );
+      .and.resolveTo(apiString(SPECIAL_COMMENT_TYPES(reviewCommitId)));
 
     await expectAsync(
       gerrit.showComments(abs('cryptohome/crypto.h'))
@@ -488,12 +496,11 @@ describe('Gerrit', () => {
 
     spyOn(https, 'getOrThrow')
       .withArgs(
-        `https://chromium-review.googlesource.com/changes/${changeId}/comments`
+        `https://chromium-review.googlesource.com/changes/${changeId}/comments`,
+        AUTH_OPTIONS
       )
-      .and.returnValue(
-        Promise.resolve(
-          apiString(TWO_PATCHSETS_CHANGE_COMMENTS(commitId1, commitId2))
-        )
+      .and.resolveTo(
+        apiString(TWO_PATCHSETS_CHANGE_COMMENTS(commitId1, commitId2))
       );
 
     await expectAsync(gerrit.showComments(fileName)).toBeResolved();
@@ -575,26 +582,24 @@ describe('Gerrit', () => {
       'Second uploaded\nChange-Id: Iecc86ab5691709978e6b171795c95e538aec1a47'
     );
 
-    spyOn(https, 'getOrThrow')
-      .withArgs(
-        'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments'
-      )
-      .and.returnValue(
-        Promise.resolve(apiString(SIMPLE_CHANGE_COMMENTS(commitId1)))
-      )
-      .withArgs(
-        'https://chromium-review.googlesource.com/changes/Iecc86ab5691709978e6b171795c95e538aec1a47/comments'
-      )
-      .and.returnValue(
-        Promise.resolve(apiString(SECOND_COMMIT_IN_CHAIN(commitId2)))
-      );
-
     const gerrit = new Gerrit(
       state.commentController,
       vscode.window.createOutputChannel('gerrit'),
       state.statusBarItem,
       new bgTaskStatus.TEST_ONLY.StatusManagerImpl()
     );
+
+    spyOn(https, 'getOrThrow')
+      .withArgs(
+        'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments',
+        AUTH_OPTIONS
+      )
+      .and.resolveTo(apiString(SIMPLE_CHANGE_COMMENTS(commitId1)))
+      .withArgs(
+        'https://chromium-review.googlesource.com/changes/Iecc86ab5691709978e6b171795c95e538aec1a47/comments',
+        AUTH_OPTIONS
+      )
+      .and.resolveTo(apiString(SECOND_COMMIT_IN_CHAIN(commitId2)));
 
     await expectAsync(
       gerrit.showComments(abs('cryptohome/cryptohome.cc'))
@@ -661,11 +666,10 @@ describe('Gerrit', () => {
 
     spyOn(https, 'getOrThrow')
       .withArgs(
-        'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments'
+        'https://chromium-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments',
+        AUTH_OPTIONS
       )
-      .and.returnValue(
-        Promise.resolve(apiString(SIMPLE_CHANGE_COMMENTS(commitId)))
-      );
+      .and.resolveTo(apiString(SIMPLE_CHANGE_COMMENTS(commitId)));
 
     await expectAsync(
       gerrit.showComments(abs('cryptohome/cryptohome.cc'))
@@ -703,9 +707,10 @@ describe('Gerrit', () => {
 
     spyOn(https, 'getOrThrow')
       .withArgs(
-        'https://chromium-review.googlesource.com/changes/Iaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/comments'
+        'https://chromium-review.googlesource.com/changes/Iaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/comments',
+        AUTH_OPTIONS
       )
-      .and.returnValue(Promise.resolve(undefined));
+      .and.resolveTo(undefined);
 
     await expectAsync(
       gerrit.showComments(abs('cryptohome/cryptohome.cc'))
@@ -724,14 +729,21 @@ describe('Gerrit', () => {
     );
   });
 
-  it('does not retrieve comments for internal repos', async () => {
+  it('displays a comment for an internal repo', async () => {
+    // Create a repo with two commits:
+    //   1) The first simulates cros-internal/main.
+    //   2) The second is the commit on which Gerrit review is taking place.
     const git = new testing.Git(tempDir.path);
-    await git.init({internal: true});
+    await git.init({repoId: 'cros-internal'});
     await git.commit('First');
-    await git.checkout('cros/main', {createBranch: true});
+    await git.checkout('cros-internal/main', {createBranch: true});
     await git.checkout('main');
-    await git.commit(
-      'Local commit\nChange-Id: I23f50ecfe44ee28972aa640e1fa82ceabcc706a8'
+    await testing.putFiles(git.root, {
+      'cryptohome/cryptohome.cc': 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n',
+    });
+    await git.addAll();
+    const commitId = await git.commit(
+      'Second\nChange-Id: I23f50ecfe44ee28972aa640e1fa82ceabcc706a8'
     );
 
     const gerrit = new Gerrit(
@@ -741,11 +753,41 @@ describe('Gerrit', () => {
       state.statusManager
     );
 
+    spyOn(https, 'getOrThrow')
+      .withArgs(
+        'https://chrome-internal-review.googlesource.com/changes/I23f50ecfe44ee28972aa640e1fa82ceabcc706a8/comments',
+        AUTH_OPTIONS
+      )
+      .and.resolveTo(apiString(SIMPLE_CHANGE_COMMENTS(commitId)));
+
     await expectAsync(
       gerrit.showComments(abs('cryptohome/cryptohome.cc'))
     ).toBeResolved();
 
-    expect(state.commentController.createCommentThread).not.toHaveBeenCalled();
+    expect(state.commentController.createCommentThread).toHaveBeenCalledTimes(
+      1
+    );
+    const callData = state.commentController.createCommentThread.calls.first();
+    expect(callData.args[0].fsPath).toEqual(abs('cryptohome/cryptohome.cc'));
+    expect(callData.args[1].start.line).toEqual(2);
+    expect(callData.args[2][0].body).toEqual(
+      new vscode.MarkdownString('Unresolved comment on the added line.')
+    );
+
+    expect(state.statusBarItem.show).toHaveBeenCalled();
+    expect(state.statusBarItem.hide).not.toHaveBeenCalled();
+    expect(state.statusBarItem.text).toEqual('$(comment) 1');
+    expect(metrics.send).toHaveBeenCalledOnceWith({
+      category: 'background',
+      group: 'gerrit',
+      action: 'update comments',
+      value: 1,
+    });
+
+    expect(state.statusManager.setStatus).toHaveBeenCalledOnceWith(
+      'Gerrit',
+      bgTaskStatus.TaskStatus.OK
+    );
   });
 
   it('does not throw errors when repositioning is triggered outside a Git repo', async () => {
@@ -781,15 +823,14 @@ describe('Gerrit', () => {
 
     spyOn(https, 'getOrThrow')
       .withArgs(
-        'https://chromium-review.googlesource.com/changes/Iaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa12345/comments'
+        'https://chromium-review.googlesource.com/changes/Iaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa12345/comments',
+        AUTH_OPTIONS
       )
-      .and.returnValue(
-        Promise.resolve(
-          apiString(
-            TWO_PATCHSETS_CHANGE_COMMENTS(
-              commitId,
-              '1111111111111111111111111111111111111111'
-            )
+      .and.resolveTo(
+        apiString(
+          TWO_PATCHSETS_CHANGE_COMMENTS(
+            commitId,
+            '1111111111111111111111111111111111111111'
           )
         )
       );

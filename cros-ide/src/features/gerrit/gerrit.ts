@@ -4,6 +4,7 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import * as fs from 'fs/promises';
 import * as dateFns from 'date-fns';
 import * as commonUtil from '../../common/common_util';
 import * as services from '../../services';
@@ -49,18 +50,19 @@ export function activate(
       vscode.commands.registerCommand(
         'cros-ide.gerrit.internal.testAuth',
         async () => {
-          const cookie = await auth.readGitcookies(outputChannel);
+          const authCookie = await gerrit.readAuthCookie();
           // Fetch from some internal Gerrit change
-          const str = await https.getOrThrow(
-            'https://chrome-internal-review.googlesource.com/changes/5103048/comments',
-            {headers: {cookie}}
+          const out = await gerrit.getOrThrow(
+            'cros-internal',
+            'changes/I6743130cd3a84635a66f54f81fa839060f3fcb39/comments',
+            authCookie
           );
           outputChannel.appendLine(
-            '[Internal] REST output for the Gerrit auth test:' + str
+            '[Internal] Output for the Gerrit auth test:\n' + out
           );
-          // Auth succeeded if the REST returned a valid JSON
+          // Judge that the auth has succeeded if the output is a valid JSON
           void vscode.window.showInformationMessage(
-            str && JSON.parse(str.split('\n')[1])
+            out && JSON.parse(out.split('\n')[1])
               ? 'Auth succeeded!'
               : 'Auth failed!'
           );
@@ -228,11 +230,41 @@ class Gerrit {
       }
     } catch (err) {
       this.showErrorMessage({
-        log: `Failed to add Gerrit comments: ${err}`,
-        metrics: 'Failed to add Gerrit comments (top-level error)',
+        log: `Failed to fetch Gerrit comments: ${err}`,
+        metrics: 'Failed to fetch Gerrit comments (top-level error)',
       });
       return;
     }
+  }
+
+  /** Execute git remote to get RepoId */
+  async getRepoId(gitDir: string): Promise<git.RepoId | undefined> {
+    const xres = await commonUtil.exec('git', ['remote'], {
+      cwd: gitDir,
+      logStdout: true,
+      logger: this.outputChannel,
+    });
+    if (xres instanceof Error) {
+      this.showErrorMessage({
+        log: `'git remote' failed: ${xres}`,
+        metrics: 'git remote failed',
+      });
+      return;
+    }
+    const repoId = xres.stdout.trimEnd();
+    if (repoId !== 'cros' && repoId !== 'cros-internal') {
+      this.showErrorMessage({
+        log: `Unknown remote repo detected: ${repoId}`,
+        metrics: 'unknown git remote result',
+      });
+      return;
+    }
+    this.outputChannel.appendLine(
+      (repoId === 'cros' ? 'Public' : 'Internal') +
+        ' remote repo detected at ' +
+        gitDir
+    );
+    return repoId;
   }
 
   collapseAllComments() {
@@ -274,26 +306,14 @@ class Gerrit {
    * stored in `this.partitionedThreads`.
    */
   private async fetchComments(gitDir: string): Promise<void> {
-    const remote = await commonUtil.exec('git', ['remote', '-v'], {
-      cwd: gitDir,
-      logStdout: true,
-      logger: this.outputChannel,
-    });
-    if (remote instanceof Error) {
-      this.showErrorMessage({
-        log: `'git remote' failed: ${remote}`,
-        metrics: 'git remote failed',
-      });
-      return;
-    }
-    if (!remote.stdout.includes('chromium.googlesource.com')) {
-      this.outputChannel.appendLine(
-        'Only public git repos are supported, so Gerrit comments will not be shown.'
-      );
-      return;
-    }
-
-    const gitLogInfos = await git.readChangeIds(gitDir, this.outputChannel);
+    const authCookie = await this.readAuthCookie();
+    const repoId = await this.getRepoId(gitDir);
+    if (repoId === undefined) return;
+    const gitLogInfos = await git.readChangeIds(
+      gitDir,
+      repoId + '/main..HEAD',
+      this.outputChannel
+    );
     if (gitLogInfos instanceof Error) {
       this.showErrorMessage({
         log: `Failed to detect commits in ${gitDir}`,
@@ -309,8 +329,8 @@ class Gerrit {
 
     for (const gitLogInfo of gitLogInfos) {
       const gerritChangeId = gitLogInfo.gerritChangeId;
-      const commentsUrl = `https://chromium-review.googlesource.com/changes/${gerritChangeId}/comments`;
-      const commentsContent = await https.getOrThrow(commentsUrl);
+      const path = `changes/${gerritChangeId}/comments`;
+      const commentsContent = await this.getOrThrow(repoId, path, authCookie);
       if (!commentsContent) {
         this.outputChannel.appendLine(`Not found on Gerrit: ${gerritChangeId}`);
         continue;
@@ -327,6 +347,39 @@ class Gerrit {
     }
 
     this.partitionedThreads = partitionedThreads;
+  }
+
+  /** Get access wrapper */
+  async getOrThrow(
+    repoId: git.RepoId,
+    path: string,
+    authCookie?: string
+  ): Promise<string | undefined> {
+    const url = git.repoIdToGerritUrl(repoId) + '/' + path;
+    const options =
+      authCookie !== undefined ? {headers: {cookie: authCookie}} : undefined;
+    return https.getOrThrow(url, options);
+  }
+
+  /** Read gitcookies */
+  async readAuthCookie(): Promise<string | undefined> {
+    const path = await auth.getGitcookiesPath(this.outputChannel);
+    try {
+      const str = await fs.readFile(path, {encoding: 'utf8'});
+      return auth.parseGitcookies(str);
+    } catch (err) {
+      if ((err as {code?: unknown}).code === 'ENOENT') {
+        const msg =
+          'The gitcookies file for Gerrit auth was not found at ' + path;
+        this.showErrorMessage(msg);
+      } else {
+        let msg =
+          'Unknown error in reading the gitcookies file for Gerrit auth at ' +
+          path;
+        if (err instanceof Object) msg += ': ' + err.toString();
+        this.showErrorMessage(msg);
+      }
+    }
   }
 
   /** Returns Git commit ids which are available in the local repo. */

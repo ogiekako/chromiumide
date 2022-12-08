@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import * as commonUtil from '../../common/common_util';
@@ -48,23 +47,4 @@ export function parseGitcookies(gitcookies: string): string {
   }
   // Return a comma-separated string
   return cookies.join(',');
-}
-
-/** Read the gitcookies */
-export async function readGitcookies(
-  outputChannel: vscode.OutputChannel
-): Promise<string | undefined> {
-  const path = await getGitcookiesPath(outputChannel);
-  try {
-    const str = await fs.readFile(path, {encoding: 'utf-8'});
-    return parseGitcookies(str);
-  } catch (err) {
-    if ((err as {code?: unknown}).code === 'ENOENT') {
-      const str =
-        'The gitcookies file for Gerrit auth was not found at ' + path;
-      outputChannel.appendLine(str);
-      void vscode.window.showInformationMessage(str);
-    }
-    return undefined;
-  }
 }

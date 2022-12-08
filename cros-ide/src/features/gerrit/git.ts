@@ -5,6 +5,16 @@
 import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
 
+/** Kind of a Git remote repository */
+export type RepoId = 'cros' | 'cros-internal';
+
+/** Get Gerrit URL for RepoId */
+export function repoIdToGerritUrl(repoId: RepoId): string {
+  return repoId === 'cros'
+    ? 'https://chromium-review.googlesource.com'
+    : 'https://chrome-internal-review.googlesource.com';
+}
+
 export type Hunks = {
   [filePath: string]: Hunk[];
 };
@@ -131,16 +141,17 @@ export type GitLogInfo = {
 };
 
 /**
- * Extracts change-ids from commit messages between cros/main to HEAD.
+ * Extracts change-ids from commit messages in the range.
  *
  * The ids are ordered from new to old. If the HEAD is already merged,
  * the result will be an empty array.
  */
 export async function readChangeIds(
   dir: string,
+  range: string,
   logger?: vscode.OutputChannel
 ): Promise<GitLogInfo[] | Error> {
-  const branchLog = await commonUtil.exec('git', ['log', 'cros/main..HEAD'], {
+  const branchLog = await commonUtil.exec('git', ['log', range], {
     cwd: dir,
     logger,
   });

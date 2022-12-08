@@ -13,8 +13,9 @@ cros-ide/tsconfig.json
 cros-ide/views/tsconfig.json
 cros-ide/.vscode/*.json
 
-# testdata should match real files, including their formatting
-scripts/compdb_no_chroot_testdata/*/*.json
-
 # Comments are allowed in js-green-licences.json.
 cros-ide/js-green-licenses.json
+
+# testdata should match real files, including their formatting
+cros-ide/src/test/testdata/
+scripts/compdb_no_chroot_testdata/*/*.json

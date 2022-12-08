@@ -4,6 +4,7 @@
 
 import * as fs from 'fs';
 import * as commonUtil from '../../common/common_util';
+import * as git from '../../features/gerrit/git';
 
 /**
  * For operating on Git repos created in test (which typically live in /tmp).
@@ -14,15 +15,11 @@ export class Git {
   constructor(readonly root: string) {}
 
   /** Creates the root directory and runs `git init`. */
-  async init(opts?: {internal: boolean}) {
+  async init(opts?: {repoId?: git.RepoId}) {
     await fs.promises.mkdir(this.root, {recursive: true});
     await commonUtil.execOrThrow('git', ['init'], {cwd: this.root});
-    const remote = opts?.internal
-      ? [
-          'cros-internal',
-          'https://chrome-internal.googlesource.com/chromeos/internal-project',
-        ]
-      : ['cros', 'https://chromium.googlesource.com/chromiumos/chromite'];
+    const repoId = opts?.repoId ?? 'cros';
+    const remote = [repoId, git.repoIdToGerritUrl(repoId)];
     await commonUtil.execOrThrow('git', ['remote', 'add', ...remote], {
       cwd: this.root,
     });

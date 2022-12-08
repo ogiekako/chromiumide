@@ -12,11 +12,11 @@ import * as https from 'https';
  */
 export async function getOrThrow(
   url: string,
-  optionsForTesting: https.RequestOptions = {}
+  options: https.RequestOptions = {}
 ): Promise<string | undefined> {
   return new Promise((resolve, reject) => {
     https
-      .get(url, optionsForTesting, res => {
+      .get(url, options, res => {
         if (res.statusCode === 404) {
           resolve(undefined);
         }
