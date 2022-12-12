@@ -86,6 +86,7 @@ type FeatureGroup =
   | 'cppxrefs'
   | 'debugging'
   | 'device'
+  | 'format'
   | 'gerrit'
   | 'idestatus'
   | 'lint'

@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
 import * as ideUtil from '../../ide_util';
 import {StatusManager, TaskStatus} from '../../ui/bg_task_status';
+import * as metrics from '../../features/metrics/metrics';
 
 // Task name in the status manager.
 const FORMATTER = 'Formatter';
@@ -91,6 +92,11 @@ class CrosFormat implements vscode.DocumentFormattingEditProvider {
     if (formatterOutput instanceof Error) {
       this.outputChannel.appendLine(formatterOutput.message);
       this.statusManager.setStatus(FORMATTER, TaskStatus.ERROR);
+      metrics.send({
+        category: 'error',
+        group: 'format',
+        description: 'call to cros format failed',
+      });
       return undefined;
     }
 
@@ -103,6 +109,13 @@ class CrosFormat implements vscode.DocumentFormattingEditProvider {
       // 1 means the file required formatting
       this.outputChannel.appendLine('file required formatting');
       this.statusManager.setStatus(FORMATTER, TaskStatus.OK);
+      // Depending on how formatting is called it can be interactive
+      // (selected from the command palette) or background (format on save).
+      metrics.send({
+        category: 'background',
+        group: 'format',
+        action: 'cros format',
+      });
       const wholeFileRange = new vscode.Range(
         document.positionAt(0),
         document.positionAt(document.getText().length)
@@ -114,6 +127,11 @@ class CrosFormat implements vscode.DocumentFormattingEditProvider {
       // no exit status.
       this.outputChannel.appendLine(formatterOutput.stderr);
       this.statusManager.setStatus(FORMATTER, TaskStatus.ERROR);
+      metrics.send({
+        category: 'error',
+        group: 'format',
+        description: 'cros format returned error',
+      });
       return undefined;
     }
   }

@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../../common/common_util';
 import {TEST_ONLY} from '../../../../features/chromiumos/cros_format';
+import * as metrics from '../../../../features/metrics/metrics';
 import {StatusManager, TaskStatus} from '../../../../ui/bg_task_status';
 import * as testing from '../../../testing';
 import {FakeTextDocument} from '../../../testing/fakes';
@@ -29,6 +30,10 @@ describe('Cros format', () => {
     };
   });
 
+  beforeEach(() => {
+    spyOn(metrics, 'send');
+  });
+
   it('shows error when the command fails (execution error)', async () => {
     spyOn(commonUtil, 'exec').and.resolveTo(new Error());
 
@@ -40,6 +45,11 @@ describe('Cros format', () => {
       'Formatter',
       TaskStatus.ERROR
     );
+    expect(metrics.send).toHaveBeenCalledOnceWith({
+      category: 'error',
+      group: 'format',
+      description: 'call to cros format failed',
+    });
   });
 
   it('shows error when the command fails (exit status 127)', async () => {
@@ -58,6 +68,11 @@ describe('Cros format', () => {
       'Formatter',
       TaskStatus.ERROR
     );
+    expect(metrics.send).toHaveBeenCalledOnceWith({
+      category: 'error',
+      group: 'format',
+      description: 'cros format returned error',
+    });
   });
 
   it('does not format code that is already formatted correctly', async () => {
@@ -77,6 +92,7 @@ describe('Cros format', () => {
       'Formatter',
       TaskStatus.OK
     );
+    expect(metrics.send).not.toHaveBeenCalled();
   });
 
   it('formats code', async () => {
@@ -97,6 +113,11 @@ describe('Cros format', () => {
       'Formatter',
       TaskStatus.OK
     );
+    expect(metrics.send).toHaveBeenCalledOnceWith({
+      category: 'background',
+      group: 'format',
+      action: 'cros format',
+    });
   });
 
   it('does not format files outside CrOS chroot', async () => {
@@ -108,5 +129,6 @@ describe('Cros format', () => {
 
     expect(commonUtil.exec).not.toHaveBeenCalled();
     expect(edits).toBeUndefined();
+    expect(metrics.send).not.toHaveBeenCalled();
   });
 });
