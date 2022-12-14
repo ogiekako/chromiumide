@@ -29,6 +29,9 @@ import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied
 import * as colors from '@mui/material/colors';
 import * as model from '../../../../src/features/chromiumos/device_management/flash/flash_device_model';
 import * as ReactPanelHelper from '../../react/common/react_panel_helper';
+import * as buildModel from '../../../../src/features/chromiumos/device_management/builds/build_model';
+import {BuildsBrowserState} from '../../../../src/features/chromiumos/device_management/builds/browser/builds_browser_model';
+import {BuildsBrowser} from './builds_browser';
 
 /** The first n FLASH_FLAGS that will be visible without expanding "More..." */
 const NUM_POPULAR_FLAGS = 4;
@@ -56,6 +59,25 @@ export function FlashDeviceView(props: {state: model.FlashDeviceViewState}) {
     setState(newState);
   };
 
+  React.useEffect(() => {
+    window.addEventListener('message', event => {
+      const message = event.data as model.UpdateBuildsBrowserState;
+      switch (message.command) {
+        case 'UpdateBuildsBrowserState':
+          setState({
+            ...state,
+            buildsBrowserState: {
+              ...message.state,
+              builds: message.state.builds.map(buildModel.fixParsedBuildInfo),
+            },
+          });
+          break;
+      }
+    });
+
+    vscodeApi.postMessage({command: 'LoadBuilds'} as model.LoadBuilds);
+  }, []);
+
   return <Container>{StepContents(state, handleStateChange)}</Container>;
 }
 
@@ -63,6 +85,17 @@ function StepContents(
   state: model.FlashDeviceViewState,
   handleStateChange: (newState: model.FlashDeviceViewState) => void
 ) {
+  const handleBuildsBrowserStateChange = (newState: BuildsBrowserState) => {
+    handleStateChange({...state, buildsBrowserState: newState});
+  };
+  const handleBuildSelected = (buildInfo: buildModel.PrebuildInfo) => {
+    handleStateChange({
+      ...state,
+      buildInfo: buildInfo,
+      step: model.FlashDeviceStep.FLASH_CONFIRMATION,
+    });
+  };
+
   switch (state.step) {
     case model.FlashDeviceStep.HIGH_LEVEL_BUILD_SELECTION:
       return (
@@ -72,7 +105,13 @@ function StepContents(
         />
       );
     case model.FlashDeviceStep.BUILD_BROWSER:
-      return <p>Build browser not yet implemented.</p>;
+      return (
+        <BuildsBrowser
+          state={state.buildsBrowserState}
+          setState={handleBuildsBrowserStateChange}
+          onBuildChosen={handleBuildSelected}
+        />
+      );
     case model.FlashDeviceStep.FLASH_CONFIRMATION:
       return (
         <FlashConfirmationStep state={state} setState={handleStateChange} />
@@ -94,7 +133,7 @@ function HighLevelBuildSelectionStep(props: {
   ) => {
     handleBuildSelectionType(Number(event.target.value));
   };
-  const handleBuildChannel = (v: model.BuildChannel) => {
+  const handleBuildChannel = (v: buildModel.BuildChannel) => {
     props.setState({...props.state, buildChannel: v});
   };
   const handleNext = () => {
@@ -116,7 +155,7 @@ function HighLevelBuildSelectionStep(props: {
   const handleCancel = () => {
     vscodeApi.postMessage({command: 'close'});
   };
-  const handleKeydown = (e: any) => {
+  const handleKeydown = (e: React.KeyboardEvent) => {
     if (e.key === 'c') {
       handleBuildChannel('canary');
     } else if (e.key === 'd') {
@@ -357,12 +396,27 @@ function BuildVersionInfo(props: {
   state: model.FlashDeviceViewState;
   setState: (newState: model.FlashDeviceViewState) => void;
 }) {
-  const labelColWidth = 2;
+  const labelColWidth = 3;
   const valueColWidth = 12 - labelColWidth;
-  const buildVersionInfo =
+
+  if (
     props.state.buildSelectionType ===
-    model.BuildSelectionType.LATEST_OF_CHANNEL ? (
-      <>
+    model.BuildSelectionType.LATEST_OF_CHANNEL
+  ) {
+    return (
+      <Grid container spacing={1}>
+        <Grid
+          item
+          xs={labelColWidth}
+          style={{display: 'flex', justifyContent: 'flex-end'}}
+        >
+          <Typography>
+            <b>Channel:</b>
+          </Typography>
+        </Grid>
+        <Grid item xs={valueColWidth}>
+          <Typography>{props.state.buildChannel}</Typography>
+        </Grid>{' '}
         <Grid
           item
           xs={labelColWidth}
@@ -375,10 +429,30 @@ function BuildVersionInfo(props: {
         <Grid item xs={valueColWidth}>
           <Typography>(Latest)</Typography>
         </Grid>
-      </>
-    ) : (
-      <>
-        <Grid item xs={labelColWidth}>
+      </Grid>
+    );
+  } else {
+    return (
+      <Grid container spacing={1}>
+        <Grid
+          item
+          xs={labelColWidth}
+          style={{display: 'flex', justifyContent: 'flex-end'}}
+        >
+          <Typography>
+            <b>Channel:</b>
+          </Typography>
+        </Grid>
+        <Grid item xs={valueColWidth}>
+          <Typography>
+            {props.state.buildInfo?.buildChannel?.toString()}
+          </Typography>
+        </Grid>{' '}
+        <Grid
+          item
+          xs={labelColWidth}
+          style={{display: 'flex', justifyContent: 'flex-end'}}
+        >
           <Typography>
             <b>Chrome OS:</b>
           </Typography>
@@ -386,7 +460,11 @@ function BuildVersionInfo(props: {
         <Grid item xs={valueColWidth}>
           <Typography>{props.state.buildInfo?.chromeOsVersion}</Typography>
         </Grid>
-        <Grid item xs={labelColWidth}>
+        <Grid
+          item
+          xs={labelColWidth}
+          style={{display: 'flex', justifyContent: 'flex-end'}}
+        >
           <Typography>
             <b>Chrome:</b>
           </Typography>
@@ -394,34 +472,23 @@ function BuildVersionInfo(props: {
         <Grid item xs={valueColWidth}>
           <Typography>{props.state.buildInfo?.chromeVersion}</Typography>
         </Grid>
-        <Grid item xs={labelColWidth}>
+        <Grid
+          item
+          xs={labelColWidth}
+          style={{display: 'flex', justifyContent: 'flex-end'}}
+        >
           <b>
-            <Typography>ARC:</Typography>
+            <Typography>
+              <b>ARC:</b>
+            </Typography>
           </b>
         </Grid>
         <Grid item xs={valueColWidth}>
           <Typography>{props.state.buildInfo?.arcVersion}</Typography>
         </Grid>
-      </>
+      </Grid>
     );
-
-  return (
-    <Grid container spacing={1}>
-      <Grid
-        item
-        xs={labelColWidth}
-        style={{display: 'flex', justifyContent: 'flex-end'}}
-      >
-        <Typography>
-          <b>Channel:</b>
-        </Typography>
-      </Grid>
-      <Grid item xs={valueColWidth}>
-        <Typography>{props.state.buildChannel}</Typography>
-      </Grid>
-      {buildVersionInfo}
-    </Grid>
-  );
+  }
 }
 
 function FlashProgress(props: {
@@ -431,7 +498,6 @@ function FlashProgress(props: {
   React.useEffect(() => {
     window.addEventListener('message', event => {
       const message = event.data as model.FlashDevicePanelMessage;
-      console.log('Received message: ' + JSON.stringify(message));
       switch (message.command) {
         case 'flashProgressUpdate':
           props.setState({

@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'jasmine';
 import {FakeChrootService} from '../../../../../testing/fakes/fake_chroot_service';
-import {ChrootService} from './../../../../../../services/chromiumos/chroot';
 import {Source} from './../../../../../../common/common_util';
-import {VoidOutputChannel} from './../../../../../testing/fakes/output_channel';
+import * as model from './../../../../../../features/chromiumos/device_management/flash/flash_device_model';
 import {FlashDeviceService} from './../../../../../../features/chromiumos/device_management/flash/flash_device_service';
 import * as chroot from './../../../../../../services/chromiumos/chroot';
-import * as model from './../../../../../../features/chromiumos/device_management/flash/flash_device_model';
-import 'jasmine';
+import {ChrootService} from './../../../../../../services/chromiumos/chroot';
+import {VoidOutputChannel} from './../../../../../testing/fakes/output_channel';
 
 describe('FlashDeviceService', () => {
   describe('flash', () => {
@@ -31,6 +31,11 @@ describe('FlashDeviceService', () => {
         flashProgress: 0.0,
         flashingComplete: false,
         flashError: '',
+        buildsBrowserState: {
+          builds: [],
+          board: '',
+          loadingBuilds: false,
+        },
       };
 
       await service.flashDevice(config);

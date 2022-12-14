@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 import * as buildModel from './../builds/build_model';
+import {BuildsBrowserState} from './../../../../../src/features/chromiumos/device_management/builds/browser/builds_browser_model';
 
+/** The full state of the Flash Device view. */
 export type FlashDeviceViewState = {
   readonly step: FlashDeviceStep;
   readonly buildSelectionType: BuildSelectionType;
@@ -15,10 +17,12 @@ export type FlashDeviceViewState = {
   readonly flashProgress: number; // From 0.0 to 1.0
   readonly flashingComplete: boolean;
   readonly flashError: string;
+  readonly buildsBrowserState: BuildsBrowserState;
 };
 
 export type BuildChannel = buildModel.BuildChannel;
 
+/** Which step the user is on in the view. */
 export enum FlashDeviceStep {
   HIGH_LEVEL_BUILD_SELECTION,
   BUILD_BROWSER,
@@ -26,15 +30,22 @@ export enum FlashDeviceStep {
   FLASH_PROGRESS,
 }
 
+/** Which type of build selection the user is making. */
 export enum BuildSelectionType {
   LATEST_OF_CHANNEL,
   SPECIFIC_BUILD,
   // LOCAL_CROS_REPO,
 }
 
+/** A CLI flag for `cros flash` command. */
 export type FlashFlag = {
+  /** Label as seen in the UI checkbox. */
   readonly label: string;
+
+  /** Actual CLI flag, beginning with -- */
   readonly cliFlag: string;
+
+  /** Further description. */
   readonly help: string;
 };
 
@@ -117,14 +128,15 @@ export const FLASH_FLAGS: FlashFlag[] = [
   },
 ];
 
+/** Basic ChromeOS build info. */
 export type BuildInfo = {
+  readonly buildDate: Date;
   readonly chromeVersion: string;
   readonly chromeMilestone: string;
   readonly chromeOsVersion: string;
   readonly arcVersion: string;
   readonly arcBranch: string;
   readonly buildChannel: BuildChannel;
-  readonly date: Date;
 };
 
 export interface CloseMessage {
@@ -136,8 +148,12 @@ export interface FlashMessage {
   state: FlashDeviceViewState;
 }
 
+export interface LoadBuilds {
+  command: 'LoadBuilds';
+}
+
 /** Messages from the view to the panel controller. */
-export type FlashDeviceViewMessage = CloseMessage | FlashMessage;
+export type FlashDeviceViewMessage = CloseMessage | FlashMessage | LoadBuilds;
 
 export interface FlashProgressUpdate {
   command: 'flashProgressUpdate';
@@ -155,8 +171,14 @@ export interface FlashError {
   errorMessage: string;
 }
 
+export interface UpdateBuildsBrowserState {
+  command: 'UpdateBuildsBrowserState';
+  state: BuildsBrowserState;
+}
+
 /** Messages from the panel controller to the view.  */
 export type FlashDevicePanelMessage =
   | FlashProgressUpdate
   | FlashComplete
-  | FlashError;
+  | FlashError
+  | UpdateBuildsBrowserState;

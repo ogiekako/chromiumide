@@ -67,9 +67,9 @@ export class FlashDeviceService implements vscode.Disposable {
     const version =
       config.buildSelectionType === model.BuildSelectionType.SPECIFIC_BUILD
         ? `R${config.buildInfo?.chromeMilestone}-${config.buildInfo?.chromeOsVersion}`
-        : 'latest';
+        : `latest-${config.buildChannel}`;
     // The last part (image type) can be 'test', 'dev', 'base', 'recovery', or 'signed'.
-    return `xbuddy://remote/${config.board}/${version}-${config.buildChannel}/test`;
+    return `xbuddy://remote/${config.board}/${version}/test`;
   }
 
   /**
