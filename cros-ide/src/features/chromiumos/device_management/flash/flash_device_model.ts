@@ -148,12 +148,20 @@ export interface FlashMessage {
   state: FlashDeviceViewState;
 }
 
+export interface CancelFlashMessage {
+  command: 'cancelFlash';
+}
+
 export interface LoadBuilds {
   command: 'LoadBuilds';
 }
 
 /** Messages from the view to the panel controller. */
-export type FlashDeviceViewMessage = CloseMessage | FlashMessage | LoadBuilds;
+export type FlashDeviceViewMessage =
+  | CloseMessage
+  | FlashMessage
+  | CancelFlashMessage
+  | LoadBuilds;
 
 export interface FlashProgressUpdate {
   command: 'flashProgressUpdate';

@@ -64,7 +64,7 @@ export async function withSshTunnel<T>(
   hostname: string,
   context: vscode.ExtensionContext,
   output: vscode.OutputChannel,
-  action: (forwardedPort: number) => T
+  action: (forwardedPort: number) => Promise<T>
 ): Promise<T> {
   const forwardPort = await netUtil.findUnusedPort();
   const sshSession = await SshSession.create(
@@ -75,7 +75,7 @@ export async function withSshTunnel<T>(
   );
 
   try {
-    return action(forwardPort);
+    return await action(forwardPort);
   } finally {
     sshSession.dispose();
   }

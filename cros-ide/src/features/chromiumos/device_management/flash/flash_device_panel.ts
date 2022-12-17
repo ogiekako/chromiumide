@@ -3,13 +3,17 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import * as commonUtil from '../../../../common/common_util';
 import {ReactPanel} from '../../../../services/react_panel';
 import {BuildInfoService} from '../builds/build_info_service';
 import {BuildsBrowserState} from './../builds/browser/builds_browser_model';
 import * as model from './flash_device_model';
 import {FlashDeviceService} from './flash_device_service';
 
-export class FlashDevicePanel extends ReactPanel<model.FlashDeviceViewState> {
+export class FlashDevicePanel
+  extends ReactPanel<model.FlashDeviceViewState>
+  implements vscode.Disposable
+{
   constructor(
     extensionUri: vscode.Uri,
     hostname: string,
@@ -34,6 +38,8 @@ export class FlashDevicePanel extends ReactPanel<model.FlashDeviceViewState> {
       },
     });
 
+    this.panel.onDidDispose(() => this.dispose());
+
     this.service.onProgressUpdate(async progress => {
       await this.panel.webview.postMessage({
         command: 'flashProgressUpdate',
@@ -42,14 +48,27 @@ export class FlashDevicePanel extends ReactPanel<model.FlashDeviceViewState> {
     });
   }
 
+  private canceller = new vscode.CancellationTokenSource();
+
+  dispose() {
+    this.canceller.cancel();
+    this.canceller.dispose();
+  }
+
   protected handleWebviewMessage(message: model.FlashDeviceViewMessage): void {
     if (message.command === 'close') {
       void this.close();
     } else if (message.command === 'flash') {
       void this.flash(message.state);
+    } else if (message.command === 'cancelFlash') {
+      this.cancelFlash();
     } else if (message.command === 'LoadBuilds') {
       void this.loadBuilds();
     }
+  }
+
+  private cancelFlash() {
+    this.canceller.cancel();
   }
 
   private async loadBuilds() {
@@ -73,15 +92,27 @@ export class FlashDevicePanel extends ReactPanel<model.FlashDeviceViewState> {
   }
 
   private async flash(state: model.FlashDeviceViewState) {
-    const result = await this.service.flashDevice(state);
-    if (result instanceof Error) {
-      await this.panel.webview.postMessage({
-        command: 'flashError',
-        errorMessage: result.message,
-      });
-      await vscode.window.showErrorMessage(result.message);
-    } else {
-      await this.panel.webview.postMessage({command: 'flashComplete'});
+    this.canceller = new vscode.CancellationTokenSource();
+    console.log('created canceller');
+    try {
+      const result = await this.service.flashDevice(
+        state,
+        this.canceller.token
+      );
+      if (result instanceof commonUtil.CancelledError) {
+        // Do nothing
+      } else if (result instanceof Error) {
+        await this.panel.webview.postMessage({
+          command: 'flashError',
+          errorMessage: result.message,
+        });
+        await vscode.window.showErrorMessage(result.message);
+      } else {
+        await this.panel.webview.postMessage({command: 'flashComplete'});
+      }
+    } finally {
+      console.log('disposing canceller');
+      this.canceller.dispose();
     }
   }
 

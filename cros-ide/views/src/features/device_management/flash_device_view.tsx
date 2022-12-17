@@ -513,6 +513,17 @@ function FlashProgress(props: {
       }
     });
   }, []); // [] causes this to be run only once, after the first render
+  const handleCancel = () => {
+    vscodeApi.postMessage({
+      command: 'cancelFlash',
+    } as model.FlashDeviceViewMessage);
+
+    // Go back to flash confirmation
+    props.setState({
+      ...props.state,
+      step: model.FlashDeviceStep.FLASH_CONFIRMATION,
+    });
+  };
 
   if (props.state.flashError) {
     return (
@@ -534,6 +545,7 @@ function FlashProgress(props: {
             value={props.state.flashProgress}
             sx={{maxWidth: '70em', minWidth: '32em'}}
           />
+          <Button onClick={handleCancel}>Cancel</Button>
         </Stack>
       </div>
     );

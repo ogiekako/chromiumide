@@ -31,7 +31,8 @@ export class FlashDeviceService implements vscode.Disposable {
   }
 
   public async flashDevice(
-    config: model.FlashDeviceViewState
+    config: model.FlashDeviceViewState,
+    cancellationToken: vscode.CancellationToken | undefined
   ): Promise<ExecResult | Error> {
     const xbuddyPath = this.buildXbuddyPath(config);
 
@@ -63,6 +64,7 @@ export class FlashDeviceService implements vscode.Disposable {
                 this.output.append(line);
               },
             },
+            cancellationToken: cancellationToken,
           }
         );
         return result;

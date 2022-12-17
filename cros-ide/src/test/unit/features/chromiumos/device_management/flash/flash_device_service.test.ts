@@ -53,7 +53,7 @@ describe('FlashDeviceService', () => {
         },
       };
 
-      await service.flashDevice(config);
+      await service.flashDevice(config, undefined);
 
       const xbuddyPath = service.buildXbuddyPath(config);
       expect(chroot.execInChroot).toHaveBeenCalledOnceWith(
