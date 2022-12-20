@@ -32,6 +32,15 @@ export async function activate(
     ),
 
     vscode.commands.registerCommand(
+      'cros-ide.setDefaultBoard',
+      (board: Board) => {
+        if (board) {
+          void config.board.update(board.name);
+        }
+      }
+    ),
+
+    vscode.commands.registerCommand(
       'cros-ide.dismissBoardsPkgsWelcome',
       async () => {
         await config.boardsAndPackages.showWelcomeMessage.update(false);
@@ -260,16 +269,33 @@ class ChrootItem extends vscode.TreeItem {}
 class BoardItem extends ChrootItem implements Board {
   constructor(readonly name: string, readonly isDefault = false) {
     super(name, vscode.TreeItemCollapsibleState.Collapsed);
-    this.iconPath =
-      name === VIRTUAL_BOARDS_HOST
-        ? new vscode.ThemeIcon('device-desktop')
-        : new vscode.ThemeIcon('circuit-board');
+    // - All boards need '+' item to start working on a package.
+    // - Host and default board should not show 'Set as Default Board' item
+    //   in the context menu.
+    const contextModifiers: string[] = [];
+
+    if (name === VIRTUAL_BOARDS_HOST) {
+      this.iconPath = new vscode.ThemeIcon('device-desktop');
+      contextModifiers.push('host');
+    } else {
+      this.iconPath = new vscode.ThemeIcon('circuit-board');
+    }
+
     if (isDefault) {
       this.description = 'default';
+      contextModifiers.push('default');
     }
-  }
 
-  contextValue = 'board';
+    // Three values are possible:
+    // 1) 'board-default' for at most one hardware board if it is selected
+    //    via cros-ide.board setting
+    // 2) 'board' for hardware boards that are not selected
+    // 3) 'board-host' for one virtual board for host packages
+    //
+    // TODO(b:236187246): ensure that 'board-host-default' is not possible,
+    // see: https://chromium-review.googlesource.com/c/chromiumos/chromite/+/4116316/comment/94832cd9_8ff443a5/
+    this.contextValue = ['board', ...contextModifiers].join('-');
+  }
 }
 
 class PackageItem extends ChrootItem implements Package {

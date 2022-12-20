@@ -132,7 +132,7 @@ chromeos-base/shill`;
       }),
       jasmine.objectContaining({
         label: 'host',
-        contextValue: 'board',
+        contextValue: 'board-host',
       }),
     ]);
 

@@ -43,6 +43,7 @@
     "onCommand:cros-ide.crosWorkonStart",
     "onCommand:cros-ide.crosWorkonStop",
     "onCommand:cros-ide.selectBoard",
+    "onCommand:cros-ide.setDefaultBoard",
     "onCommand:cros-ide.fileIdeBug",
     "onCommand:cros-ide.resetUserID",
     "onCommand:cros-ide.openEbuild",
@@ -198,6 +199,11 @@
         "command": "cros-ide.selectBoard",
         "category": "CrOS",
         "title": "Select target board"
+      },
+      {
+        "command": "cros-ide.setDefaultBoard",
+        "category": "CrOS",
+        "title": "Set as Default Board"
       },
       {
         "command": "cros-ide.fileIdeBug",
@@ -420,7 +426,7 @@
         },
         {
           "command": "cros-ide.crosWorkonStart",
-          "when": "view == boards-packages && viewItem == board",
+          "when": "view == boards-packages && viewItem =~ /^board/",
           "group": "inline"
         },
         {
@@ -432,6 +438,10 @@
           "command": "cros-ide.openEbuild",
           "when": "view == boards-packages && viewItem == package",
           "group": "inline"
+        },
+        {
+          "command": "cros-ide.setDefaultBoard",
+          "when": "view == boards-packages && viewItem == board"
         },
         {
           "command": "cros-ide.coverage.generate",
