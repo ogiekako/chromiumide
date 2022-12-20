@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 /**
- * Response from Gerrit List Change Comments API.
+ * Response from Gerrit 'List Change Comments' API
  *
  * https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#list-change-comments
  */
@@ -12,9 +12,9 @@ export type CommentInfosMap = {
 };
 
 /**
- * Special identifiers that can be used instead of a path to a file.
+ * Special identifiers that can be used instead of a path to a file
  *
- * https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html
+ * https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#file-id
  */
 export const MAGIC_PATHS = Object.freeze([
   '/COMMIT_MSG',
@@ -23,6 +23,8 @@ export const MAGIC_PATHS = Object.freeze([
 ]);
 
 /**
+ * Comment information in a response from Gerrit 'List Change Comments' API
+ *
  * https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#comment-info
  */
 export type CommentInfo = {
@@ -42,6 +44,8 @@ export type CommentInfo = {
 };
 
 /**
+ * Account information used in Gerrit APIs
+ *
  * https://gerrit-review.googlesource.com/Documentation/rest-api-accounts.html#account-info
  */
 export type AccountInfo = {
@@ -62,6 +66,8 @@ export function accountName(a: AccountInfo): string {
 }
 
 /**
+ * Range of a comment, used in the range field of CommentInfo
+ *
  * https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#comment-range
  */
 export type CommentRange = {
