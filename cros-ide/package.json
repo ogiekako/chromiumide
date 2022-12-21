@@ -219,7 +219,7 @@
         "command": "cros-ide.coverage.generate",
         "category": "CrOS",
         "title": "Generate Coverage Data",
-        "enablement": "config.cros-ide.underDevelopment.testCoverage"
+        "enablement": "config.cros-ide.testCoverage.enabled"
       },
       {
         "command": "cros-ide.coverage.showReport",
@@ -445,7 +445,7 @@
         },
         {
           "command": "cros-ide.coverage.generate",
-          "when": "view == boards-packages && viewItem == package && config.cros-ide.underDevelopment.testCoverage"
+          "when": "view == boards-packages && viewItem == package && config.cros-ide.testCoverage.enabled"
         },
         {
           "command": "cros-ide.coverage.showReport",
@@ -550,6 +550,11 @@
           "description": "Enable Tricium spellchecker. Requires a reload to take effect.",
           "default": true
         },
+        "cros-ide.testCoverage.enabled": {
+          "type": "boolean",
+          "markdownDescription": "Show Code Coverage ([go/cros-ide-doc-boards-pkgs#code-coverage](http://go/cros-ide-doc-boards-pkgs#code-coverage)). Requires a reload to take effect.",
+          "default": true
+        },
         "cros-ide.underDevelopment.chromiumBuild": {
           "type": "boolean",
           "description": "Enable build + deploy for chromium code (incomplete)",
@@ -602,7 +607,7 @@
         },
         "cros-ide.underDevelopment.testCoverage": {
           "type": "boolean",
-          "description": "Enable Test Coverage (incomplete)",
+          "description": "Enable Experimental Code Coverage Features",
           "default": false
         },
         "cros-ide.deviceManagement.devices": {

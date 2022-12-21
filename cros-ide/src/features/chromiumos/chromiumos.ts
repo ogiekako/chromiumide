@@ -116,7 +116,7 @@ export class Chromiumos implements vscode.Disposable {
         crosFormat.activate(ephemeralContext, this.root, this.statusManager);
       }
 
-      if (config.underDevelopment.testCoverage.get()) {
+      if (config.testCoverage.enabled.get()) {
         this.featureName = 'testCoverage';
         new Coverage(chrootService, this.statusManager).activate(
           ephemeralContext

@@ -143,6 +143,10 @@ export const chrome = {
 
 export const spellchecker = new ConfigValue<boolean>('spellchecker');
 
+export const testCoverage = {
+  enabled: new ConfigValue<boolean>('testCoverage.enabled'),
+};
+
 export const TEST_ONLY = {
   CROS_IDE_PREFIX,
 };
