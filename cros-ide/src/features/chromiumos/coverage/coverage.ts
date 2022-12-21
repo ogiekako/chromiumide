@@ -107,6 +107,9 @@ export class Coverage {
       }
     );
     const statusOk = !(res instanceof Error) && res.exitStatus === 0;
+    if (statusOk) {
+      void this.updateDecorations(vscode.window.activeTextEditor);
+    }
     this.statusManager.setStatus(
       COVERAGE_TASK_ID,
       statusOk ? TaskStatus.OK : TaskStatus.ERROR
