@@ -22,7 +22,7 @@ describe('partitionCommentThreads', () => {
 
   it('breaks threads', () => {
     const zeroTime = ' 00:00:00.000000000';
-    const comments: CommentInfoLike[] = [
+    const commentInfos: CommentInfoLike[] = [
       {
         id: 'reply_1_1',
         in_reply_to: 'thread_1',
@@ -52,22 +52,22 @@ describe('partitionCommentThreads', () => {
       },
     ];
     const input = {
-      'file/path.cc': comments.map(c => c as api.CommentInfo),
+      'file/path.cc': commentInfos.map(c => c as api.CommentInfo),
     };
 
     const oc = jasmine.objectContaining;
     const want = {
       'file/path.cc': [
         oc({
-          comments: [
+          commentInfos: [
             oc({id: 'thread_1'}),
             oc({id: 'reply_1_1'}),
             oc({id: 'reply_1_2'}),
           ],
         }),
-        oc({comments: [oc({id: 'thread_2'})]}),
-        oc({comments: [oc({id: 'thread_3'}), oc({id: 'reply_3_1'})]}),
-        oc({comments: [oc({id: 'reply_to_nonexisting'})]}),
+        oc({commentInfos: [oc({id: 'thread_2'})]}),
+        oc({commentInfos: [oc({id: 'thread_3'}), oc({id: 'reply_3_1'})]}),
+        oc({commentInfos: [oc({id: 'reply_to_nonexisting'})]}),
       ],
     };
 
@@ -135,7 +135,9 @@ const COMMENT_INFO = Object.freeze({
 });
 
 // Based on crrev.com/c/3951631
-const SIMPLE_COMMENT_INFOS_MAP = (commitId1: string): api.CommentInfosMap => {
+const SIMPLE_COMMENT_INFOS_MAP = (
+  commitId1: string
+): api.FilePathToCommentInfos => {
   return {
     'cryptohome/cryptohome.cc': [
       {
@@ -151,7 +153,9 @@ const SIMPLE_COMMENT_INFOS_MAP = (commitId1: string): api.CommentInfosMap => {
 
 // Based on crrev.com/c/3980425
 // For testing chains of changes
-const SECOND_COMMIT_IN_CHAIN = (commitId: string): api.CommentInfosMap => {
+const SECOND_COMMIT_IN_CHAIN = (
+  commitId: string
+): api.FilePathToCommentInfos => {
   return {
     'cryptohome/cryptohome.cc': [
       {
@@ -171,7 +175,7 @@ const SECOND_COMMIT_IN_CHAIN = (commitId: string): api.CommentInfosMap => {
 const TWO_PATCHSETS_COMMENT_INFOS_MAP = (
   commitId1: string,
   commitId2: string
-): api.CommentInfosMap => {
+): api.FilePathToCommentInfos => {
   return {
     'cryptohome/cryptohome.cc': [
       {

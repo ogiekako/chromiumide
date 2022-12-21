@@ -47,7 +47,7 @@ export async function getRepoId(
   return new UnknownRepoError(repoId, repoUrl);
 }
 
-export type HunksMap = {
+export type FilePathToHunks = {
   [filePath: string]: Hunk[];
 };
 
@@ -105,12 +105,12 @@ export async function commitExists(
  * Extracts diff hunks of changes made between the `originalCommitId`
  * and the working tree.
  */
-export async function readDiffHunksMap(
+export async function readDiffHunks(
   gitDir: string,
   commitId: string,
   paths: string[],
   logger?: vscode.OutputChannel
-): Promise<HunksMap | Error> {
+): Promise<FilePathToHunks | Error> {
   const gitDiff = await commonUtil.exec(
     'git',
     ['diff', '-U0', commitId, '--', ...paths],
@@ -120,13 +120,13 @@ export async function readDiffHunksMap(
     }
   );
   if (gitDiff instanceof Error) return gitDiff;
-  return parseDiffHunksMap(gitDiff.stdout);
+  return parseDiffHunks(gitDiff.stdout);
 }
 
 /**
  * Parses the output of `git diff -U0` and returns hunks.
  */
-function parseDiffHunksMap(gitDiffContent: string): HunksMap {
+function parseDiffHunks(gitDiffContent: string): FilePathToHunks {
   /**
    * gitDiffContent example:`
    * --- a/ide_tooling/cros-ide/src/features/gerrit.ts
@@ -141,7 +141,7 @@ function parseDiffHunksMap(gitDiffContent: string): HunksMap {
   const gitDiffHunkRegex =
     /(?:(?:^--- a\/(.*)$)|(?:^@@ -([0-9]*)[,]?([0-9]*) \+([0-9]*)[,]?([0-9]*) @@))/gm;
   let regexArray: RegExpExecArray | null;
-  const hunksMap: HunksMap = {};
+  const hunksMap: FilePathToHunks = {};
   let hunkFilePath = '';
   while ((regexArray = gitDiffHunkRegex.exec(gitDiffContent)) !== null) {
     if (regexArray[1]) {
@@ -200,4 +200,4 @@ function parseGitLog(gitLog: string): GitLogInfo[] {
   return result;
 }
 
-export const TEST_ONLY = {parseDiffHunksMap, parseGitLog};
+export const TEST_ONLY = {parseDiffHunks, parseGitLog};
