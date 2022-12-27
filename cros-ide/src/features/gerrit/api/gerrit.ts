@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// APIs Gerrit defines
+
 /**
  * Response from Gerrit 'Get Change' API
  *
@@ -89,15 +91,6 @@ export type AccountInfo = {
   readonly email?: string;
   readonly status?: string;
 };
-
-/**
- * Turn api.AccountInfo into the name string
- */
-export function accountName(a: AccountInfo): string {
-  if (a.display_name) return a.display_name;
-  if (a.name) return a.name;
-  return 'id' + a._account_id;
-}
 
 /**
  * Range of a comment, used in the range field of CommentInfo

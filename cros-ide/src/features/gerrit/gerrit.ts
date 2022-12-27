@@ -15,7 +15,6 @@ import * as metrics from '../metrics/metrics';
 import * as api from './api';
 import * as git from './git';
 import * as helpers from './helpers';
-import * as https from './https';
 import * as auth from './auth';
 import * as virtualDocument from './virtual_document';
 
@@ -52,7 +51,7 @@ export function activate(
         async () => {
           const authCookie = await gerrit.readAuthCookie();
           // Fetch from some internal Gerrit change
-          const out = await gerrit.getOrThrow(
+          const out = await api.fetchOrThrow(
             'cros-internal',
             'changes/I6743130cd3a84635a66f54f81fa839060f3fcb39/comments',
             authCookie
@@ -333,7 +332,7 @@ class Gerrit {
    * Retrieves data from Gerrit API and applies basic transformations
    * to partition it into threads and by commit id. The data is then
    * stored in `this.changes`.
-   * It can throw an error from HTTPS access by `this.getOrThrow`.
+   * It can throw an error from HTTPS access by `api.getOrThrow`.
    */
   private async fetchChangesOrThrow(gitDir: string): Promise<void> {
     const authCookie = await this.readAuthCookie();
@@ -344,35 +343,31 @@ class Gerrit {
 
     const changes: Change[] = [];
     for (const {localCommitId, changeId} of gitLogInfos) {
-      // Fetch ChangeInfo
-      const changeContent = await this.getOrThrow(
+      // Fetch a change
+      const changeInfo = await api.fetchChangeOrThrow(
         repoId,
-        `changes/${changeId}?o=ALL_REVISIONS`,
+        changeId,
         authCookie
       );
-      if (!changeContent) {
+      if (!changeInfo) {
         this.outputChannel.appendLine(
           `Not found on Gerrit: Change ${changeId}`
         );
         continue;
       }
-      const changeInfo = JSON.parse(changeContent) as api.ChangeInfo;
 
       // Fetch comments
-      const commentsContent = await this.getOrThrow(
+      const commentInfosMap = await api.fetchCommentsOrThrow(
         repoId,
-        `changes/${changeId}/comments`,
+        changeId,
         authCookie
       );
-      if (!commentsContent) {
+      if (!commentInfosMap) {
         this.outputChannel.appendLine(
           `Comments for ${changeId} could not be fetched from Gerrit`
         );
         continue;
       }
-      const commentInfosMap = JSON.parse(
-        commentsContent
-      ) as api.FilePathToCommentInfos;
 
       const change = new Change(
         localCommitId,
@@ -403,23 +398,6 @@ class Gerrit {
       return [];
     }
     return gitLogInfos;
-  }
-
-  /**
-   * Gets a raw string from Gerrit REST API with an auth cookie,
-   * returning undefined on 404 error.
-   * It can throw an error from https.getOrThrow.
-   */
-  async getOrThrow(
-    repoId: git.RepoId,
-    path: string,
-    authCookie?: string
-  ): Promise<string | undefined> {
-    const url = `${git.gerritUrl(repoId)}/${path}`;
-    const options =
-      authCookie !== undefined ? {headers: {cookie: authCookie}} : undefined;
-    const str = await https.getOrThrow(url, options);
-    return str?.substring(')]}\n'.length);
   }
 
   /** Reads gitcookies or returns undefined. */
