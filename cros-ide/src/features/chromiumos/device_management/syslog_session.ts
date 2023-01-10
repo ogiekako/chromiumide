@@ -40,15 +40,17 @@ export class SyslogSession {
     output: vscode.OutputChannel
   ): Promise<SyslogSession> {
     const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), '/'));
-    return new SyslogSession(hostname, context, output, tempDir);
+    const session = new SyslogSession();
+    await session.create(hostname, context, output, tempDir);
+    return session;
   }
 
-  private constructor(
+  private async create(
     hostname: string,
     context: vscode.ExtensionContext,
     output: vscode.OutputChannel,
     tempDir: string
-  ) {
+  ): Promise<void> {
     // Remove the temporary directory on disposal.
     this.subscriptions.push(
       new vscode.Disposable(() => {
@@ -56,16 +58,66 @@ export class SyslogSession {
       })
     );
 
-    const syslogPath = path.join(tempDir, SYSLOG_FILE);
+    // Ask the remote system log to open.
+    // Based on https://chromium.googlesource.com/chromiumos/docs/+/HEAD/logging.md#locations.
+    type RemoteSyslogPickItem = vscode.QuickPickItem & {path?: string};
+    const remoteSyslogPickItems: RemoteSyslogPickItem[] = [
+      {
+        label: '$(file) /var/log/messages',
+        description: 'General system logs.',
+        path: '/var/log/messages',
+      },
+      {
+        label: '$(file) /var/log/net.log',
+        description: 'Network-related logs.',
+        path: '/var/log/net.log',
+      },
+      {
+        label: '$(file) /var/log/boot.log',
+        description: 'Boot messages.',
+        path: '/var/log/boot.log',
+      },
+      {
+        label: '$(file) /var/log/secure.log',
+        description: 'Logs with authpriv facility.',
+        path: '/var/log/secure.log',
+      },
+      {
+        label: '$(file) /var/log/upstart.log',
+        description: 'Upstart logs.',
+        path: '/var/log/upstart.log',
+      },
+      {
+        label: 'Enter a custom file path...',
+      },
+    ];
+    const remoteSyslogPicked = await vscode.window.showQuickPick(
+      remoteSyslogPickItems,
+      {
+        title: 'System Log Select',
+        placeHolder: "Select the remote device's system log to open.",
+      }
+    );
+    if (!remoteSyslogPicked) return;
+    let remoteSyslogPath = remoteSyslogPicked.path;
+    if (!remoteSyslogPath) {
+      remoteSyslogPath = await vscode.window.showInputBox({
+        title: 'System Log Select: Custom',
+        prompt:
+          "Enter the file path of the remote device's system log to open. " +
+          "The log should be in CrOS's standard log format.",
+        value: '/var/log/messages',
+      });
+      if (!remoteSyslogPath) return;
+    }
 
-    const tailPromise = execSyslogTail(hostname, syslogPath, context, {
+    const localSyslogPath = path.join(tempDir, SYSLOG_FILE);
+
+    // Execute the tail process in the background.
+    void execSyslogTail(hostname, remoteSyslogPath, localSyslogPath, context, {
       logger: output,
       cancellationToken: this.canceller.token,
-    });
-
-    // Show an error message when the tail process aborts.
-    void (async () => {
-      const result = await tailPromise;
+    }).then(result => {
       if (this.canceller.token.isCancellationRequested) {
         // The execution was already canceled, do not show pop-ups.
         return;
@@ -75,9 +127,15 @@ export class SyslogSession {
           `System log viewer: SSH connection aborted: ${result}`
         );
       }
-    })();
+    });
 
-    const panel = createWebview(hostname, syslogPath, context);
+    // Create the Webview panel.
+    const panel = createWebview(
+      hostname,
+      remoteSyslogPath,
+      localSyslogPath,
+      context
+    );
     this.subscriptions.push(panel);
 
     // Dispose the session when the panel is closed.
@@ -98,24 +156,27 @@ export class SyslogSession {
 
 /**
  * Runs an external process to stream remote system logs to a local file.
+ *
+ * @param remoteSyslogPath Path of the system log file in the remote device.
+ * @param localSyslogPath Path of the system log copy file in the local device.
  */
 function execSyslogTail(
   hostname: string,
-  outPath: string,
+  remoteSyslogPath: string,
+  localSyslogPath: string,
   context: vscode.ExtensionContext,
   options?: commonUtil.ExecOptions
 ): Promise<commonUtil.ExecResult | Error> {
-  const tailCommand =
-    shutil.escapeArray(
-      sshUtil.buildSshCommand(
-        hostname,
-        context.extensionUri,
-        undefined,
-        'tail -F -n +1 /var/log/messages'
-      )
-    ) +
-    ' > ' +
-    shutil.escape(outPath);
+  // `tail -F` command keeps listening even if the file `remoteSyslogPath`
+  // doesn't exist, waiting for the file to appear.
+  const tailCommand = `${shutil.escapeArray(
+    sshUtil.buildSshCommand(
+      hostname,
+      context.extensionUri,
+      undefined,
+      `tail -F -n +1 ${remoteSyslogPath}`
+    )
+  )} > ${shutil.escape(localSyslogPath)}`;
 
   return commonUtil.exec('sh', ['-c', tailCommand], options);
 }
@@ -125,31 +186,40 @@ function execSyslogTail(
  */
 function createWebview(
   hostname: string,
-  syslogPath: string,
+  remoteSyslogPath: string,
+  localSyslogPath: string,
   context: vscode.ExtensionContext
 ): vscode.WebviewPanel {
   const panel = vscode.window.createWebviewPanel(
     'syslog',
-    `Syslog: ${hostname}`,
+    `${hostname}: ${remoteSyslogPath}`,
     vscode.ViewColumn.One,
     {
       enableScripts: true,
       localResourceRoots: [
-        vscode.Uri.file(path.dirname(syslogPath)),
+        vscode.Uri.file(path.dirname(localSyslogPath)),
         vscode.Uri.file(context.extensionPath),
       ],
     }
   );
 
-  const syslogUrl = panel.webview.asWebviewUri(vscode.Uri.file(syslogPath));
-  panel.webview.html = getWebviewContent(panel.webview, syslogUrl, context);
+  const localSyslogUrl = panel.webview.asWebviewUri(
+    vscode.Uri.file(localSyslogPath)
+  );
+  panel.webview.html = getWebviewContent(
+    panel.webview,
+    remoteSyslogPath,
+    localSyslogUrl,
+    context
+  );
 
   return panel;
 }
 
 function getWebviewContent(
   webview: vscode.Webview,
-  syslogUrl: vscode.Uri,
+  remoteSyslogPath: string,
+  localSyslogUrl: vscode.Uri,
   context: vscode.ExtensionContext
 ): string {
   const filePath = path.join(context.extensionPath, 'dist/views/syslog.html');
@@ -162,8 +232,12 @@ function getWebviewContent(
       to: webview.asWebviewUri(context.extensionUri).toString(),
     },
     {
-      from: /%SYSLOG_URL%/g,
-      to: webview.asWebviewUri(syslogUrl).toString(),
+      from: /%REMOTE_SYSLOG_PATH%/g,
+      to: remoteSyslogPath, // Just display it as is for now
+    },
+    {
+      from: /%LOCAL_SYSLOG_URL%/g,
+      to: webview.asWebviewUri(localSyslogUrl).toString(),
     },
   ]);
 }
