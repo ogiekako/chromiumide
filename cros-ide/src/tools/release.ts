@@ -215,13 +215,13 @@ async function build(tempDir: string, preRelease: boolean): Promise<string> {
   return path.join(tempDir, localName);
 }
 
-async function buildAndUpload(preRelease: boolean) {
+async function buildAndUpload(preRelease: boolean, remoteBranch?: string) {
   if (!process.env.OVSX_PAT || !process.env.VSCE_PAT) {
     throw new Error('Set OVSX_PAT and VSCE_PAT: read go/cros-ide-release');
   }
 
   await assertCleanGitStatus();
-  await assertHeadUpdatesVersion();
+  await assertHeadUpdatesVersion(remoteBranch);
 
   const version = await currentVersion();
   if (!hasCorrectMinorVersion(version, preRelease)) {
@@ -318,7 +318,7 @@ async function main() {
       console.log(USAGE);
       return;
     case 'publish':
-      await buildAndUpload(config.preRelease);
+      await buildAndUpload(config.preRelease, config.remoteBranch);
       return;
     case 'update':
       await updateVersionAndCommit(config.preRelease);
