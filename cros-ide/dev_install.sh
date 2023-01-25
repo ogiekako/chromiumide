@@ -61,6 +61,11 @@ fi
 
 npm ci
 
+previous_version="$(npm pkg get version)"
+# Trim leading and trailing double quotes.
+previous_version="${previous_version%\"}"
+previous_version="${previous_version#\"}"
+
 npm version prerelease --preid=dev
 
 td="$(mktemp -d)"
@@ -70,3 +75,5 @@ npx vsce package -o "${td}/"
 "${exe}" --force --install-extension "${td}"/*
 
 rm -r "${td}"
+
+npm version "${previous_version}"
