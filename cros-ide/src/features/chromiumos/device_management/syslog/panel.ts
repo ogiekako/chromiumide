@@ -9,6 +9,7 @@ import * as path from 'path';
 import * as shutil from '../../../../common/shutil';
 import * as commonUtil from '../../../../common/common_util';
 import * as sshUtil from '../ssh_util';
+import * as metrics from '../../../metrics/metrics';
 import {ReactPanel} from '../../../../services/react_panel';
 import {
   parseSyslogLine,
@@ -107,6 +108,16 @@ export class SyslogPanel extends ReactPanel<SyslogViewContext> {
       if (msg.command === 'reload') {
         const entries = await this.loadSyslogOrThrow();
         await this.postMessage({command: 'reset', entries: entries});
+      } else if (msg.command === 'copy') {
+        metrics.send({
+          category: 'interactive',
+          group: 'device',
+          action: 'copy in syslog viewer',
+        });
+        await vscode.env.clipboard.writeText(msg.text);
+        void vscode.window.showInformationMessage(
+          `Copied to clipboard the system log from ${this.remoteSyslogPath}!`
+        );
       }
     })();
   }

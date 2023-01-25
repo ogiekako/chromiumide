@@ -19,7 +19,7 @@ import {
   Zoom,
 } from '@mui/material';
 import {createTheme, SxProps, ThemeProvider} from '@mui/material/styles';
-import {ArrowDownward} from '@mui/icons-material';
+import {ArrowDownward, ContentCopy} from '@mui/icons-material';
 import {
   forwardRef,
   useCallback,
@@ -43,6 +43,7 @@ import {
   SyslogSeverity,
   SyslogViewBackendMessage,
   SyslogViewFrontendMessage,
+  stringifySyslogEntries,
 } from '../../../../../src/features/chromiumos/device_management/syslog/model';
 import {
   initialTextFilter,
@@ -220,6 +221,10 @@ function RegexIcon(): JSX.Element {
   return <i className="codicon codicon-regex" />;
 }
 
+/** Maximum line number of one copy. */
+const COPY_MAX = 10000;
+const COPY_MAX_TEXT = '10k';
+
 /** The table for the syslog. */
 function SyslogTable(props: {filter: SyslogFilter}): JSX.Element {
   const {filter} = props;
@@ -244,10 +249,48 @@ function SyslogTable(props: {filter: SyslogFilter}): JSX.Element {
     window.addEventListener('message', handleMsg);
     return () => window.removeEventListener('message', handleMsg);
   }, [handleMsg]);
+  // Calculate and cache filtered entries
+  const filteredEntries = useMemo(
+    () => entries.filter(entry => matchesSyslogFilter(entry, filter)),
+    [entries, filter]
+  );
+  // For 'Copy to clipboard' button.
+  const handleClipboardCopier = useCallback(
+    () =>
+      postMessage({
+        command: 'copy',
+        // Copies up to COPY_MAX lines from the end.
+        text: stringifySyslogEntries(filteredEntries.slice(-COPY_MAX)),
+      }),
+    [filteredEntries]
+  );
   return (
-    <SyslogTableBody
-      entries={entries.filter(entry => matchesSyslogFilter(entry, filter))}
-    />
+    <>
+      <SyslogTableBody entries={filteredEntries} />
+      <CustomTooltip
+        title={
+          <div style={{textAlign: 'center'}}>
+            Copy to clipboard
+            <br />
+            (up to {COPY_MAX_TEXT} lines)
+          </div>
+        }
+      >
+        <Fab
+          onClick={handleClipboardCopier}
+          color="default"
+          size="small"
+          sx={{
+            position: 'absolute',
+            top: 40,
+            right: 30,
+            boxShadow: 0,
+          }}
+        >
+          <ContentCopy />
+        </Fab>
+      </CustomTooltip>
+    </>
   );
 }
 

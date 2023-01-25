@@ -37,10 +37,16 @@ export type SyslogViewBackendMessage = {
 };
 
 /** Message from the frontend. */
-export type SyslogViewFrontendMessage = {
-  /** Request that the backend should reload the log file. */
-  command: 'reload';
-};
+export type SyslogViewFrontendMessage =
+  | {
+      /** Request that the backend should reload the log file. */
+      command: 'reload';
+    }
+  | {
+      /** Request that the backend should copy the text to the clipboard. */
+      command: 'copy';
+      text: string;
+    };
 
 /** The regex used for `parseSyslogLine`. */
 const SYSLOG_REGEX = /^([^ ]*) ([^ ]*) ([^ ]*): (.*)$/;
@@ -77,4 +83,18 @@ export function parseSyslogLine(line: string, lineNum: number): SyslogEntry {
     process,
     message,
   };
+}
+
+/** Converts syslog entries to a string in the standard format. */
+export function stringifySyslogEntries(entries: SyslogEntry[]): string {
+  return entries.map(stringifySyslogEntry).join('\n') + '\n';
+}
+
+/** Converts a syslog entry to a string in the standard format. */
+function stringifySyslogEntry(entry: SyslogEntry): string {
+  if (entry.timestamp) {
+    return `${entry.timestamp} ${entry.process}: ${entry.message}`;
+  } else {
+    return `${entry.message}`; // Fallback
+  }
 }
