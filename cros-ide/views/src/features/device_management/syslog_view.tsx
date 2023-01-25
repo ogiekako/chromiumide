@@ -26,7 +26,7 @@ import {
   ChangeEventHandler,
   CSSProperties,
 } from 'react';
-import {TableVirtuoso} from 'react-virtuoso';
+import {TableVirtuoso, TableVirtuosoProps} from 'react-virtuoso';
 import * as ReactPanelHelper from '../../react/common/react_panel_helper';
 import {
   SyslogViewContext,
@@ -269,10 +269,20 @@ function SyslogTable(props: {filter: SyslogFilter}): JSX.Element {
     return () => window.removeEventListener('message', handleMsg);
   }, [handleMsg]);
   return (
-    <TableVirtuoso
-      style={{marginTop: 10}}
-      data={entries.filter(entry => matchesFilter(entry, filter))}
-      components={{
+    <SyslogTableBody
+      entries={entries.filter(entry => matchesFilter(entry, filter))}
+    />
+  );
+}
+
+/** The body of the syslog table, wrapping `TableVirtuoso`. */
+function SyslogTableBody(props: {entries: SyslogEntry[]}) {
+  const {entries} = props;
+  // Memoizes props passed to `TableVirtuoso` for performance
+  const virtuosoProps: TableVirtuosoProps<SyslogEntry, unknown> = useMemo(
+    () => ({
+      style: {marginTop: 10},
+      components: {
         Table: props => {
           const {children, ...propsRest} = props;
           return (
@@ -301,8 +311,8 @@ function SyslogTable(props: {filter: SyslogFilter}): JSX.Element {
         TableBody: forwardRef((props, ref) => (
           <TableBody {...props} ref={ref} />
         )),
-      }}
-      fixedHeaderContent={() => (
+      },
+      fixedHeaderContent: () => (
         <TableRow sx={{backgroundColor: BACKGROUND_COLOR}}>
           {['#', 'Timestamp', 'Severity', 'Process', 'Message'].map(
             (label, i) => (
@@ -312,11 +322,13 @@ function SyslogTable(props: {filter: SyslogFilter}): JSX.Element {
             )
           )}
         </TableRow>
-      )}
-      itemContent={(i, entry) => <SyslogRow entry={entry} />}
-      computeItemKey={(i, entry) => entry.lineNum}
-    />
+      ),
+      itemContent: (i, entry) => <SyslogRow entry={entry} />,
+      computeItemKey: (i, entry) => entry.lineNum,
+    }),
+    []
   );
+  return <TableVirtuoso data={entries} {...virtuosoProps} />;
 }
 
 /** Checks if the syslog entry matches the filter. */
