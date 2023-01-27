@@ -30,16 +30,16 @@ export type SyslogSeverity =
 
 /** Message from the backend. */
 export type SyslogViewBackendMessage = {
-  /** Request that the frontend should reset the log entries. */
-  command: 'reset';
-  /** System log entries. */
-  entries: SyslogEntry[];
+  /** Request that the frontend should add new system log entries. */
+  command: 'add';
+  /** New system log entries. */
+  newEntries: SyslogEntry[];
 };
 
 /** Message from the frontend. */
 export type SyslogViewFrontendMessage =
   | {
-      /** Request that the backend should reload the log file. */
+      /** Request that the backend should load new system log entries. */
       command: 'reload';
     }
   | {

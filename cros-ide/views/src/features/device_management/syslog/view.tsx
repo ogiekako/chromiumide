@@ -239,11 +239,20 @@ function SyslogTable(props: {filter: SyslogFilter}): JSX.Element {
   // Handle a message from the backend.
   const handleMsg = useCallback(
     ({data: msg}: MessageEvent<SyslogViewBackendMessage>) => {
-      if (msg.command === 'reset') {
-        setEntries(msg.entries);
+      if (msg.command === 'add') {
+        setEntries(entries => {
+          const newEntries = [...entries];
+          for (const newEntry of msg.newEntries) {
+            // We write to the index directly (instead of `.push`).
+            // This update is robust with concurrency,
+            // because it is reorderable and idempotent.
+            newEntries[newEntry.lineNum] = newEntry;
+          }
+          return newEntries;
+        });
       }
     },
-    []
+    [setEntries]
   );
   useEffect(() => {
     window.addEventListener('message', handleMsg);

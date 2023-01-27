@@ -13,7 +13,6 @@ import * as metrics from '../../../metrics/metrics';
 import {ReactPanel} from '../../../../services/react_panel';
 import {
   parseSyslogLine,
-  SyslogEntry,
   SyslogViewBackendMessage,
   SyslogViewContext,
   SyslogViewFrontendMessage,
@@ -38,6 +37,13 @@ export class SyslogPanel extends ReactPanel<SyslogViewContext> {
   private readonly localTempDir: string;
   /** Path to the local system log file. */
   private readonly localSyslogPath: string;
+
+  /** Flag to avoid running multiple threads loading new syslog entries. */
+  private isLoadingNewSyslogEntries = false;
+  /** Byte number of the system log entries that are read so far. */
+  private localSyslogReadByte = 0;
+  /** Line number of the system log entries that are read so far. */
+  private localSyslogReadLine = 0;
 
   constructor(
     private readonly hostname: string,
@@ -106,8 +112,12 @@ export class SyslogPanel extends ReactPanel<SyslogViewContext> {
   protected handleWebviewMessage(msg: SyslogViewFrontendMessage): void {
     void (async () => {
       if (msg.command === 'reload') {
-        const entries = await this.loadSyslogOrThrow();
-        await this.postMessage({command: 'reset', entries: entries});
+        const res = await this.loadNewSyslogEntries();
+        if (res instanceof Error) {
+          await vscode.window.showErrorMessage(
+            `Error from reading new syslog entries: ${res.message}`
+          );
+        }
       } else if (msg.command === 'copy') {
         metrics.send({
           category: 'interactive',
@@ -133,16 +143,50 @@ export class SyslogPanel extends ReactPanel<SyslogViewContext> {
   }
 
   /**
-   * Loads the whole content of the syslog and parses it.
-   * Throws the error from `fs.promises.readFile`.
-   *
-   * TODO(ymat): Use ReadStream to load only the new entries.
+   * Loads the new lines of the syslog, parses them,
+   * adds them to `this.syslogEntries`, and passes them to the frontend.
+   * Returns (rather than throw) an error from `fs` functions.
    */
-  private async loadSyslogOrThrow(): Promise<SyslogEntry[]> {
-    // TODO: Read only the added lines of the file.
-    const contents = await fs.promises.readFile(this.localSyslogPath!, 'utf-8');
-    const lines = contents.split('\n');
-    if (lines[lines.length - 1] === '') lines.pop();
-    return lines.map(parseSyslogLine);
+  private loadNewSyslogEntries(): Promise<void | Error> {
+    return new Promise(resolve => {
+      if (this.isLoadingNewSyslogEntries) return;
+      // Lock loading of new entries.
+      this.isLoadingNewSyslogEntries = true;
+      // Remainder from the last read.
+      let remainder = '';
+      try {
+        const stream = fs.createReadStream(this.localSyslogPath, {
+          encoding: 'utf-8',
+          start: this.localSyslogReadByte,
+        });
+        stream
+          .on('data', (chunk: string) => {
+            const lines = (remainder + chunk).split('\n');
+            // The last line is the remainder for the next read.
+            remainder = lines.pop()!;
+            const newEntries = [];
+            for (const line of lines) {
+              newEntries.push(parseSyslogLine(line, this.localSyslogReadLine));
+              this.localSyslogReadLine++;
+            }
+            // The message is asynchronously posted.
+            void this.postMessage({
+              command: 'add',
+              newEntries,
+            });
+          })
+          .on('close', () => {
+            // Set the cursor to the beginning of the next line.
+            this.localSyslogReadByte +=
+              stream.bytesRead - Buffer.byteLength(remainder, 'utf-8');
+            // Unlock loading of new entries.
+            this.isLoadingNewSyslogEntries = false;
+            resolve();
+          })
+          .on('error', err => resolve(err));
+      } catch (err) {
+        if (err instanceof Error) resolve(err);
+      }
+    });
   }
 }
