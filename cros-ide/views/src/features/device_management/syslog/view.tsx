@@ -45,9 +45,10 @@ import {
   SyslogViewFrontendMessage,
   stringifySyslogEntries,
 } from '../../../../../src/features/chromiumos/device_management/syslog/model';
+import * as viewModel from './viewmodel';
 import {
   initialTextFilter,
-  matchesSyslogFilter,
+  matchSyslogEntry,
   SyslogFilter,
   TextFilter,
 } from './viewmodel';
@@ -58,6 +59,8 @@ const BACKGROUND_COLOR = 'var(--vscode-editor-background)';
 const INFO_COLOR = 'var(--vscode-editorInfo-foreground)';
 const WARNING_COLOR = 'var(--vscode-editorWarning-foreground)';
 const ERROR_COLOR = 'var(--vscode-editorError-foreground)';
+const MATCH_HIGHLIGHT_COLOR =
+  'var(--vscode-editor-findMatchHighlightBackground)';
 
 // Acquire the VS Code webview instance.
 const vscodeApi = acquireVsCodeApi();
@@ -260,7 +263,7 @@ function SyslogTable(props: {filter: SyslogFilter}): JSX.Element {
   }, [handleMsg]);
   // Calculate and cache filtered entries
   const filteredEntries = useMemo(
-    () => entries.filter(entry => matchesSyslogFilter(entry, filter)),
+    () => entries.flatMap(entry => matchSyslogEntry(entry, filter) ?? []),
     [entries, filter]
   );
   // For 'Copy to clipboard' button.
@@ -269,7 +272,9 @@ function SyslogTable(props: {filter: SyslogFilter}): JSX.Element {
       postMessage({
         command: 'copy',
         // Copies up to COPY_MAX lines from the end.
-        text: stringifySyslogEntries(filteredEntries.slice(-COPY_MAX)),
+        text: stringifySyslogEntries(
+          filteredEntries.map(viewModel.toSyslogEntry).slice(-COPY_MAX)
+        ),
       }),
     [filteredEntries]
   );
@@ -307,11 +312,14 @@ function SyslogTable(props: {filter: SyslogFilter}): JSX.Element {
  * The body of the syslog table,
  * wrapping `TableVirtuoso` and the 'Jump to bottom' button.
  */
-function SyslogTableBody(props: {entries: SyslogEntry[]}) {
+function SyslogTableBody(props: {entries: viewModel.MatchedSyslogEntry[]}) {
   const {entries} = props;
   const virtuosoRef = useRef<TableVirtuosoHandle>(null);
   // Memoizes props passed to `TableVirtuoso` for performance
-  const virtuosoProps: TableVirtuosoProps<SyslogEntry, unknown> = useMemo(
+  const virtuosoProps: TableVirtuosoProps<
+    viewModel.MatchedSyslogEntry,
+    unknown
+  > = useMemo(
     () => ({
       style: {marginTop: 10},
       followOutput: 'smooth',
@@ -447,20 +455,48 @@ function SyslogTableBody(props: {entries: SyslogEntry[]}) {
   );
 }
 
+function MatchedText(props: {entry: viewModel.MatchedText}): JSX.Element {
+  const {
+    entry: {
+      text,
+      range: [start, end],
+    },
+  } = props;
+
+  if (start === end) {
+    return <>{text}</>;
+  }
+  const head = text.substring(0, start);
+  const highlight = text.substring(start, end);
+  const tail = text.substring(end);
+  return (
+    <>
+      {head}
+      <mark style={{background: MATCH_HIGHLIGHT_COLOR}}>{highlight}</mark>
+      {tail}
+    </>
+  );
+}
+
 /** The row for each syslog entry. */
-function SyslogRow(props: {entry: SyslogEntry}): JSX.Element {
+function SyslogRow(props: {entry: viewModel.MatchedSyslogEntry}): JSX.Element {
   const {
     entry: {lineNum, timestamp, severity, process, message},
   } = props;
+
+  const processElement = process && <MatchedText entry={process} />;
+  const messageElement = <MatchedText entry={message} />;
   const sx = sxSyslogEntry(severity);
   // The line number is 1-based.
   return (
     <>
-      {[lineNum + 1, timestamp, severity, process, message].map((s, i) => (
-        <TableCell sx={sx}>
-          <div style={tableCellStyle(i)}>{s}</div>
-        </TableCell>
-      ))}
+      {[lineNum + 1, timestamp, severity, processElement, messageElement].map(
+        (s, i) => (
+          <TableCell sx={sx}>
+            <div style={tableCellStyle(i)}>{s}</div>
+          </TableCell>
+        )
+      )}
     </>
   );
 }
