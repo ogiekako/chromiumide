@@ -168,6 +168,9 @@ const languageToLintConfigs = new Map<string, LintConfig[]>([
         executable: realpath => crosExeFor(realpath),
         arguments: (path: string) => ['lint', '--output=parseable', path],
         parse: parseCrosLintShell,
+        // Multiple empty lines at the end of scripts cause errors.
+        // TODO(b/268282249): Parse the error ("delete trailing blank lines") and show it.
+        ignoreEmptyDiagnostics: true,
       },
     ],
   ],
