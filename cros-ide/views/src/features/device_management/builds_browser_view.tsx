@@ -4,8 +4,8 @@
 
 import {useEffect, useState} from 'react';
 import * as ReactPanelHelper from '../../react/common/react_panel_helper';
-import * as model from '../../../../src/features//chromiumos/device_management/builds/browser/builds_browser_model';
-import * as buildModel from '../../../../src/features/chromiumos/device_management/builds/build_model';
+import * as model from '../../../../src/features/device_management/builds/browser/builds_browser_model';
+import * as buildModel from '../../../../src/features/device_management/builds/build_model';
 import {BuildsBrowser} from './builds_browser';
 
 const vscodeApi = acquireVsCodeApi();

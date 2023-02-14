@@ -27,10 +27,10 @@ import CheckIcon from '@mui/icons-material/Check';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import * as colors from '@mui/material/colors';
-import * as model from '../../../../src/features/chromiumos/device_management/flash/flash_device_model';
+import * as model from '../../../../src/features/device_management/flash/flash_device_model';
 import * as ReactPanelHelper from '../../react/common/react_panel_helper';
-import * as buildModel from '../../../../src/features/chromiumos/device_management/builds/build_model';
-import {BuildsBrowserState} from '../../../../src/features/chromiumos/device_management/builds/browser/builds_browser_model';
+import * as buildModel from '../../../../src/features/device_management/builds/build_model';
+import {BuildsBrowserState} from '../../../../src/features/device_management/builds/browser/builds_browser_model';
 import {BuildsBrowser} from './builds_browser';
 
 /** The first n FLASH_FLAGS that will be visible without expanding "More..." */

@@ -4,13 +4,13 @@
 
 import * as fs from 'fs';
 import * as mockFs from 'mock-fs';
-import {OwnedDeviceRepository} from '../../../../../../features/chromiumos/device_management/device_repository';
+import {OwnedDeviceRepository} from '../../../../../../features/device_management/device_repository';
 import {
   DutNetworkType,
   DutConnectionConfig,
-} from '../../../../../../features/chromiumos/device_management/v2/add_owned_device_model';
+} from '../../../../../../features/device_management/v2/add_owned_device_model';
 import {VoidOutputChannel} from '../../../../../testing/fakes/output_channel';
-import {AddOwnedDeviceService} from '../../../../../../features/chromiumos/device_management/v2/add_owned_device_service';
+import {AddOwnedDeviceService} from '../../../../../../features/device_management/v2/add_owned_device_service';
 
 describe('AddOwnedDeviceService', () => {
   describe('addHostToSshConfig', () => {

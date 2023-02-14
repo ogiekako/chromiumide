@@ -5,7 +5,7 @@
 import {
   Device,
   IDeviceRepository,
-} from '../../../../../features/chromiumos/device_management/device_repository';
+} from '../../../../../features/device_management/device_repository';
 
 export class FakeDeviceRepository implements IDeviceRepository<Device> {
   constructor(readonly devices: Device[]) {}

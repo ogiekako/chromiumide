@@ -5,9 +5,9 @@
 import * as fs from 'fs';
 import * as mockFs from 'mock-fs';
 import 'jasmine';
-import * as sshConfig from '../../../../../features/chromiumos/device_management/ssh_config';
+import * as sshConfig from '../../../../../features/device_management/ssh_config';
 import {FakeDeviceRepository} from './fake_device_repository';
-import {SshConfigHostEntry} from './../../../../../features/chromiumos/device_management/ssh_util';
+import {SshConfigHostEntry} from '../../../../../features/device_management/ssh_util';
 
 const TEST_CONFIG_FILE = `
 # Comments are ignored

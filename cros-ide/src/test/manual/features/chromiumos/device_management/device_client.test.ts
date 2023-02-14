@@ -4,13 +4,13 @@
 
 import {ConsoleOutputChannel} from '../../../../testing/fakes/output_channel';
 import {CipdRepository} from '../../../../../common/cipd';
-import {buildMinimalDeviceSshArgs} from '../../../../../features/chromiumos/device_management/ssh_util';
+import {buildMinimalDeviceSshArgs} from '../../../../../features/device_management/ssh_util';
 import {getExtensionUri} from '../../../../testing';
 import {
   CrosfleetDutLeaseOutput,
   CrosfleetRunner,
-} from '../../../../../features/chromiumos/device_management/crosfleet';
-import {DeviceClient} from '../../../../../features/chromiumos/device_management/device_client';
+} from '../../../../../features/device_management/crosfleet';
+import {DeviceClient} from '../../../../../features/device_management/device_client';
 
 const TIMEOUT = 2 * 60 * 1000;
 

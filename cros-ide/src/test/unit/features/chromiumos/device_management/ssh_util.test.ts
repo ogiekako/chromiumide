@@ -4,7 +4,7 @@
 
 import 'jasmine';
 import * as vscode from 'vscode';
-import * as sshUtil from '../../../../../features/chromiumos/device_management/ssh_util';
+import * as sshUtil from '../../../../../features/device_management/ssh_util';
 
 describe('SSH utility', () => {
   const FAKE_EXTENSION_URI = vscode.Uri.parse('file:///path/to/extension');

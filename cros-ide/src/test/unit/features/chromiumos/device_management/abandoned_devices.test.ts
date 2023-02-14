@@ -5,7 +5,7 @@
 import {
   AbandonedDevices,
   TEST_ONLY,
-} from '../../../../../features/chromiumos/device_management/abandoned_devices';
+} from '../../../../../features/device_management/abandoned_devices';
 import {cleanState} from '../../../../testing';
 import * as fakes from '../../../../testing/fakes';
 

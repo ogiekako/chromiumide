@@ -44,7 +44,7 @@ import {
   SyslogViewBackendMessage,
   SyslogViewFrontendMessage,
   stringifySyslogEntries,
-} from '../../../../../src/features/chromiumos/device_management/syslog/model';
+} from '../../../../../src/features/device_management/syslog/model';
 import * as viewModel from './viewmodel';
 import {
   initialTextFilter,

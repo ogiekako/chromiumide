@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as deviceClient from '../../../../../features/chromiumos/device_management/device_client';
-import {buildMinimalDeviceSshArgs} from '../../../../../features/chromiumos/device_management/ssh_util';
+import * as deviceClient from '../../../../../features/device_management/device_client';
+import {buildMinimalDeviceSshArgs} from '../../../../../features/device_management/ssh_util';
 import * as testing from '../../../../testing';
 import {FakeSshServer} from './fake_ssh_server';
 

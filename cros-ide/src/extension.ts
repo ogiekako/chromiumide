@@ -13,6 +13,7 @@ import * as cipd from './common/cipd';
 import * as commonUtil from './common/common_util';
 import * as features from './features';
 import * as codesearch from './features/codesearch';
+import * as deviceManagement from './features/device_management';
 import * as crosLint from './features/cros_lint';
 import * as gerrit from './features/gerrit';
 import * as gn from './features/gn';
@@ -68,6 +69,13 @@ async function postMetricsActivate(
   const cipdRepository = new cipd.CipdRepository();
 
   const chromiumosServices = new services.chromiumos.ChromiumosServiceModule();
+
+  deviceManagement.activate(
+    context,
+    statusManager,
+    chromiumosServices,
+    cipdRepository
+  );
 
   context.subscriptions.push(
     new ChromiumActivation(context, statusManager),
