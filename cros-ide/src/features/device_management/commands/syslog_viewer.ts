@@ -39,6 +39,11 @@ async function askRemoteSyslogPath(): Promise<string | undefined> {
       path: '/var/log/upstart.log',
     },
     {
+      label: '$(file) /var/log/chrome/chrome',
+      description: 'Chrome UI logs.',
+      path: '/var/log/chrome/chrome',
+    },
+    {
       label: 'Enter a custom file path...',
     },
   ];
