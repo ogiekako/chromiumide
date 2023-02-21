@@ -14,6 +14,18 @@ import * as metrics from '../../metrics/metrics';
 import * as parser from '../../chromiumos/tast/parser';
 import {CommandContext, promptKnownHostnameIfNeeded} from './common';
 
+/**
+ * Represents a Tast build error that can occur after calling the list command.
+ * The message can be reported directly to the user.
+ */
+class TastListBuildError extends Error {
+  constructor() {
+    super(
+      'Tast failed to build, please ensure all issues are addressed before trying again.'
+    );
+  }
+}
+
 export async function runTastTests(
   context: CommandContext,
   chrootService: services.chromiumos.ChrootService
@@ -97,8 +109,12 @@ export async function runTastTests(
       testCase.name
     );
   } catch (err: unknown) {
+    const errorMessage =
+      err instanceof TastListBuildError
+        ? err.message
+        : 'Error finding available tests.';
     const choice = await vscode.window.showErrorMessage(
-      'Error finding available tests.',
+      errorMessage,
       'Open Logs'
     );
     if (choice) {
@@ -167,7 +183,7 @@ async function getAvailableTests(
   testName: string
 ): Promise<string[] | undefined> {
   // Show a progress notification as this is a long operation.
-  return await vscode.window.withProgress(
+  return vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       cancellable: true,
@@ -178,13 +194,24 @@ async function getAvailableTests(
         sudoReason: 'to get list of available tests.',
         logger: context.output,
         cancellationToken: token,
+        ignoreNonZeroExit: true,
       });
       if (token.isCancellationRequested) {
         return undefined;
       }
+      // Handle response errors.
       if (res instanceof Error) {
         context.output.append(res.message);
         throw res;
+      }
+      // Handle errors based on the status code.
+      const {exitStatus, stderr} = res;
+      if (exitStatus !== 0) {
+        // Parse out custom build failure messages if they exist.
+        if (stderr.includes('build failed:')) {
+          throw new TastListBuildError();
+        }
+        throw new Error('Failed to list available tests');
       }
       // Tast tests can specify parameterized tests. Check for these as options.
       const testNameRE = new RegExp(`^${testName}(?:\\.\\w+)*$`, 'gm');
