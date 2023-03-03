@@ -12,6 +12,7 @@ import * as sourceMapSupport from 'source-map-support';
 import * as cipd from './common/cipd';
 import * as commonUtil from './common/common_util';
 import * as features from './features';
+import * as ownersLinks from './features/owners_links';
 import * as codesearch from './features/codesearch';
 import * as deviceManagement from './features/device_management';
 import * as crosLint from './features/cros_lint';
@@ -112,6 +113,9 @@ async function postMetricsActivate(
   crosLint.activate(context, statusManager, linterLogger);
   gn.activate(context, statusManager, linterLogger);
   shortLinkProvider.activate(context);
+  if (config.underDevelopment.ownersFileLinks.get()) {
+    ownersLinks.activate(context);
+  }
   codesearch.activate(context);
   suggestExtension.activate(context);
   feedback.activate(context);

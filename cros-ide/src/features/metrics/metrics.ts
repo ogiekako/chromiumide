@@ -92,6 +92,7 @@ type FeatureGroup =
   | 'idestatus'
   | 'lint'
   | 'misc'
+  | 'owners'
   | 'package'
   | 'spellchecker'
   | 'tast'

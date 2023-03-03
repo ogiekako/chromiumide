@@ -98,6 +98,7 @@ export const underDevelopment = {
     'underDevelopment.deviceManagementFlashV2'
   ),
   gerrit: new ConfigValue<boolean>('underDevelopment.gerrit'),
+  ownersFileLinks: new ConfigValue<boolean>('underDevelopment.ownersFileLinks'),
   platform2GtestDebugging: new ConfigValue<boolean>(
     'underDevelopment.platform2GtestDebugging'
   ),

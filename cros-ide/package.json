@@ -664,6 +664,11 @@
           "description": "Enable new features for Gerrit (under development)",
           "default": false
         },
+        "cros-ide.underDevelopment.ownersFileLinks": {
+          "type": "boolean",
+          "description": "Enable experimental support for clickable links in OWNERS files.",
+          "default": false
+        },
         "cros-ide.underDevelopment.platform2GtestDebugging": {
           "type": "boolean",
           "description": "Enable platform2 gtest debugging support",
