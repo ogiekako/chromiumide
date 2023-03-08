@@ -8,6 +8,7 @@ import * as cipd from '../../../../common/cipd';
 import * as services from '../../../../services';
 import * as gitDocument from '../../../../services/git_document';
 import * as bgTaskStatus from '../../../../ui/bg_task_status';
+import {TaskStatus} from '../../../../ui/bg_task_status';
 import * as metrics from '../../../metrics/metrics';
 import * as tricium from '../tricium';
 import * as executor from './executor';
@@ -35,7 +36,7 @@ export async function activate(
 ) {
   const outputChannel = vscode.window.createOutputChannel('CrOS IDE: Tricium');
   statusManager.setTask(STATUS_BAR_TASK_ID, {
-    status: bgTaskStatus.TaskStatus.OK,
+    status: TaskStatus.OK,
     outputChannel,
   });
 
@@ -46,7 +47,7 @@ export async function activate(
     );
   } catch (err) {
     outputChannel.append(`Could not download Tricium spellchecker: ${err}`);
-    statusManager.setStatus(STATUS_BAR_TASK_ID, bgTaskStatus.TaskStatus.ERROR);
+    statusManager.setStatus(STATUS_BAR_TASK_ID, TaskStatus.ERROR);
     return;
   }
 
@@ -184,7 +185,7 @@ class Spellchecker {
     results: tricium.Results | Error
   ): Promise<void> {
     if (results instanceof Error) {
-      this.setStatus(bgTaskStatus.TaskStatus.ERROR);
+      this.setStatus(TaskStatus.ERROR);
       metrics.send({
         category: 'error',
         group: 'spellchecker',
@@ -225,10 +226,10 @@ class Spellchecker {
       });
     }
     this.diagnosticCollection.set(uri, diagnostics);
-    this.setStatus(bgTaskStatus.TaskStatus.OK);
+    this.setStatus(TaskStatus.OK);
   }
 
-  private setStatus(status: bgTaskStatus.TaskStatus) {
+  private setStatus(status: TaskStatus) {
     this.statusManager.setStatus(STATUS_BAR_TASK_ID, status);
   }
 

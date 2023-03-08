@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as bgTaskStatus from '../ui/bg_task_status';
+import {TaskStatus} from '../ui/bg_task_status';
 import * as commonUtil from '../common/common_util';
 import * as logs from '../logs';
 
@@ -60,7 +61,7 @@ async function format(
   if (res instanceof Error) {
     log.channel.appendLine('ERROR: failed to run `gn format`: ' + res.message);
     statusManager.setTask(log.taskId, {
-      status: bgTaskStatus.TaskStatus.ERROR,
+      status: TaskStatus.ERROR,
       command: log.showLogCommand,
     });
     return;

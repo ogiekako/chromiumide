@@ -12,6 +12,7 @@ import {TEST_ONLY} from '../../../../features/gerrit/gerrit';
 import * as https from '../../../../features/gerrit/https';
 import * as metrics from '../../../../features/metrics/metrics';
 import * as bgTaskStatus from '../../../../ui/bg_task_status';
+import {TaskStatus} from '../../../../ui/bg_task_status';
 import * as testing from '../../../testing';
 
 const {ErrorMessageRouter, formatGerritTimestamp, Gerrit} = TEST_ONLY;
@@ -82,7 +83,7 @@ describe('ErrorMessageRouter', () => {
     });
     expect(state.statusManager.setStatus).toHaveBeenCalledOnceWith(
       'Gerrit',
-      bgTaskStatus.TaskStatus.ERROR
+      TaskStatus.ERROR
     );
   });
 
@@ -101,7 +102,7 @@ describe('ErrorMessageRouter', () => {
     });
     expect(state.statusManager.setStatus).toHaveBeenCalledOnceWith(
       'Gerrit',
-      bgTaskStatus.TaskStatus.ERROR
+      TaskStatus.ERROR
     );
   });
 
@@ -1052,7 +1053,7 @@ describe('Gerrit', () => {
 
     expect(state.statusManager.setStatus).toHaveBeenCalledOnceWith(
       'Gerrit',
-      bgTaskStatus.TaskStatus.ERROR
+      TaskStatus.ERROR
     );
     expect(metrics.send).toHaveBeenCalledWith({
       category: 'error',

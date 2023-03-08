@@ -31,6 +31,7 @@ import * as services from './services';
 import * as config from './services/config';
 import * as gitDocument from './services/git_document';
 import * as bgTaskStatus from './ui/bg_task_status';
+import {TaskStatus} from './ui/bg_task_status';
 
 // Install source map if it's available so that error stacktraces show TS
 // filepaths during our development.
@@ -104,7 +105,7 @@ async function postMetricsActivate(
   // We need an item in the IDE status, which lets users discover the UI log. Since UI actions
   // which result in an error should show a popup, we will not be changing the status
   statusManager.setTask('UI Actions', {
-    status: bgTaskStatus.TaskStatus.OK,
+    status: TaskStatus.OK,
     command: ideUtil.SHOW_UI_LOG,
   });
 

@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import * as metrics from '../../metrics/metrics';
 import * as bgTaskStatus from '../../../ui/bg_task_status';
+import {TaskStatus} from '../../../ui/bg_task_status';
 import * as services from '../../../services';
 import * as commonUtil from '../../../common/common_util';
 import * as compdbGenerator from './compdb_generator';
@@ -140,7 +141,7 @@ export class CppCodeCompletion implements vscode.Disposable {
     // processes, so we ensure it to run only one at a time using the manager.
     await this.jobManager.offer(async () => {
       this.statusManager.setTask(STATUS_BAR_TASK_NAME, {
-        status: bgTaskStatus.TaskStatus.RUNNING,
+        status: TaskStatus.RUNNING,
         command: SHOW_LOG_COMMAND,
       });
       const canceller = new vscode.CancellationTokenSource();
@@ -177,13 +178,13 @@ export class CppCodeCompletion implements vscode.Disposable {
         this.output.appendLine(error.message);
         this.showErrorMessage(error);
         this.statusManager.setTask(STATUS_BAR_TASK_NAME, {
-          status: bgTaskStatus.TaskStatus.ERROR,
+          status: TaskStatus.ERROR,
           command: SHOW_LOG_COMMAND,
         });
         return;
       }
       this.statusManager.setTask(STATUS_BAR_TASK_NAME, {
-        status: bgTaskStatus.TaskStatus.OK,
+        status: TaskStatus.OK,
         command: SHOW_LOG_COMMAND,
       });
     });

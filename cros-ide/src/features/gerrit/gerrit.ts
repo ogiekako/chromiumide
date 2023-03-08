@@ -12,6 +12,7 @@ import * as services from '../../services';
 import {underDevelopment} from '../../services/config';
 import * as gitDocument from '../../services/git_document';
 import * as bgTaskStatus from '../../ui/bg_task_status';
+import {TaskStatus} from '../../ui/bg_task_status';
 import * as metrics from '../metrics/metrics';
 import * as api from './api';
 import * as git from './git';
@@ -31,7 +32,7 @@ export function activate(
   const outputChannel = vscode.window.createOutputChannel('CrOS IDE: Gerrit');
   context.subscriptions.push(outputChannel);
   statusManager.setTask(GERRIT, {
-    status: bgTaskStatus.TaskStatus.OK,
+    status: TaskStatus.OK,
     outputChannel,
   });
 
@@ -613,7 +614,7 @@ class ErrorMessageRouter {
 
     this.outputChannel.appendLine(m.log);
     if (!m.noErrorStatus) {
-      this.statusManager.setStatus(GERRIT, bgTaskStatus.TaskStatus.ERROR);
+      this.statusManager.setStatus(GERRIT, TaskStatus.ERROR);
     }
     if (m.metrics) {
       metrics.send({

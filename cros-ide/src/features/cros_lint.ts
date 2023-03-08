@@ -11,6 +11,7 @@ import * as logs from '../logs';
 import * as services from '../services';
 import * as config from '../services/config';
 import * as bgTaskStatus from '../ui/bg_task_status';
+import {TaskStatus} from '../ui/bg_task_status';
 
 export function activate(
   context: vscode.ExtensionContext,
@@ -289,7 +290,7 @@ async function updateDiagnosticsWrapper(
   } catch (err) {
     log.channel.append(`${err}\n`);
     statusManager.setTask(log.taskId, {
-      status: bgTaskStatus.TaskStatus.ERROR,
+      status: TaskStatus.ERROR,
       command: log.showLogCommand,
     });
     metrics.send({
@@ -348,7 +349,7 @@ async function updateDiagnostics(
       if (res instanceof Error) {
         log.channel.append(res.message);
         statusManager.setTask(log.taskId, {
-          status: bgTaskStatus.TaskStatus.ERROR,
+          status: TaskStatus.ERROR,
           command: log.showLogCommand,
         });
         return;
@@ -361,7 +362,7 @@ async function updateDiagnostics(
         );
         if (!lintConfig.ignoreEmptyDiagnostics) {
           statusManager.setTask(log.taskId, {
-            status: bgTaskStatus.TaskStatus.ERROR,
+            status: TaskStatus.ERROR,
             command: log.showLogCommand,
           });
           metrics.send({
@@ -377,7 +378,7 @@ async function updateDiagnostics(
 
     collection.set(document.uri, diagnosticsCollection);
     statusManager.setTask(log.taskId, {
-      status: bgTaskStatus.TaskStatus.OK,
+      status: TaskStatus.OK,
       command: log.showLogCommand,
     });
     metrics.send({

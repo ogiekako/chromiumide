@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import * as services from '../../../services';
 import * as bgTaskStatus from '../../../ui/bg_task_status';
+import {TaskStatus} from '../../../ui/bg_task_status';
 import {STATUS_TASK_NAME, SHOW_LOG_COMMAND} from '.';
 
 export function activate(
@@ -60,7 +61,7 @@ export class HostTestTaskProvider implements vscode.TaskProvider {
     if (result instanceof Error) {
       this.output.append(`Listing tests failed: ${result}`);
       this.statusManager.setTask(STATUS_TASK_NAME, {
-        status: bgTaskStatus.TaskStatus.ERROR,
+        status: TaskStatus.ERROR,
         command: SHOW_LOG_COMMAND,
       });
       return [];
@@ -88,7 +89,7 @@ export class HostTestTaskProvider implements vscode.TaskProvider {
     }
 
     this.statusManager.setTask(STATUS_TASK_NAME, {
-      status: bgTaskStatus.TaskStatus.OK,
+      status: TaskStatus.OK,
       command: SHOW_LOG_COMMAND,
     });
     return tasks;

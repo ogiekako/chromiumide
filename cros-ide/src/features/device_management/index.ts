@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 import * as cipd from '../../common/cipd';
 import * as services from '../../services';
 import * as bgTaskStatus from '../../ui/bg_task_status';
+import {TaskStatus} from '../../ui/bg_task_status';
 import * as commands from './commands';
 import * as crosfleet from './crosfleet';
 import * as repository from './device_repository';
@@ -59,7 +60,7 @@ export function activate(
   );
 
   statusManager.setTask('Device Management', {
-    status: bgTaskStatus.TaskStatus.OK,
+    status: TaskStatus.OK,
     command: {
       command: 'cros-ide.deviceManagement.openLogs',
       title: 'Open Device Management Logs',
