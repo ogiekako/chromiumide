@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.10.0 (March 2023)
+
+- Fix for duplicated Gerrit comments.
+- Fixes for some lint warnings in shellscripts.
+
 ## 0.8.0 (February 2023)
 
 - Gerrit integration
