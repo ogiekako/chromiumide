@@ -24,7 +24,7 @@ const informationMessageDetail =
   'The data is pseudonymous. i.e. it is associated with a randomly generated unique user ID ' +
   'which resets every 180 days automatically, and you can also reset it from the Command ' +
   'Palette.\n' +
-  'Raw data is only accessible by the modern IDE team. However, aggregated data (e.g. trend ' +
+  'Raw data is only accessible by the CrOS IDE team. However, aggregated data (e.g. trend ' +
   'of number of users against time) might be shared with a broader audience for retrospective or ' +
   'advertising purposes.\n' +
   'You can opt-in or out of metrics collection anytime in settings (> extension > CrOS IDE).\n' +

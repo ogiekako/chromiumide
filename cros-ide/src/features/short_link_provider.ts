@@ -37,8 +37,7 @@ export class ShortLinkProvider implements vscode.DocumentLinkProvider {
     const text = document.getText();
     let match: RegExpMatchArray | null;
     while ((match = pattern.exec(text)) !== null) {
-      // TODO(b/216429126): check when match.index can be undefined
-      if (match.index) {
+      if (match.index !== undefined) {
         const linkStart = document.positionAt(match.index);
         const linkEnd = document.positionAt(match.index + match[0].length);
         links.push(

@@ -1,6 +1,6 @@
 {
   "greenLicenses": [
-    // We want to know exectly which 3rd party licenses we require,
+    // We want to know exactly which 3rd party licenses we require,
     // so we're making this list restrictive.
     //
     // New entries from the default list of green licences
