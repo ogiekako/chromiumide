@@ -7,6 +7,7 @@ import * as bgTaskStatus from '../../ui/bg_task_status';
 import * as config from '../../services/config';
 import * as metrics from '../metrics/metrics';
 import * as chromiumBuild from './chromium_build';
+import * as outputDirectories from './output_directories';
 
 /**
  * Extension context value provided to this class. We omit subscriptions here
@@ -60,6 +61,14 @@ export class Chromium implements vscode.Disposable {
     if (config.underDevelopment.chromiumBuild.get()) {
       this.featureName = 'chromiumBuild';
       chromiumBuild.activate(ephemeralContext, this.statusManager);
+    }
+    if (config.underDevelopment.chromiumOutputDirectories.get()) {
+      this.featureName = 'chromiumOutputDirectories';
+      outputDirectories.activate(
+        ephemeralContext,
+        this.statusManager,
+        this.root
+      );
     }
   }
 }

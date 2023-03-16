@@ -52,6 +52,7 @@
     "onView:devices",
     "onView:boards-packages",
     "onView:cros-ide-status",
+    "onView:cros-ide.chromium.outputDirectories",
     "onLanguage:c",
     "onLanguage:cpp",
     "onLanguage:gn",
@@ -308,6 +309,22 @@
         "command": "cros-ide.showHelpForLint",
         "title": "CrOS IDE Help",
         "icon": "$(question)"
+      },
+      {
+        "command": "cros-ide.chromium.outputDirectories.editArgs",
+        "title": "Edit args.gn",
+        "category": "Chromium"
+      },
+      {
+        "command": "cros-ide.chromium.outputDirectories.setCurrentLink",
+        "title": "Set as output directory",
+        "category": "Chromium"
+      },
+      {
+        "command": "cros-ide.chromium.outputDirectories.refresh",
+        "title": "Refresh output directories",
+        "icon": "$(refresh)",
+        "category": "Chromium"
       }
     ],
     "viewsContainers": {
@@ -332,6 +349,13 @@
         {
           "id": "cros-ide-status",
           "name": "IDE Status"
+        }
+      ],
+      "explorer": [
+        {
+          "id": "cros-ide.chromium.outputDirectories",
+          "name": "Chromium: Output Directories",
+          "when": "config.cros-ide.underDevelopment.chromiumOutputDirectories"
         }
       ]
     },
@@ -419,6 +443,11 @@
         {
           "command": "cros-ide.showHelpForLint",
           "when": "view == workbench.panel.markers.view",
+          "group": "navigation"
+        },
+        {
+          "command": "cros-ide.chromium.outputDirectories.refresh",
+          "when": "view == cros-ide.chromium.outputDirectories",
           "group": "navigation"
         }
       ],
@@ -529,11 +558,31 @@
         {
           "command": "cros-ide.coverage.showReport",
           "when": "view == boards-packages && viewItem == package && config.cros-ide.underDevelopment.testCoverage"
+        },
+        {
+          "command": "cros-ide.chromium.outputDirectories.editArgs",
+          "when": "view == cros-ide.chromium.outputDirectories"
+        },
+        {
+          "command": "cros-ide.chromium.outputDirectories.setCurrentLink",
+          "when": "view == cros-ide.chromium.outputDirectories && viewItem == directory"
         }
       ],
       "commandPalette": [
         {
           "command": "cros-ide.deviceManagement.copyHostname",
+          "when": "false"
+        },
+        {
+          "command": "cros-ide.chromium.outputDirectories.editArgs",
+          "when": "false"
+        },
+        {
+          "command": "cros-ide.chromium.outputDirectories.setCurrentLink",
+          "when": "false"
+        },
+        {
+          "command": "cros-ide.chromium.outputDirectories.refresh",
           "when": "false"
         }
       ]
@@ -637,6 +686,11 @@
         "cros-ide.underDevelopment.chromiumBuild": {
           "type": "boolean",
           "description": "Enable build + deploy for chromium code (incomplete)",
+          "default": false
+        },
+        "cros-ide.underDevelopment.chromiumOutputDirectories": {
+          "type": "boolean",
+          "description": "Enable output directory view for Chromium code (under development)",
           "default": false
         },
         "cros-ide.underDevelopment.crosFormat": {

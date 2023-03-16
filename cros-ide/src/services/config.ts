@@ -87,6 +87,9 @@ export const gerrit = {
 
 export const underDevelopment = {
   chromiumBuild: new ConfigValue<boolean>('underDevelopment.chromiumBuild'),
+  chromiumOutputDirectories: new ConfigValue<boolean>(
+    'underDevelopment.chromiumOutputDirectories'
+  ),
   crosFormat: new ConfigValue<boolean>('underDevelopment.crosFormat'),
   deviceManagement: new ConfigValue<boolean>(
     'underDevelopment.deviceManagement'

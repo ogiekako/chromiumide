@@ -82,6 +82,7 @@ const optionsGA = {
 
 // Exhaustive list of feature groups.
 type FeatureGroup =
+  | 'chromium.outputDirectories'
   | 'codesearch'
   | 'coverage'
   | 'cppxrefs'
