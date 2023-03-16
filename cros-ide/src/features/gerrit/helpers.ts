@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as dateFns from 'date-fns';
+
 /** Map from the file path to T */
 export type PathMap<T> = {
   [filePath: string]: T;
@@ -45,4 +47,35 @@ export function splitPathArrayMap<T, Key>(
     }
   }
   return res;
+}
+
+/**
+ * Convert UTC timestamp returned by Gerrit into a localized human fiendly format.
+ *
+ * Sample input: '2022-09-27 09:25:04.000000000'
+ */
+export function formatGerritTimestamp(timestamp: string): string {
+  try {
+    // The input is UTC, but before we can parse it, we need to adjust
+    // the format by replacing '.000000000' at the end with 'Z'
+    // ('Z' tells date-fns that it's UTC time).
+    const timestampZ: string = timestamp.replace(/\.[0-9]*$/, 'Z');
+    const date: Date = dateFns.parse(
+      timestampZ,
+      'yyyy-MM-dd HH:mm:ssX',
+      new Date()
+    );
+    // Date-fns functions use the local timezone.
+    if (dateFns.isToday(date)) {
+      return dateFns.format(date, 'HH:mm'); // e.g., 14:27
+    } else if (dateFns.isThisYear(date)) {
+      return dateFns.format(date, 'MMM d'); // e.g., Sep 5
+    } else {
+      return dateFns.format(date, 'yyyy MMM d'); // e.g., 2019 Aug 15
+    }
+  } catch (err) {
+    // Make sure not to throw any errors, because then
+    // the comments may not be shown at all.
+    return timestamp;
+  }
 }

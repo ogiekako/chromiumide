@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as helpers from '../../../../features/gerrit/helpers';
+import {formatGerritTimestamp} from '../../../../features/gerrit/helpers';
 
 type TestArrayMap = {
   [filePath: string]: number[];
@@ -51,5 +52,34 @@ describe('splitPathArrayMap', () => {
       [2, {'b.cc': [4, 5]}],
     ]);
     expect(helpers.splitPathArrayMap(input, div2)).toEqual(want);
+  });
+});
+
+describe('formatGerritTimestaps', () => {
+  it("formats today's date as hours and minutes", () => {
+    const now = new Date();
+
+    const year = now.getUTCFullYear().toString();
+    const month = (now.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = now.getUTCDate().toString().padStart(2, '0');
+    const hours = now.getUTCHours().toString().padStart(2, '0');
+    const minutes = now.getUTCMinutes().toString().padStart(2, '0');
+
+    const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:04.000000000`;
+    // We don't know the local timezone, only match the regex.
+    expect(formatGerritTimestamp(timestamp)).toMatch(/[0-9]{2}:[0-9]{2}/);
+  });
+
+  it('formats dates long time ago as year, month, and day', () => {
+    // Test only the year, because month name could be localized
+    // and the day may depend on the timezone
+    expect(formatGerritTimestamp('2018-09-27 09:25:04.000000000')).toMatch(
+      /^2018/
+    );
+  });
+
+  it('does not crash on malformed input', () => {
+    const badTimestamp = 'last Monday';
+    expect(formatGerritTimestamp(badTimestamp)).toEqual(badTimestamp);
   });
 });
