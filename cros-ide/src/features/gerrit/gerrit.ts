@@ -28,9 +28,12 @@ export const onDidHandleEventForTesting =
 export function activate(
   statusManager: bgTaskStatus.StatusManager,
   gitDirsWatcher: services.GitDirsWatcher,
+  subscriptions?: vscode.Disposable[],
   internalErrorForTesting?: Error
 ): vscode.Disposable {
-  const subscriptions: vscode.Disposable[] = [];
+  if (!subscriptions) {
+    subscriptions = [];
+  }
 
   const outputChannel = vscode.window.createOutputChannel('CrOS IDE: Gerrit');
   subscriptions.push(outputChannel);
@@ -189,7 +192,7 @@ export function activate(
     })
   );
 
-  return vscode.Disposable.from(...subscriptions.reverse());
+  return vscode.Disposable.from(...[...subscriptions].reverse());
 }
 
 async function openExternal(repoId: git.RepoId, path: string): Promise<void> {

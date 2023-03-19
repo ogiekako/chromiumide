@@ -25,7 +25,14 @@ import {VisibleGitDirsChangeEvent} from '.';
  * opened and closed).
  */
 export class GitDirsWatcher implements vscode.Disposable {
-  constructor(private readonly root: string) {}
+  constructor(
+    private readonly root: string,
+    subscriptions?: vscode.Disposable[]
+  ) {
+    if (subscriptions) {
+      subscriptions.push(this);
+    }
+  }
 
   private visibleGitDirsWatcher = new visible.Watcher(this.root);
 

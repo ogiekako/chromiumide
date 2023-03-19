@@ -106,10 +106,10 @@ describe('Gerrit', () => {
       },
     });
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     const completeShowChangeEvents = new testing.EventReader(
@@ -187,10 +187,10 @@ describe('Gerrit', () => {
       },
     });
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     const completeShowChangeEvents = new testing.EventReader(
@@ -285,10 +285,10 @@ describe('Gerrit', () => {
       },
     });
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     // Document provider for patch set level comments must be registered.
@@ -424,10 +424,10 @@ describe('Gerrit', () => {
       },
     });
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     const completeShowChangeEvents = new testing.EventReader(
@@ -545,13 +545,10 @@ describe('Gerrit', () => {
         },
       });
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(
-        new bgTaskStatus.TEST_ONLY.StatusManagerImpl(),
-        gitDirsWatcher
-      ),
-      gitDirsWatcher
+    gerrit.activate(
+      new bgTaskStatus.TEST_ONLY.StatusManagerImpl(),
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     const completeShowChangeEvents = new testing.EventReader(
@@ -629,10 +626,10 @@ describe('Gerrit', () => {
       },
     });
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     const completeShowChangeEvents = new testing.EventReader(
@@ -671,10 +668,10 @@ describe('Gerrit', () => {
       id: changeId,
     });
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     const completeShowChangeEvents = new testing.EventReader(
@@ -727,10 +724,10 @@ describe('Gerrit', () => {
       },
     });
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     const completeShowChangeEvents = new testing.EventReader(
@@ -767,10 +764,10 @@ describe('Gerrit', () => {
   });
 
   it('does not throw errors when repositioning is triggered outside a Git repo', async () => {
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     const completeShowChangeEvents = new testing.EventReader(
@@ -818,10 +815,10 @@ describe('Gerrit', () => {
       },
     });
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
     );
 
     const completeShowChangeEvents = new testing.EventReader(
@@ -882,10 +879,11 @@ describe('Gerrit', () => {
       `${user} saw a test error while editing /home/${user}/hello/world.php`
     );
 
-    const gitDirsWatcher = new GitDirsWatcher('/');
-    subscriptions.push(
-      gerrit.activate(state.statusManager, gitDirsWatcher, internalError),
-      gitDirsWatcher
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions,
+      internalError
     );
 
     const completeShowChangeEvents = new testing.EventReader(
