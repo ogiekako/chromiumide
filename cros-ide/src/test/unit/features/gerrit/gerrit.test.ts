@@ -5,7 +5,6 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as api from '../../../../features/gerrit/api';
 import * as auth from '../../../../features/gerrit/auth';
 import * as gerrit from '../../../../features/gerrit/gerrit';
 import * as metrics from '../../../../features/metrics/metrics';
@@ -15,115 +14,13 @@ import {TaskStatus} from '../../../../ui/bg_task_status';
 import * as testing from '../../../testing';
 import {VoidOutputChannel} from '../../../testing/fakes';
 import {FakeCommentController} from '../../../testing/fakes/comment_controller';
+import {
+  AUTHOR,
+  changeInfo,
+  resolvedCommentInfo,
+  unresolvedCommentInfo,
+} from './fake_data';
 import {FakeGerrit} from './fake_env';
-
-const AUTHOR: api.AccountInfo = Object.freeze({
-  _account_id: 1355869,
-  name: 'Tomasz Tylenda',
-  email: 'ttylenda@chromium.org',
-  avatars: [
-    {
-      url: 'https://lh3.googleusercontent.com/photo.jpg',
-      height: 32,
-    },
-  ],
-});
-
-function CHANGE_INFO(changeId: string, commitIds: string[]): api.ChangeInfo {
-  const revisions: {[commitId: string]: Object} = {};
-  for (const commitId of commitIds) revisions[commitId] = {};
-  return {change_id: changeId, revisions} as api.ChangeInfo;
-}
-
-const COMMENT_INFO_TEMPLATE = Object.freeze({
-  author: AUTHOR,
-  change_message_id: '592dcb09ed96952012e147fe621d264db460cd6f',
-  unresolved: true,
-  patch_set: 1,
-  updated: '2022-10-13 05:27:40.000000000',
-});
-
-// Based on crrev.com/c/3951631
-const SIMPLE_COMMENT_INFOS_MAP = (
-  commitId1: string
-): api.FilePathToBaseCommentInfos => {
-  return {
-    'cryptohome/cryptohome.cc': [
-      {
-        ...COMMENT_INFO_TEMPLATE,
-        id: 'b2698729_8e2b9e9a',
-        line: 3,
-        message: 'Unresolved comment on the added line.',
-        commit_id: commitId1,
-      },
-    ],
-  };
-};
-
-const SIMPLE_DRAFT_COMMENT_INFOS_MAP = (
-  commitId1: string
-): api.FilePathToBaseCommentInfos => {
-  return {
-    'cryptohome/cryptohome.cc': [
-      {
-        ...COMMENT_INFO_TEMPLATE,
-        id: 'aaaaaaaaa_bbbbbbbb',
-        line: 3,
-        message: 'Draft reply.',
-        commit_id: commitId1,
-        in_reply_to: 'b2698729_8e2b9e9a',
-        updated: '2022-10-13 05:43:50.000000000',
-      },
-    ],
-  };
-};
-
-// Based on crrev.com/c/3980425
-// For testing chains of changes
-const SECOND_COMMIT_IN_CHAIN = (
-  commitId: string
-): api.FilePathToBaseCommentInfos => {
-  return {
-    'cryptohome/cryptohome.cc': [
-      {
-        ...COMMENT_INFO_TEMPLATE,
-        id: '91ffb8ea_d3594fb4',
-        line: 6,
-        message: 'Comment on the second change',
-        commit_id: commitId,
-      },
-    ],
-  };
-};
-
-// Based on crrev.com/c/3954724, important bits are:
-//   "Comment on termios" on line 15 (1-base) of the first patch set
-//   "Comment on unistd" on line 18 (1-base) of the second patch set, resolved
-const TWO_PATCHSETS_COMMENT_INFOS_MAP = (
-  commitId1: string,
-  commitId2: string
-): api.FilePathToBaseCommentInfos => {
-  return {
-    'cryptohome/cryptohome.cc': [
-      {
-        ...COMMENT_INFO_TEMPLATE,
-        // Note, that we use commit_id to identify distinct patchset, not the patch_set.
-        id: '3d3c9023_4550daf0',
-        line: 15,
-        message: 'Comment on termios',
-        commit_id: commitId1,
-      },
-      {
-        ...COMMENT_INFO_TEMPLATE,
-        id: '9845ccec_3e772fd4',
-        line: 18,
-        message: 'Comment on unistd',
-        commit_id: commitId2,
-        unresolved: false,
-      },
-    ],
-  };
-};
 
 const GITCOOKIES_PATH = path.join(
   __dirname,
@@ -197,8 +94,16 @@ describe('Gerrit', () => {
 
     FakeGerrit.initialize().setChange({
       id: changeId,
-      info: CHANGE_INFO(changeId, [commitId]),
-      comments: SIMPLE_COMMENT_INFOS_MAP(commitId),
+      info: changeInfo(changeId, [commitId]),
+      comments: {
+        'cryptohome/cryptohome.cc': [
+          unresolvedCommentInfo({
+            line: 3,
+            message: 'Unresolved comment on the added line.',
+            commitId,
+          }),
+        ],
+      },
     });
 
     const gitDirsWatcher = new GitDirsWatcher('/');
@@ -258,11 +163,28 @@ describe('Gerrit', () => {
     const changeId = 'I23f50ecfe44ee28972aa640e1fa82ceabcc706a8';
     const commitId = await git.commit(`Second\nChange-Id: ${changeId}`);
 
+    const firstComment = unresolvedCommentInfo({
+      line: 3,
+      message: 'Unresolved comment on the added line.',
+      commitId,
+    });
+    const draftReplyComment = unresolvedCommentInfo({
+      line: 3,
+      message: 'Draft reply.',
+      commitId,
+      inReplyTo: firstComment.id,
+      updated: '2022-10-13 05:43:50.000000000',
+    });
+
     FakeGerrit.initialize({accountsMe: AUTHOR}).setChange({
       id: changeId,
-      info: CHANGE_INFO(changeId, [commitId]),
-      comments: SIMPLE_COMMENT_INFOS_MAP(commitId),
-      drafts: SIMPLE_DRAFT_COMMENT_INFOS_MAP(commitId),
+      info: changeInfo(changeId, [commitId]),
+      comments: {
+        'cryptohome/cryptohome.cc': [firstComment],
+      },
+      drafts: {
+        'cryptohome/cryptohome.cc': [draftReplyComment],
+      },
     });
 
     const gitDirsWatcher = new GitDirsWatcher('/');
@@ -309,48 +231,6 @@ describe('Gerrit', () => {
   });
 
   it('handles special comment types (line, file, commit msg, patchset)', async () => {
-    // Based on crrev.com/c/3980425
-    // Contains four comments: on a line, on a file, on the commit message, and patchset level.
-    const SPECIAL_COMMENT_TYPES = (
-      commitId: string
-    ): api.FilePathToBaseCommentInfos => {
-      return {
-        '/COMMIT_MSG': [
-          {
-            ...COMMENT_INFO_TEMPLATE,
-            id: '11f22565_49cc073f',
-            line: 7,
-            message: 'Commit message comment',
-            commit_id: commitId,
-          },
-        ],
-        '/PATCHSET_LEVEL': [
-          {
-            ...COMMENT_INFO_TEMPLATE,
-            id: '413f2364_e012168b',
-            updated: '2022-10-27 08:26:37.000000000',
-            message: 'Patchset level comment.',
-            commit_id: commitId,
-          },
-        ],
-        'cryptohome/crypto.h': [
-          {
-            ...COMMENT_INFO_TEMPLATE,
-            id: 'dac128a9_60677732',
-            message: 'File comment.',
-            commit_id: commitId,
-          },
-          {
-            ...COMMENT_INFO_TEMPLATE,
-            id: 'e5b66a14_6d8b4554',
-            line: 11,
-            message: 'Line comment.',
-            commit_id: commitId,
-          },
-        ],
-      };
-    };
-
     // Create a repo with two commits:
     //   1) The first simulates cros/main.
     //   2) The second is the commit on which Gerrit review is taking place.
@@ -373,8 +253,36 @@ describe('Gerrit', () => {
 
     FakeGerrit.initialize().setChange({
       id: changeId,
-      info: CHANGE_INFO(changeId, [reviewCommitId]),
-      comments: SPECIAL_COMMENT_TYPES(reviewCommitId),
+      info: changeInfo(changeId, [reviewCommitId]),
+      // Based on crrev.com/c/3980425
+      // Contains four comments: on a line, on a file, on the commit message, and patchset level.
+      comments: {
+        '/COMMIT_MSG': [
+          unresolvedCommentInfo({
+            line: 7,
+            message: 'Commit message comment',
+            commitId: reviewCommitId,
+          }),
+        ],
+        '/PATCHSET_LEVEL': [
+          unresolvedCommentInfo({
+            updated: '2022-10-27 08:26:37.000000000',
+            message: 'Patchset level comment.',
+            commitId: reviewCommitId,
+          }),
+        ],
+        'cryptohome/crypto.h': [
+          unresolvedCommentInfo({
+            message: 'File comment.',
+            commitId: reviewCommitId,
+          }),
+          unresolvedCommentInfo({
+            line: 11,
+            message: 'Line comment.',
+            commitId: reviewCommitId,
+          }),
+        ],
+      },
     });
 
     const gitDirsWatcher = new GitDirsWatcher('/');
@@ -499,8 +407,21 @@ describe('Gerrit', () => {
 
     FakeGerrit.initialize().setChange({
       id: changeId,
-      info: CHANGE_INFO(changeId, [commitId1, commitId2]),
-      comments: TWO_PATCHSETS_COMMENT_INFOS_MAP(commitId1, commitId2),
+      info: changeInfo(changeId, [commitId1, commitId2]),
+      comments: {
+        'cryptohome/cryptohome.cc': [
+          unresolvedCommentInfo({
+            line: 15,
+            message: 'Comment on termios',
+            commitId: commitId1,
+          }),
+          resolvedCommentInfo({
+            line: 18,
+            message: 'Comment on unistd',
+            commitId: commitId2,
+          }),
+        ],
+      },
     });
 
     const gitDirsWatcher = new GitDirsWatcher('/');
@@ -599,13 +520,29 @@ describe('Gerrit', () => {
     FakeGerrit.initialize()
       .setChange({
         id: changeId1,
-        info: CHANGE_INFO(changeId1, [commitId1]),
-        comments: SIMPLE_COMMENT_INFOS_MAP(commitId1),
+        info: changeInfo(changeId1, [commitId1]),
+        comments: {
+          'cryptohome/cryptohome.cc': [
+            unresolvedCommentInfo({
+              line: 3,
+              message: 'Unresolved comment on the added line.',
+              commitId: commitId1,
+            }),
+          ],
+        },
       })
       .setChange({
         id: changeId2,
-        info: CHANGE_INFO(changeId2, [commitId2]),
-        comments: SECOND_COMMIT_IN_CHAIN(commitId2),
+        info: changeInfo(changeId2, [commitId2]),
+        comments: {
+          'cryptohome/cryptohome.cc': [
+            unresolvedCommentInfo({
+              line: 6,
+              message: 'Comment on the second change',
+              commitId: commitId2,
+            }),
+          ],
+        },
       });
 
     const gitDirsWatcher = new GitDirsWatcher('/');
@@ -663,7 +600,7 @@ describe('Gerrit', () => {
     });
   });
 
-  it('positions comments on valid line nubers', async () => {
+  it('positions comments on valid line numbers', async () => {
     const git = new testing.Git(tempDir.path);
     await git.init();
     await git.commit('Mainline');
@@ -680,8 +617,16 @@ describe('Gerrit', () => {
 
     FakeGerrit.initialize().setChange({
       id: changeId,
-      info: CHANGE_INFO(changeId, [commitId]),
-      comments: SIMPLE_COMMENT_INFOS_MAP(commitId),
+      info: changeInfo(changeId, [commitId]),
+      comments: {
+        'cryptohome/cryptohome.cc': [
+          unresolvedCommentInfo({
+            line: 3,
+            message: 'Unresolved comment on the added line.',
+            commitId: commitId,
+          }),
+        ],
+      },
     });
 
     const gitDirsWatcher = new GitDirsWatcher('/');
@@ -770,8 +715,16 @@ describe('Gerrit', () => {
 
     FakeGerrit.initialize({internal: true}).setChange({
       id: changeId,
-      info: CHANGE_INFO(changeId, [commitId]),
-      comments: SIMPLE_COMMENT_INFOS_MAP(commitId),
+      info: changeInfo(changeId, [commitId]),
+      comments: {
+        'cryptohome/cryptohome.cc': [
+          unresolvedCommentInfo({
+            line: 3,
+            message: 'Unresolved comment on the added line.',
+            commitId,
+          }),
+        ],
+      },
     });
 
     const gitDirsWatcher = new GitDirsWatcher('/');
@@ -848,8 +801,21 @@ describe('Gerrit', () => {
 
     FakeGerrit.initialize().setChange({
       id: changeId,
-      info: CHANGE_INFO(changeId, [commitId1, commitId2]),
-      comments: TWO_PATCHSETS_COMMENT_INFOS_MAP(commitId1, commitId2),
+      info: changeInfo(changeId, [commitId1, commitId2]),
+      comments: {
+        'cryptohome/cryptohome.cc': [
+          unresolvedCommentInfo({
+            line: 15,
+            message: 'Comment on termios',
+            commitId: commitId1,
+          }),
+          resolvedCommentInfo({
+            line: 18,
+            message: 'Comment on unistd',
+            commitId: commitId2,
+          }),
+        ],
+      },
     });
 
     const gitDirsWatcher = new GitDirsWatcher('/');
