@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as services from '../../services';
@@ -11,11 +10,12 @@ import * as gitDocument from '../../services/git_document';
 import * as bgTaskStatus from '../../ui/bg_task_status';
 import * as metrics from '../metrics/metrics';
 import * as api from './api';
+import * as auth from './auth';
 import * as git from './git';
 import * as helpers from './helpers';
-import * as auth from './auth';
-import * as virtualDocument from './virtual_document';
+import {GerritComments} from './model';
 import {Sink} from './sink';
+import * as virtualDocument from './virtual_document';
 
 const onDidHandleEventForTestingEmitter = new vscode.EventEmitter<void>();
 // Notifies completion of async event handling for testing.
@@ -80,14 +80,17 @@ export function activate(
   );
   statusBar.command = focusCommentsPanel;
 
-  const gerrit = new Gerrit(sink, statusBar, internalErrorForTesting);
+  const gerrit = new Gerrit(
+    sink,
+    statusBar,
+    gitDirsWatcher,
+    internalErrorForTesting
+  );
   subscriptions.push(gerrit);
-
-  let gitHead: string | undefined;
 
   subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async document => {
-      await gerrit.showChanges(document.fileName, false);
+      await gerrit.showChanges(document.fileName);
       onDidHandleEventForTestingEmitter.fire();
     }),
     vscode.commands.registerCommand(
@@ -152,30 +155,7 @@ export function activate(
           authorId,
         },
       }: VscodeComment) => openExternal(repoId, `dashboard/${authorId}`)
-    ),
-    // TODO(b/268655627): Instrument this command to send metrics.
-    vscode.commands.registerCommand(
-      'cros-ide.gerrit.refreshComments',
-      async () => {
-        // Refresh all git directories that are being tracked by the IDE.
-        const showChangePromises: Promise<void>[] = [];
-        for (const curGitDir of gitDirsWatcher.visibleGitDirs) {
-          showChangePromises.push(gerrit.showChanges(curGitDir));
-        }
-        await Promise.all(showChangePromises);
-      }
-    ),
-    gitDirsWatcher.onDidChangeHead(async event => {
-      // 1. Check !event.head to avoid closing comments
-      //    when the only visible file is closed or replaced.
-      // 2. Check event.head !== gitHead to avoid reloading comments
-      //    on "head_1 -> undefined -> head_1" sequence.
-      if (event.head && event.head !== gitHead) {
-        gitHead = event.head;
-        await gerrit.showChanges(event.gitDir);
-        onDidHandleEventForTestingEmitter.fire();
-      }
-    })
+    )
   );
 
   return vscode.Disposable.from(...[...subscriptions].reverse());
@@ -186,18 +166,9 @@ async function openExternal(repoId: git.RepoId, path: string): Promise<void> {
   void vscode.env.openExternal(vscode.Uri.parse(url));
 }
 
-/** Removes sensitive data from a string sent to metrics. */
-// This function is a part of gerrit package, not metrics,
-// because it's easier to test it here.
-// TODO(ttylenda): Move this logic to metrics package.
-function redactPII(input: string): string {
-  const user = os.userInfo().username;
-  return input.replace(new RegExp(user, 'g'), '${USER}');
-}
-
 class Gerrit implements vscode.Disposable {
-  // Map git file paths to their associated changes.
-  private changes: Map<string, Change[]> = new Map<string, Change[]>();
+  // Map git root directory to their associated changes.
+  private changes = new Map<string, readonly Change[]>();
 
   private readonly commentController = vscode.comments.createCommentController(
     'cros-ide-gerrit',
@@ -209,8 +180,19 @@ class Gerrit implements vscode.Disposable {
   constructor(
     private readonly sink: Sink,
     private readonly statusBar: vscode.StatusBarItem,
+    gitDirsWatcher: services.GitDirsWatcher,
     private readonly internalErrorForTesting?: Error
-  ) {}
+  ) {
+    const gerritComments = new GerritComments(
+      gitDirsWatcher,
+      sink,
+      this.subscriptions
+    );
+    gerritComments.onDidUpdateComments(async ({gitDir, changes}) => {
+      await this.showChanges(gitDir, changes);
+      onDidHandleEventForTestingEmitter.fire();
+    });
+  }
 
   /**
    * Generator for iterating over threads associated with an optional path.
@@ -240,7 +222,10 @@ class Gerrit implements vscode.Disposable {
    * from Gerrit and uses it unless fetch is true.
    * TODO(davidwelling): Optimize UI experience by merging in changes rather than doing a replace, and accepting filePath as an array.
    */
-  async showChanges(filePath: string, fetch = true): Promise<void> {
+  async showChanges(
+    filePath: string,
+    changes?: readonly Change[]
+  ): Promise<void> {
     try {
       if (this.internalErrorForTesting) {
         throw this.internalErrorForTesting;
@@ -248,17 +233,12 @@ class Gerrit implements vscode.Disposable {
 
       const gitDir = await git.findGitDir(filePath, this.sink);
       if (!gitDir) return;
-      if (fetch) {
+      if (changes) {
         // Clear existing comments.
         this.clearCommentThreadsFromVscode(filePath);
         this.changes.delete(filePath);
 
         // Save off the new changes if they were found.
-        const changes = await this.fetchChangesOrThrow(gitDir);
-        if (changes === undefined) {
-          this.sink.appendLine('No changes found');
-          return;
-        }
         this.changes.set(filePath, changes);
       }
       let nCommentThreads = 0;
@@ -293,7 +273,7 @@ class Gerrit implements vscode.Disposable {
         }
       }
       this.updateStatusBar();
-      if (fetch && nCommentThreads > 0) {
+      if (changes && nCommentThreads > 0) {
         metrics.send({
           category: 'background',
           group: 'gerrit',
@@ -302,11 +282,7 @@ class Gerrit implements vscode.Disposable {
         });
       }
     } catch (err) {
-      const redacted = redactPII(`${err}`);
-      this.sink.show({
-        log: `Failed to show Gerrit changes: ${err}`,
-        metrics: 'Failed to show Gerrit changes (top-level): ' + redacted,
-      });
+      helpers.showTopLevelError(err as Error, this.sink);
       return;
     }
   }
@@ -331,92 +307,6 @@ class Gerrit implements vscode.Disposable {
     this.statusBar.text = `$(comment) ${nUnresolved}`;
     this.statusBar.tooltip = `Gerrit comments: ${nUnresolved} unresolved (${nAll} total)`;
     this.statusBar.show();
-  }
-
-  /**
-   * Retrieves the changes from Gerrit Rest API.
-   * It can return `undefined` when changes were not obtained.
-   * It can throw an error from HTTPS access by `api.getOrThrow`.
-   */
-  private async fetchChangesOrThrow(
-    gitDir: string
-  ): Promise<Change[] | undefined> {
-    const repoId = await git.getRepoId(gitDir, this.sink);
-    if (repoId === undefined) return;
-    const authCookie = await auth.readAuthCookie(repoId, this.sink);
-    const gitLogInfos = await git.readGitLog(gitDir, this.sink);
-    if (gitLogInfos.length === 0) return;
-
-    // Fetch the user's account info
-    const myAccountInfo = await api.fetchMyAccountInfoOrThrow(
-      repoId,
-      authCookie
-    );
-    if (!myAccountInfo) {
-      this.sink.appendLine(
-        'Calling user info could not be fetched from Gerrit'
-      );
-      // Don't skip here, because we want to show public information
-      // even when authentication has failed
-    }
-
-    const changes: Change[] = [];
-    for (const {localCommitId, changeId} of gitLogInfos) {
-      // Fetch a change
-      const changeInfo = await api.fetchChangeOrThrow(
-        repoId,
-        changeId,
-        authCookie
-      );
-      if (!changeInfo) {
-        this.sink.appendLine(`Not found on Gerrit: Change ${changeId}`);
-        continue;
-      }
-
-      // Fetch public comments
-      const publicCommentInfosMap = await api.fetchPublicCommentsOrThrow(
-        repoId,
-        changeId,
-        authCookie
-      );
-      if (!publicCommentInfosMap) {
-        this.sink.appendLine(
-          `Comments for ${changeId} could not be fetched from Gerrit`
-        );
-        continue;
-      }
-
-      // Fetch draft comments
-      let draftCommentInfosMap: api.FilePathToCommentInfos | undefined;
-      if (myAccountInfo) {
-        draftCommentInfosMap = await api.fetchDraftCommentsOrThrow(
-          repoId,
-          changeId,
-          myAccountInfo,
-          authCookie
-        );
-        if (!draftCommentInfosMap) {
-          this.sink.appendLine(
-            `Drafts for ${changeId} could not be fetched from Gerrit`
-          );
-          // Don't skip here, because we want to show public information
-          // even when authentication has failedgit
-        }
-      }
-
-      const commentInfosMap = api.mergeCommentInfos(
-        publicCommentInfosMap,
-        draftCommentInfosMap
-      );
-      const change = new Change(
-        localCommitId,
-        repoId,
-        changeInfo,
-        commentInfosMap
-      );
-      changes.push(change);
-    }
-    return changes;
   }
 
   /**
@@ -459,7 +349,7 @@ class Gerrit implements vscode.Disposable {
 /**
  * Gerrit change
  */
-class Change {
+export class Change {
   readonly revisions: CommitIdToRevision;
   constructor(
     readonly localCommitId: string,
@@ -487,6 +377,20 @@ class Change {
   }
   get changeNumber(): number {
     return this.changeInfo._number;
+  }
+
+  equals(other: Change): boolean {
+    if (this.changeId !== other.changeId) return false;
+    if (
+      Object.keys(this.revisions).length !== Object.keys(other.revisions).length
+    )
+      return false;
+    for (const [commitId, revision] of Object.entries(this.revisions)) {
+      const r = other.revisions[commitId];
+      if (!r) return false;
+      if (!revision.equals(r)) return false;
+    }
+    return true;
   }
 }
 
@@ -557,6 +461,35 @@ export class Revision {
 
   get revisionNumber(): number | 'edit' {
     return this.revisionInfo._number;
+  }
+
+  /**
+   * Returns whether this and other represents the identical revision state,
+   * i.e. whether they would produce the same view.
+   */
+  equals(other: Revision): boolean {
+    if (this.revisionNumber !== other.revisionNumber) return false;
+    if (
+      Object.keys(this.commentInfosMap).length !==
+      Object.keys(other.commentInfosMap).length
+    ) {
+      return false;
+    }
+    for (const [filePath, commentInfos] of Object.entries(
+      this.commentInfosMap
+    )) {
+      const cs = other.commentInfosMap[filePath];
+      if (!cs) return false;
+
+      if (commentInfos.length !== cs.length) return false;
+
+      for (let i = 0; i < commentInfos.length; i++) {
+        if (commentInfos[i].id !== cs[i].id) return false;
+        if (commentInfos[i].isPublic !== cs[i].isPublic) return false;
+        if (commentInfos[i].updated !== cs[i].updated) return false;
+      }
+    }
+    return true;
   }
 }
 

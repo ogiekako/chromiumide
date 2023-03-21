@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as os from 'os';
 import * as dateFns from 'date-fns';
+import {Sink} from './sink';
 
 /** Map from the file path to T */
 export type PathMap<T> = {
@@ -78,4 +80,20 @@ export function formatGerritTimestamp(timestamp: string): string {
     // the comments may not be shown at all.
     return timestamp;
   }
+}
+/** Removes sensitive data from a string sent to metrics. */
+// This function is a part of gerrit package, not metrics,
+// because it's easier to test it here.
+// TODO(ttylenda): Move this logic to metrics package.
+function redactPII(input: string): string {
+  const user = os.userInfo().username;
+  return input.replace(new RegExp(user, 'g'), '${USER}');
+}
+
+export function showTopLevelError(err: Error, sink: Sink) {
+  const redacted = redactPII(`${err}`);
+  sink.show({
+    log: `Failed to show Gerrit changes: ${err}`,
+    metrics: 'Failed to show Gerrit changes (top-level): ' + redacted,
+  });
 }
