@@ -11,14 +11,13 @@ import * as services from '../../services';
 import {underDevelopment} from '../../services/config';
 import * as gitDocument from '../../services/git_document';
 import * as bgTaskStatus from '../../ui/bg_task_status';
-import {TaskStatus} from '../../ui/bg_task_status';
 import * as metrics from '../metrics/metrics';
 import * as api from './api';
 import * as git from './git';
 import * as helpers from './helpers';
 import * as auth from './auth';
 import * as virtualDocument from './virtual_document';
-import {ErrorMessageRouter, GERRIT} from './sink';
+import {Sink} from './sink';
 
 const onDidHandleEventForTestingEmitter = new vscode.EventEmitter<void>();
 // Notifies completion of async event handling for testing.
@@ -35,13 +34,7 @@ export function activate(
     subscriptions = [];
   }
 
-  const outputChannel = vscode.window.createOutputChannel('CrOS IDE: Gerrit');
-  subscriptions.push(outputChannel);
-
-  statusManager.setTask(GERRIT, {
-    status: TaskStatus.OK,
-    outputChannel,
-  });
+  const sink = new Sink(statusManager, subscriptions);
 
   subscriptions.push(new virtualDocument.GerritDocumentProvider());
 
@@ -58,7 +51,7 @@ export function activate(
             'changes/I6743130cd3a84635a66f54f81fa839060f3fcb39/comments',
             authCookie
           );
-          outputChannel.appendLine(
+          sink.appendLine(
             '[Internal] Output for the Gerrit auth test:\n' + out
           );
           // Judge that the auth has succeeded if the output is a valid JSON
@@ -89,12 +82,7 @@ export function activate(
   );
   statusBar.command = focusCommentsPanel;
 
-  const gerrit = new Gerrit(
-    outputChannel,
-    statusBar,
-    statusManager,
-    internalErrorForTesting
-  );
+  const gerrit = new Gerrit(sink, statusBar, internalErrorForTesting);
   subscriptions.push(gerrit);
 
   let gitHead: string | undefined;
@@ -212,7 +200,6 @@ function redactPII(input: string): string {
 class Gerrit implements vscode.Disposable {
   // Map git file paths to their associated changes.
   private changes: Map<string, Change[]> = new Map<string, Change[]>();
-  private errorMessageRouter: ErrorMessageRouter;
 
   private readonly commentController = vscode.comments.createCommentController(
     'cros-ide-gerrit',
@@ -222,16 +209,10 @@ class Gerrit implements vscode.Disposable {
   private readonly subscriptions = [this.commentController];
 
   constructor(
-    private readonly outputChannel: vscode.OutputChannel,
+    private readonly sink: Sink,
     private readonly statusBar: vscode.StatusBarItem,
-    statusManager: bgTaskStatus.StatusManager,
     private readonly internalErrorForTesting?: Error
-  ) {
-    this.errorMessageRouter = new ErrorMessageRouter(
-      outputChannel,
-      statusManager
-    );
-  }
+  ) {}
 
   /**
    * Generator for iterating over threads associated with an optional path.
@@ -277,7 +258,7 @@ class Gerrit implements vscode.Disposable {
         // Save off the new changes if they were found.
         const changes = await this.fetchChangesOrThrow(gitDir);
         if (changes === undefined) {
-          this.outputChannel.appendLine('No changes found');
+          this.sink.appendLine('No changes found');
           return;
         }
         this.changes.set(filePath, changes);
@@ -320,7 +301,7 @@ class Gerrit implements vscode.Disposable {
       }
     } catch (err) {
       const redacted = redactPII(`${err}`);
-      this.errorMessageRouter.show({
+      this.sink.show({
         log: `Failed to show Gerrit changes: ${err}`,
         metrics: 'Failed to show Gerrit changes (top-level): ' + redacted,
       });
@@ -335,7 +316,7 @@ class Gerrit implements vscode.Disposable {
   private async findGitDir(filePath: string): Promise<string | undefined> {
     const gitDir = commonUtil.findGitDir(filePath);
     if (!gitDir) {
-      this.outputChannel.appendLine('Git directory not found for ' + filePath);
+      this.sink.appendLine('Git directory not found for ' + filePath);
       return;
     }
     return gitDir;
@@ -346,9 +327,9 @@ class Gerrit implements vscode.Disposable {
    * showing an error message if the id is not found.
    */
   async getRepoId(gitDir: string): Promise<git.RepoId | undefined> {
-    const repoId = await git.getRepoId(gitDir, this.outputChannel);
+    const repoId = await git.getRepoId(gitDir, this.sink);
     if (repoId instanceof git.UnknownRepoError) {
-      this.errorMessageRouter.show({
+      this.sink.show({
         log:
           'Unknown remote repo detected: ' +
           `id ${repoId.repoId}, url ${repoId.repoUrl}.\n` +
@@ -359,14 +340,14 @@ class Gerrit implements vscode.Disposable {
       return;
     }
     if (repoId instanceof Error) {
-      this.errorMessageRouter.show({
+      this.sink.show({
         log: `'git remote' failed: ${repoId.message}`,
         metrics: 'git remote failed',
       });
       return;
     }
     const repoKind = repoId === 'cros' ? 'Public' : 'Internal';
-    this.outputChannel.appendLine(
+    this.sink.appendLine(
       `${repoKind} Chrome remote repo detected at ${gitDir}`
     );
     return repoId;
@@ -414,7 +395,7 @@ class Gerrit implements vscode.Disposable {
       authCookie
     );
     if (!myAccountInfo) {
-      this.outputChannel.appendLine(
+      this.sink.appendLine(
         'Calling user info could not be fetched from Gerrit'
       );
       // Don't skip here, because we want to show public information
@@ -430,9 +411,7 @@ class Gerrit implements vscode.Disposable {
         authCookie
       );
       if (!changeInfo) {
-        this.outputChannel.appendLine(
-          `Not found on Gerrit: Change ${changeId}`
-        );
+        this.sink.appendLine(`Not found on Gerrit: Change ${changeId}`);
         continue;
       }
 
@@ -443,7 +422,7 @@ class Gerrit implements vscode.Disposable {
         authCookie
       );
       if (!publicCommentInfosMap) {
-        this.outputChannel.appendLine(
+        this.sink.appendLine(
           `Comments for ${changeId} could not be fetched from Gerrit`
         );
         continue;
@@ -459,7 +438,7 @@ class Gerrit implements vscode.Disposable {
           authCookie
         );
         if (!draftCommentInfosMap) {
-          this.outputChannel.appendLine(
+          this.sink.appendLine(
             `Drafts for ${changeId} could not be fetched from Gerrit`
           );
           // Don't skip here, because we want to show public information
@@ -487,9 +466,9 @@ class Gerrit implements vscode.Disposable {
    * typically these are the changes from HEAD (inclusive) to remote main (exclusive).
    */
   private async readGitLog(gitDir: string): Promise<git.GitLogInfo[]> {
-    const gitLogInfos = await git.readGitLog(gitDir, this.outputChannel);
+    const gitLogInfos = await git.readGitLog(gitDir, this.sink);
     if (gitLogInfos instanceof Error) {
-      this.errorMessageRouter.show({
+      this.sink.show({
         log: `Failed to get commits in ${gitDir}`,
         metrics: 'readGitLog failed to get commits',
       });
@@ -500,7 +479,7 @@ class Gerrit implements vscode.Disposable {
 
   /** Reads gitcookies or returns undefined. */
   async readAuthCookie(repoId: git.RepoId): Promise<string | undefined> {
-    const filePath = await auth.getGitcookiesPath(this.outputChannel);
+    const filePath = await auth.getGitcookiesPath(this.sink);
     try {
       const str = await fs.promises.readFile(filePath, {encoding: 'utf8'});
       return auth.parseAuthGitcookies(repoId, str);
@@ -508,13 +487,13 @@ class Gerrit implements vscode.Disposable {
       if ((err as {code?: unknown}).code === 'ENOENT') {
         const msg =
           'The gitcookies file for Gerrit auth was not found at ' + filePath;
-        this.errorMessageRouter.show(msg);
+        this.sink.show(msg);
       } else {
         let msg =
           'Unknown error in reading the gitcookies file for Gerrit auth at ' +
           filePath;
         if (err instanceof Object) msg += ': ' + err.toString();
-        this.errorMessageRouter.show(msg);
+        this.sink.show(msg);
       }
     }
   }
@@ -527,20 +506,16 @@ class Gerrit implements vscode.Disposable {
     commitId: string,
     gitDir: string
   ): Promise<boolean> {
-    const commitExists = await git.commitExists(
-      commitId,
-      gitDir,
-      this.outputChannel
-    );
+    const commitExists = await git.commitExists(commitId, gitDir, this.sink);
     if (commitExists instanceof Error) {
-      this.errorMessageRouter.show({
+      this.sink.show({
         log: `Local availability check failed for the patchset ${commitId}.`,
         metrics: 'Local commit availability check failed',
       });
       return false;
     }
     if (!commitExists) {
-      this.errorMessageRouter.show({
+      this.sink.show({
         log:
           `The patchset ${commitId} was not available locally. This happens ` +
           'when some patchsets were uploaded to Gerrit from a different chroot, ' +
@@ -582,10 +557,10 @@ class Gerrit implements vscode.Disposable {
       gitDir,
       commitId,
       filePaths,
-      this.outputChannel
+      this.sink
     );
     if (hunksMap instanceof Error) {
-      this.errorMessageRouter.show({
+      this.sink.show({
         log: 'Failed to get git diff to reposition Gerrit comments',
         metrics: 'Failed to get git diff to reposition Gerrit comments',
       });

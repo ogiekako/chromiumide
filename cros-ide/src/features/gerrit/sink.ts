@@ -8,20 +8,41 @@ import {TaskStatus} from '../../ui/bg_task_status';
 import * as metrics from '../metrics/metrics';
 
 // Task name in the status manager.
-export const GERRIT = 'Gerrit';
+const GERRIT = 'Gerrit';
 
 /**
- * Helper for showing error messages, sending metrics,
- * and updating the IDE status.
- *
- * It used to be a method in Gerrit class, but it was extracted
- * for testability.
+ * Represents the means to report logs or errors.
  */
-export class ErrorMessageRouter {
+export class Sink implements vscode.Disposable {
+  private readonly output =
+    vscode.window.createOutputChannel('CrOS IDE: Gerrit');
+
   constructor(
-    private readonly outputChannel: vscode.OutputChannel,
-    private readonly statusManager: bgTaskStatus.StatusManager
-  ) {}
+    private readonly statusManager: bgTaskStatus.StatusManager,
+    subscriptions?: vscode.Disposable[]
+  ) {
+    if (subscriptions) {
+      subscriptions.push(this);
+    }
+    statusManager.setTask(GERRIT, {
+      status: TaskStatus.OK,
+      outputChannel: this.output,
+    });
+  }
+
+  /**
+   * Append the given value to the output channel.
+   */
+  append(value: string) {
+    this.output.append(value);
+  }
+
+  /**
+   * Append the given value and a line feed character to the output channel.
+   */
+  appendLine(value: string) {
+    this.output.appendLine(value);
+  }
 
   /**
    * Show `message.log` in the IDE, set task status to error
@@ -36,7 +57,7 @@ export class ErrorMessageRouter {
     const m: {log: string; metrics?: string; noErrorStatus?: boolean} =
       typeof message === 'string' ? {log: message, metrics: message} : message;
 
-    this.outputChannel.appendLine(m.log);
+    this.output.appendLine(m.log);
     if (!m.noErrorStatus) {
       this.statusManager.setStatus(GERRIT, TaskStatus.ERROR);
     }
@@ -47,5 +68,9 @@ export class ErrorMessageRouter {
         description: m.metrics,
       });
     }
+  }
+
+  dispose() {
+    vscode.Disposable.from(this.output).dispose();
   }
 }

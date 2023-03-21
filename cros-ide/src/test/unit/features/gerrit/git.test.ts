@@ -9,6 +9,8 @@ import {
   readGitLog,
   TEST_ONLY,
 } from '../../../../features/gerrit/git';
+import {Sink} from '../../../../features/gerrit/sink';
+import {FakeStatusManager} from '../../../testing/fakes';
 
 const {parseGitLog} = TEST_ONLY;
 
@@ -85,6 +87,12 @@ describe('parseGitLog', () => {
 describe('Git helper', () => {
   const tempDir = testing.tempDir();
 
+  const subscriptions: vscode.Disposable[] = [];
+  afterEach(() => {
+    vscode.Disposable.from(...subscriptions.reverse()).dispose();
+    subscriptions.length = 0;
+  });
+
   it('detects which SHA is available locally', async () => {
     const repo = new testing.Git(tempDir.path);
     await repo.init();
@@ -97,11 +105,12 @@ describe('Git helper', () => {
   });
 
   it('returns local changes (empty on detached head)', async () => {
+    const sink = new Sink(new FakeStatusManager(), subscriptions);
+
     const repo = new testing.Git(tempDir.path);
     await repo.init();
     await repo.commit('First');
     await repo.setupCrosBranches();
-    const outputChannel = vscode.window.createOutputChannel('git');
 
     const changeId2 = 'Iaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
     const commitId2 = await repo.commit(`Second\nChange-Id: ${changeId2}`);
@@ -109,7 +118,7 @@ describe('Git helper', () => {
     const changeId3 = 'Ibbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
     const commitId3 = await repo.commit(`Third\nChange-Id: ${changeId3}`);
 
-    const branchLog = await readGitLog(repo.root, outputChannel);
+    const branchLog = await readGitLog(repo.root, sink);
     expect(branchLog).toEqual([
       {
         localCommitId: commitId3,
@@ -123,7 +132,7 @@ describe('Git helper', () => {
 
     await repo.checkout(commitId2);
 
-    const detachedHeadLog = await readGitLog(repo.root, outputChannel);
+    const detachedHeadLog = await readGitLog(repo.root, sink);
     expect(detachedHeadLog).toHaveSize(0);
   });
 });

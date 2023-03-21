@@ -2,18 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
 import * as commonUtil from '../../common/common_util';
 import * as git from './git';
+import {Sink} from './sink';
 
 // The implementation here is largely based on depot_tools/gerrit_util.py
 
 /** Get the path of the gitcookies */
-export async function getGitcookiesPath(
-  outputChannel: vscode.OutputChannel
-): Promise<string> {
+export async function getGitcookiesPath(sink: Sink): Promise<string> {
   // Use the environment variable GIT_COOKIES_PATH if it exists
   const envPath = process.env.GIT_COOKIES_PATH;
   if (envPath) return envPath;
@@ -24,7 +22,7 @@ export async function getGitcookiesPath(
     'http.cookiefile',
   ]);
   if (gitPath instanceof Error) {
-    outputChannel.appendLine(
+    sink.appendLine(
       '"git config --path http.cookiefile" failed, so we use ~/.gitcookies'
     );
     // Use ~/.gitcookies

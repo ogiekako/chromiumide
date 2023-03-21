@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
+import {Sink} from './sink';
 
 /** Kind of a Git remote repository */
 export type RepoId = 'cros' | 'cros-internal';
@@ -27,12 +27,12 @@ export class UnknownRepoError extends Error {
  */
 export async function getRepoId(
   gitDir: string,
-  outputChannel: vscode.OutputChannel
+  sink: Sink
 ): Promise<RepoId | Error> {
   const gitRemote = await commonUtil.exec('git', ['remote', '-v'], {
     cwd: gitDir,
     logStdout: true,
-    logger: outputChannel,
+    logger: sink,
   });
   if (gitRemote instanceof Error) return gitRemote;
   const [repoId, repoUrl] = gitRemote.stdout.split('\n')[0].split(/\s+/);
@@ -90,7 +90,7 @@ export class Hunk {
 export async function commitExists(
   commitId: string,
   dir: string,
-  logger?: vscode.OutputChannel
+  logger?: Sink
 ): Promise<boolean | Error> {
   const result = await commonUtil.exec('git', ['cat-file', '-e', commitId], {
     cwd: dir,
@@ -109,14 +109,14 @@ export async function readDiffHunks(
   gitDir: string,
   commitId: string,
   paths: string[],
-  logger?: vscode.OutputChannel
+  sink?: Sink
 ): Promise<FilePathToHunks | Error> {
   const gitDiff = await commonUtil.exec(
     'git',
     ['diff', '-U0', commitId, '--', ...paths],
     {
       cwd: gitDir,
-      logger,
+      logger: sink,
     }
   );
   if (gitDiff instanceof Error) return gitDiff;
@@ -169,7 +169,7 @@ export type GitLogInfo = {
 
 async function isHeadDetached(
   gitDir: string,
-  logger: vscode.OutputChannel
+  sink: Sink
 ): Promise<boolean | Error> {
   // `git rev-parse --symbolic-full-name HEAD` outputs `HEAD`
   // when the head is detached.
@@ -179,7 +179,7 @@ async function isHeadDetached(
     {
       cwd: gitDir,
       logStdout: true,
-      logger,
+      logger: sink,
     }
   );
   if (revParseHead instanceof Error) {
@@ -196,13 +196,13 @@ async function isHeadDetached(
  */
 export async function readGitLog(
   gitDir: string,
-  logger: vscode.OutputChannel
+  sink: Sink
 ): Promise<GitLogInfo[] | Error> {
-  const detachedHead = await isHeadDetached(gitDir, logger);
+  const detachedHead = await isHeadDetached(gitDir, sink);
   if (detachedHead instanceof Error) return detachedHead;
 
   if (detachedHead) {
-    logger.appendLine(
+    sink.appendLine(
       'Detected detached head. Gerrit comments will not be shown.'
     );
     return [];
@@ -210,7 +210,7 @@ export async function readGitLog(
 
   const branchLog = await commonUtil.exec('git', ['log', '@{upstream}..HEAD'], {
     cwd: gitDir,
-    logger,
+    logger: sink,
   });
   if (branchLog instanceof Error) return branchLog;
   return parseGitLog(branchLog.stdout);

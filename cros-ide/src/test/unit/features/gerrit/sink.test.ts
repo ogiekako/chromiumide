@@ -3,30 +3,30 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {ErrorMessageRouter} from '../../../../features/gerrit/sink';
+import {Sink} from '../../../../features/gerrit/sink';
 import * as metrics from '../../../../features/metrics/metrics';
 import * as bgTaskStatus from '../../../../ui/bg_task_status';
 import {TaskStatus} from '../../../../ui/bg_task_status';
 import * as testing from '../../../testing';
 
-describe('ErrorMessageRouter', () => {
+describe('Sink', () => {
+  const {vscodeSpy} = testing.installVscodeDouble();
+
   const state = testing.cleanState(() => {
     const outputChannel = jasmine.createSpyObj<vscode.OutputChannel>(
       'outputChannel',
       ['appendLine']
     );
+    vscodeSpy.window.createOutputChannel.and.returnValue(outputChannel);
+
     const statusManager = jasmine.createSpyObj<bgTaskStatus.StatusManager>(
       'statusManager',
-      ['setStatus']
-    );
-    const errorMessageRouter = new ErrorMessageRouter(
-      outputChannel,
-      statusManager
+      ['setStatus', 'setTask']
     );
     return {
       outputChannel,
       statusManager,
-      errorMessageRouter,
+      sink: new Sink(statusManager),
     };
   });
 
@@ -35,7 +35,7 @@ describe('ErrorMessageRouter', () => {
   });
 
   it('shows a simple message', () => {
-    state.errorMessageRouter.show('simple message');
+    state.sink.show('simple message');
     expect(state.outputChannel.appendLine).toHaveBeenCalledOnceWith(
       'simple message'
     );
@@ -51,7 +51,7 @@ describe('ErrorMessageRouter', () => {
   });
 
   it('shows a message with custom metrics', () => {
-    state.errorMessageRouter.show({
+    state.sink.show({
       log: 'log message',
       metrics: 'metrics message',
     });
@@ -70,7 +70,7 @@ describe('ErrorMessageRouter', () => {
   });
 
   it('shows a message supressing status change', () => {
-    state.errorMessageRouter.show({
+    state.sink.show({
       log: 'log message',
       metrics: 'metrics message',
       noErrorStatus: true,
