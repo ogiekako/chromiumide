@@ -10,10 +10,10 @@ import {
   installVscodeDouble,
   installFakeConfigs,
 } from '../../../testing/doubles';
-import * as bgTaskStatus from '../../../../ui/bg_task_status';
 import {ErrorDetails} from '../../../../features/chromiumos/cpp_code_completion/compdb_generator';
 import * as testing from '../../../testing';
 import * as fakes from '../../../testing/fakes';
+import {FakeStatusManager} from '../../../testing/fakes';
 
 describe('C++ code completion', () => {
   const {vscodeSpy, vscodeEmitters} = installVscodeDouble();
@@ -84,7 +84,7 @@ describe('C++ code completion', () => {
             };
           },
         ],
-        new bgTaskStatus.TEST_ONLY.StatusManagerImpl()
+        new FakeStatusManager()
       );
 
       const clangd = tc.hasClangd
@@ -165,7 +165,7 @@ describe('C++ code completion on failure', () => {
           };
         },
       ],
-      new bgTaskStatus.TEST_ONLY.StatusManagerImpl()
+      new FakeStatusManager()
     );
 
     const clangd = jasmine.createSpyObj<vscode.Extension<unknown>>('clangd', [

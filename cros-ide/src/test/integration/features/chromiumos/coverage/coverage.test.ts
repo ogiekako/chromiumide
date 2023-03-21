@@ -6,8 +6,8 @@ import * as assert from 'assert';
 import {Coverage} from '../../../../../features/chromiumos/coverage';
 import * as services from '../../../../../services';
 import * as config from '../../../../../services/config';
-import * as bgTaskStatus from '../../../../../ui/bg_task_status';
 import * as testing from '../../../../testing';
+import {FakeStatusManager} from '../../../../testing/fakes';
 
 const coverageJsonContents =
   `{"data": [{ "files": [{
@@ -36,10 +36,7 @@ describe('Test coverage', () => {
       tempDir.path
     )!;
     return {
-      coverage: new Coverage(
-        chrootService,
-        new bgTaskStatus.TEST_ONLY.StatusManagerImpl()
-      ),
+      coverage: new Coverage(chrootService, new FakeStatusManager()),
     };
   });
 

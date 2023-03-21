@@ -12,7 +12,7 @@ import {GitDirsWatcher} from '../../../../services';
 import * as bgTaskStatus from '../../../../ui/bg_task_status';
 import {TaskStatus} from '../../../../ui/bg_task_status';
 import * as testing from '../../../testing';
-import {VoidOutputChannel} from '../../../testing/fakes';
+import {FakeStatusManager, VoidOutputChannel} from '../../../testing/fakes';
 import {FakeCommentController} from '../../../testing/fakes/comment_controller';
 import {
   AUTHOR,
@@ -671,7 +671,7 @@ describe('Gerrit', () => {
       });
 
     gerrit.activate(
-      new bgTaskStatus.TEST_ONLY.StatusManagerImpl(),
+      new FakeStatusManager(),
       new GitDirsWatcher('/', subscriptions),
       subscriptions
     );
