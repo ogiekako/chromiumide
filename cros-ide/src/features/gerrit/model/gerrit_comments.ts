@@ -14,6 +14,7 @@ import {Clock} from './clock';
 import {Ticket} from './ticket';
 
 export const POLL_INTERVAL_MILLIS = 10 * 1000;
+export const FETCH_THROTTLE_INTERVAL_MILLIS = 500;
 
 /**
  * Retrieves and holds current comments from Gerrit. It does this by fetching
@@ -22,6 +23,7 @@ export const POLL_INTERVAL_MILLIS = 10 * 1000;
  */
 export class GerritComments implements vscode.Disposable {
   private readonly gitDirToChanges = new Map<string, [Ticket, Change[]]>();
+  private readonly gitDirToTimeoutId = new Map<string, NodeJS.Timeout>();
 
   private readonly onDidUpdateCommentsEmitter = new vscode.EventEmitter<{
     gitDir: string;
@@ -45,27 +47,36 @@ export class GerritComments implements vscode.Disposable {
     const clock = new Clock(POLL_INTERVAL_MILLIS, this.subscriptions);
 
     this.subscriptions.push(
-      gitDirsWatcher.onDidChangeHead(async event => {
+      gitDirsWatcher.onDidChangeHead(event => {
         // 1. Check !event.head to avoid closing comments
         //    when the only visible file is closed or replaced.
         // 2. Check event.head !== gitHead to avoid reloading comments
         //    on "head_1 -> undefined -> head_1" sequence.
         if (event.head && event.head !== gitHead) {
           gitHead = event.head;
-          await this.fetch(event.gitDir, new Ticket());
+          this.requestFetch(event.gitDir, new Ticket());
         }
       }),
-      clock.onDidTick(async () => {
-        await this.refresh();
+      clock.onDidTick(() => {
+        this.refresh();
       }),
       // TODO(b/268655627): Instrument this command to send metrics.
-      vscode.commands.registerCommand(
-        'cros-ide.gerrit.refreshComments',
-        async () => {
-          await this.refresh();
-        }
-      )
+      vscode.commands.registerCommand('cros-ide.gerrit.refreshComments', () => {
+        this.refresh();
+      })
     );
+  }
+
+  private requestFetch(gitDir: string, ticket: Ticket): void {
+    const existingTimeoutId = this.gitDirToTimeoutId.get(gitDir);
+    if (existingTimeoutId !== undefined) {
+      clearTimeout(existingTimeoutId);
+    }
+
+    const timeoutId = setTimeout(() => {
+      void this.fetch(gitDir, ticket);
+    }, FETCH_THROTTLE_INTERVAL_MILLIS);
+    this.gitDirToTimeoutId.set(gitDir, timeoutId);
   }
 
   private async fetch(gitDir: string, ticket: Ticket): Promise<void> {
@@ -104,13 +115,10 @@ export class GerritComments implements vscode.Disposable {
     });
   }
 
-  private async refresh(): Promise<void> {
-    // Refresh all git directories that are being tracked by the IDE.
-    const showChangePromises: Promise<void>[] = [];
+  private refresh(): void {
     for (const curGitDir of this.gitDirsWatcher.visibleGitDirs) {
-      showChangePromises.push(this.fetch(curGitDir, new Ticket()));
+      this.requestFetch(curGitDir, new Ticket());
     }
-    await Promise.all(showChangePromises);
   }
 
   dispose() {
