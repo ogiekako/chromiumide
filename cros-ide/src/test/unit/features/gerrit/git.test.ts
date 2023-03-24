@@ -112,7 +112,7 @@ describe('Git helper', () => {
     ).toBeFalse();
   });
 
-  it('returns local changes (empty on detached head)', async () => {
+  it('returns local changes (works on detached head)', async () => {
     const sink = new Sink(new FakeStatusManager(), subscriptions);
 
     const repo = new testing.Git(tempDir.path);
@@ -141,6 +141,11 @@ describe('Git helper', () => {
     await repo.checkout(commitId2);
 
     const detachedHeadLog = await readGitLog(repo.root, sink);
-    expect(detachedHeadLog).toHaveSize(0);
+    expect(detachedHeadLog).toEqual([
+      {
+        localCommitId: commitId2,
+        changeId: changeId2,
+      },
+    ]);
   });
 });

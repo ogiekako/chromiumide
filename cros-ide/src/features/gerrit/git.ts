@@ -216,24 +216,6 @@ export type GitLogInfo = {
   readonly changeId: string;
 };
 
-async function isHeadDetachedOrThrow(
-  gitDir: string,
-  sink: Sink
-): Promise<boolean> {
-  // `git rev-parse --symbolic-full-name HEAD` outputs `HEAD`
-  // when the head is detached.
-  const revParseHead = await commonUtil.execOrThrow(
-    'git',
-    ['rev-parse', '--symbolic-full-name', 'HEAD'],
-    {
-      cwd: gitDir,
-      logStdout: true,
-      logger: sink,
-    }
-  );
-  return revParseHead.stdout.trim() === 'HEAD';
-}
-
 /**
  * Extracts change ids from Git log in the range `@{upstream}..HEAD`
  *
@@ -258,22 +240,76 @@ export async function readGitLog(
 }
 
 async function readGitLogOrThrow(gitDir: string, sink: Sink) {
-  const detachedHead = await isHeadDetachedOrThrow(gitDir, sink);
-  if (detachedHead) {
+  const upstreamBranch = await getUpstreamOrThrow(gitDir, sink);
+  if (!upstreamBranch) {
     sink.appendLine(
-      'Detected detached head. Gerrit comments will not be shown.'
+      'Upstream branch not found. Gerrit comments will not be shown. If you think this is an error, please file go/cros-ide-new-bug'
     );
     return [];
   }
   const branchLog = await commonUtil.execOrThrow(
     'git',
-    ['log', '@{upstream}..HEAD'],
+    ['log', `${upstreamBranch}..HEAD`],
     {
       cwd: gitDir,
       logger: sink,
     }
   );
   return parseGitLog(branchLog.stdout);
+}
+
+async function getUpstreamOrThrow(
+  gitDir: string,
+  sink: Sink
+): Promise<string | undefined> {
+  if (!(await isHeadDetachedOrThrow(gitDir, sink))) {
+    return '@{upstream}';
+  }
+  // Create mapping from local ref to upstream.
+  const localRefToUpstream = new Map<string, string>();
+  for (const localRefAndUpstream of (
+    await commonUtil.execOrThrow(
+      'git',
+      ['branch', '--format=%(refname:short) %(upstream:short)'],
+      {cwd: gitDir, logger: sink}
+    )
+  ).stdout.split('\n')) {
+    const x = localRefAndUpstream.split(' ');
+    if (x.length < 2) continue;
+    const [ref, upstream] = x;
+    localRefToUpstream.set(ref, upstream);
+  }
+  // Find the latest local ref from reflog.
+  const limit = 1000; // avoid reading arbitrarily long log.
+  for (const ref of (
+    await commonUtil.execOrThrow(
+      'git',
+      ['reflog', '--pretty=%D', `-${limit}`],
+      {cwd: gitDir, logger: sink}
+    )
+  ).stdout.split('\n')) {
+    const upstream = localRefToUpstream.get(ref);
+    if (upstream) return upstream;
+  }
+  return undefined;
+}
+
+async function isHeadDetachedOrThrow(
+  gitDir: string,
+  sink: Sink
+): Promise<boolean> {
+  // `git rev-parse --symbolic-full-name HEAD` outputs `HEAD`
+  // when the head is detached.
+  const revParseHead = await commonUtil.execOrThrow(
+    'git',
+    ['rev-parse', '--symbolic-full-name', 'HEAD'],
+    {
+      cwd: gitDir,
+      logStdout: true,
+      logger: sink,
+    }
+  );
+  return revParseHead.stdout.trim() === 'HEAD';
 }
 
 function parseGitLog(gitLog: string): GitLogInfo[] {
