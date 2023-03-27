@@ -5,6 +5,7 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import * as api from '../../../../features/gerrit/api';
 import * as gerrit from '../../../../features/gerrit/gerrit';
 import {
   FETCH_THROTTLE_INTERVAL_MILLIS,
@@ -1216,6 +1217,189 @@ describe('Gerrit', () => {
     // Error is reported only two times, because all but the first and last
     // events are ignored.
     expect(metrics.send).toHaveBeenCalledTimes(2);
+  });
+
+  it('shifts comments correctly', async () => {
+    const git = new testing.Git(tempDir.path);
+
+    const changeId = 'I123';
+
+    await testing.cachedSetup(
+      tempDir.path,
+      async () => {
+        await git.init();
+        await git.commit('Mainline');
+        await git.setupCrosBranches();
+
+        await testing.putFiles(tempDir.path, {
+          // 9 lines
+          'foo.txt': 'A\nB\nC\nD\nE\nF\nG\nH\nI\n',
+          'bar.txt': 'A\nB\n',
+          'baz.txt': `1
+2
+3
+4
+`,
+        });
+        await git.addAll();
+        await git.commit(`foobar\nChange-Id: ${changeId}`);
+      },
+      'gerrit_shifts_comments_correctly'
+    );
+
+    const commitId = await git.getCommitId();
+
+    await testing.putFiles(tempDir.path, {
+      // First line added.
+      // Third line removed.
+      // Fifth line modified, sixth to seventh line removed.
+      'foo.txt': `X
+A
+B
+D
+X
+H
+I
+`,
+      // First line added.
+      'bar.txt': `X
+A
+B
+`,
+      'baz.txt': `1
+ADD
+2
+ADD
+3
+ADD
+4
+`,
+    });
+
+    const range = (
+      start_line: number,
+      start_character: number,
+      end_line: number,
+      end_character: number
+    ): api.CommentRange => {
+      return {
+        start_line,
+        start_character,
+        end_line,
+        end_character,
+      };
+    };
+
+    FakeGerrit.initialize().setChange({
+      id: changeId,
+      info: changeInfo(changeId, [commitId]),
+      comments: {
+        'foo.txt': [
+          unresolvedCommentInfo({
+            message: 'case 00 - comment on a file',
+            commitId,
+          }),
+          unresolvedCommentInfo({
+            message: 'case 01 - comment on characters',
+            range: range(1, 1, 1, 2),
+            line: 1,
+            commitId,
+          }),
+          unresolvedCommentInfo({
+            message: 'case 02 - comment on a line',
+            line: 1,
+            commitId,
+          }),
+          unresolvedCommentInfo({
+            message: 'case 03 - comment on a removed line',
+            line: 3,
+            commitId,
+          }),
+          unresolvedCommentInfo({message: 'case 04', line: 4, commitId}),
+          unresolvedCommentInfo({
+            message: 'case 05 - comment in a removed hunk',
+            line: 5,
+            commitId,
+          }),
+          unresolvedCommentInfo({message: 'case 06', line: 7, commitId}),
+          unresolvedCommentInfo({message: 'case 07', line: 8, commitId}),
+          unresolvedCommentInfo({
+            message: 'case 08 - comment across multiple hunks',
+            range: range(3, 1, 6, 2),
+            line: 3,
+            commitId,
+          }),
+        ],
+        'bar.txt': [
+          unresolvedCommentInfo({
+            message: 'case 09 - bar',
+            line: 1,
+            commitId,
+          }),
+        ],
+        'baz.txt': [
+          unresolvedCommentInfo({
+            message: 'case 10 - one',
+            line: 1,
+            commitId,
+          }),
+          unresolvedCommentInfo({
+            message: 'case 11 - two',
+            line: 2,
+            commitId,
+          }),
+          unresolvedCommentInfo({
+            message: 'case 12 - three',
+            line: 3,
+            commitId,
+          }),
+          unresolvedCommentInfo({
+            message: 'case 13 - four',
+            line: 4,
+            commitId,
+          }),
+        ],
+      },
+    });
+
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
+    );
+
+    const completeShowChangeEvents = new testing.EventReader(
+      gerrit.onDidHandleEventForTesting,
+      subscriptions
+    );
+
+    const fooFilePath = abs('foo.txt');
+    vscodeEmitters.workspace.onDidOpenTextDocument.fire({
+      uri: vscode.Uri.file(fooFilePath),
+      fileName: fooFilePath,
+    } as vscode.TextDocument);
+
+    await completeShowChangeEvents.poll(FETCH_THROTTLE_INTERVAL_MILLIS);
+
+    const threads = threadsSortedByFirstCommentBody(state.commentController);
+
+    // foo.txt
+    expect(threads[0].range).toEqual(new vscode.Range(0, 0, 0, 0));
+    expect(threads[1].range).toEqual(new vscode.Range(1, 1, 1, 2));
+    expect(threads[2].range).toEqual(new vscode.Range(1, 0, 1, 0));
+    expect(threads[3].range).toEqual(new vscode.Range(2, 0, 2, 0));
+    expect(threads[4].range).toEqual(new vscode.Range(3, 0, 3, 0));
+    expect(threads[5].range).toEqual(new vscode.Range(4, 0, 4, 0));
+    expect(threads[6].range).toEqual(new vscode.Range(4, 0, 4, 0));
+    expect(threads[7].range).toEqual(new vscode.Range(5, 0, 5, 0));
+    expect(threads[8].range).toEqual(new vscode.Range(2, 1, 5, 2));
+    // bar.txt
+    expect(threads[9].range).toEqual(new vscode.Range(1, 0, 1, 0));
+    // baz.txt
+    expect(threads[10].range).toEqual(new vscode.Range(0, 0, 0, 0));
+    expect(threads[11].range).toEqual(new vscode.Range(2, 0, 2, 0));
+    expect(threads[12].range).toEqual(new vscode.Range(4, 0, 4, 0));
+    expect(threads[13].range).toEqual(new vscode.Range(6, 0, 6, 0));
   });
 });
 

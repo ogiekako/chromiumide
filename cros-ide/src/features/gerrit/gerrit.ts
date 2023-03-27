@@ -364,7 +364,3 @@ function shiftCommentThreadsByHunks(
     }
   }
 }
-
-export const TEST_ONLY = {
-  shiftCommentThreadsByHunks,
-};

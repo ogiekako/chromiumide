@@ -4,9 +4,10 @@
 
 import * as api from '../../../../features/gerrit/api';
 
-export type PartialCommentInfo = {
+type PartialCommentInfo = {
   id?: string;
   line?: number;
+  range?: api.CommentRange;
   message?: string;
   commitId?: string;
   inReplyTo?: string;
@@ -40,11 +41,12 @@ function commentInfo(
   info: PartialCommentInfo,
   unresolved: boolean
 ): api.BaseCommentInfo {
-  const {line, message, commitId, inReplyTo, updated, id} = info;
+  const {line, range, message, commitId, inReplyTo, updated, id} = info;
   return {
     author: AUTHOR,
     id: id ?? `${globalCommentId++}`,
-    line: line ?? 1,
+    line,
+    range,
     message: message ?? 'a',
     commit_id: commitId ?? '1',
     unresolved,
