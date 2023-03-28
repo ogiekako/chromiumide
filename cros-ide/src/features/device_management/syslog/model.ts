@@ -24,6 +24,7 @@ export type SyslogSeverity =
   | 'NOTICE'
   | 'WARNING'
   | 'ERR'
+  | 'ERROR'
   | 'ALERT'
   | 'EMERG'
   | 'CRIT';
@@ -68,6 +69,7 @@ export function parseSyslogLine(line: string, lineNum: number): SyslogEntry {
     case 'INFO':
     case 'NOTICE':
     case 'WARNING':
+    case 'ERROR':
     case 'ERR':
     case 'ALERT':
     case 'EMERG':
