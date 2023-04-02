@@ -75,9 +75,6 @@ describe('Gerrit', () => {
     vscodeSpy.comments.createCommentController.and.returnValue(
       state.commentController
     );
-    vscodeSpy.commands.registerCommand.and.returnValue(
-      vscode.Disposable.from()
-    );
 
     vscodeSpy.window.createOutputChannel.and.returnValue(state.outputChannel);
     vscodeSpy.window.createStatusBarItem.and.returnValue(state.statusBarItem);
@@ -1410,6 +1407,120 @@ ADD
     expect(threads[11].range).toEqual(new vscode.Range(2, 0, 2, 0));
     expect(threads[12].range).toEqual(new vscode.Range(4, 0, 4, 0));
     expect(threads[13].range).toEqual(new vscode.Range(6, 0, 6, 0));
+  });
+
+  it('supports comment reply', async () => {
+    const git = new testing.Git(tempDir.path);
+
+    const changeId = 'I123';
+
+    await testing.cachedSetup(
+      tempDir.path,
+      async () => {
+        await git.init();
+        await git.commit('Mainline');
+        await git.setupCrosBranches();
+
+        // First review patchset.
+        await testing.putFiles(git.root, {
+          'foo.txt': 'A\nB\nC',
+        });
+        await git.addAll();
+        await git.commit(`ABC\nChange-Id: ${changeId}\n`, {
+          all: true,
+        });
+      },
+      'gerrit_supports_comment_reply'
+    );
+
+    const commitId = await git.getCommitId();
+
+    FakeGerrit.initialize({accountsMe: AUTHOR}).setChange({
+      id: changeId,
+      info: changeInfo(changeId, [commitId]),
+      comments: {
+        'foo.txt': [
+          unresolvedCommentInfo({
+            line: 1,
+            message: '1 - unresolved',
+            commitId,
+          }),
+          resolvedCommentInfo({
+            line: 2,
+            message: '2 - resolved',
+            commitId,
+          }),
+          unresolvedCommentInfo({
+            line: 3,
+            message: '3 - unresolved',
+            commitId,
+          }),
+        ],
+      },
+    });
+
+    gerrit.activate(
+      state.statusManager,
+      new GitDirsWatcher('/', subscriptions),
+      subscriptions
+    );
+
+    const completeShowChangeEvents = new testing.EventReader(
+      gerrit.onDidHandleEventForTesting,
+      subscriptions
+    );
+
+    const fooFilePath = abs('foo.txt');
+
+    vscodeEmitters.workspace.onDidOpenTextDocument.fire({
+      uri: vscode.Uri.file(fooFilePath),
+      fileName: fooFilePath,
+    } as vscode.TextDocument);
+
+    await completeShowChangeEvents.poll(FETCH_THROTTLE_INTERVAL_MILLIS);
+
+    const threads = threadsSortedByFirstCommentBody(state.commentController);
+
+    expect(threads[0].comments.length).toEqual(1);
+    expect(threads[1].comments.length).toEqual(1);
+    expect(threads[2].comments.length).toEqual(1);
+
+    expect(threads[0].contextValue).toMatch(/<unresolved>/);
+    expect(threads[1].contextValue).toMatch(/<resolved>/);
+    expect(threads[2].contextValue).toMatch(/<unresolved>/);
+
+    // Reply to unresolved comment.
+    await vscodeSpy.commands.executeCommand('cros-ide.gerrit.reply', {
+      thread: threads[0],
+      text: 'still unresolved',
+    });
+    // Unresolve comment.
+    await vscodeSpy.commands.executeCommand(
+      'cros-ide.gerrit.replyAndUnresolve',
+      {
+        thread: threads[1],
+        text: 'unresolve',
+      }
+    );
+    // Resolve comment.
+    await vscodeSpy.commands.executeCommand('cros-ide.gerrit.replyAndResolve', {
+      thread: threads[2],
+      text: 'resolve',
+    });
+
+    // Receive event for each draft update.
+    await completeShowChangeEvents.read();
+    await completeShowChangeEvents.read();
+    await completeShowChangeEvents.read();
+
+    // Draft comments are added to the view.
+    expect(threads[0].comments.length).toEqual(2);
+    expect(threads[1].comments.length).toEqual(2);
+    expect(threads[2].comments.length).toEqual(2);
+
+    expect(threads[0].contextValue).toMatch(/<unresolved>/);
+    expect(threads[1].contextValue).toMatch(/<unresolved>/);
+    expect(threads[2].contextValue).toMatch(/<resolved>/);
   });
 });
 

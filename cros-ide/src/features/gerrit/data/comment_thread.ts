@@ -25,10 +25,11 @@ export class CommentThread {
   constructor(
     private readonly localCommitId: string,
     readonly repoId: git.RepoId,
-    private readonly changeId: string,
+    readonly changeId: string,
     readonly changeNumber: number,
-    private readonly revisionNumber: number | 'edit',
-    commentInfos: api.CommentInfo[]
+    readonly revisionNumber: number | 'edit',
+    commentInfos: api.CommentInfo[],
+    readonly filePath: string
   ) {
     this.comments = commentInfos.map(
       commentInfo => new Comment(repoId, changeNumber, commentInfo)
@@ -46,7 +47,7 @@ export class CommentThread {
   get firstComment(): Comment {
     return this.comments[0];
   }
-  private get lastComment(): Comment {
+  get lastComment(): Comment {
     return this.comments[this.comments.length - 1];
   }
 

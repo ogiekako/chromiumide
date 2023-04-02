@@ -57,11 +57,11 @@ export class GerritComments implements vscode.Disposable {
         }
       }),
       clock.onDidTick(() => {
-        this.refresh();
+        this.requestRefresh();
       }),
       // TODO(b/268655627): Instrument this command to send metrics.
       vscode.commands.registerCommand('cros-ide.gerrit.refreshComments', () => {
-        this.refresh();
+        this.requestRefresh();
       })
     );
   }
@@ -119,9 +119,19 @@ export class GerritComments implements vscode.Disposable {
     });
   }
 
-  private refresh(): void {
+  private requestRefresh(): void {
     for (const curGitDir of this.gitDirsWatcher.visibleGitDirs) {
       this.requestFetch(curGitDir, new Ticket());
+    }
+  }
+
+  /**
+   * Fetches Gerrit changes for visible Git directories and fires events if any
+   * comments are updated.
+   */
+  async refresh(): Promise<void> {
+    for (const curGitDir of this.gitDirsWatcher.visibleGitDirs) {
+      await this.fetch(curGitDir, new Ticket());
     }
   }
 

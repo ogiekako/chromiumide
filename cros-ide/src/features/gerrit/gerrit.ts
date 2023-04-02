@@ -49,11 +49,13 @@ export function activate(
         async () => {
           const authCookie = await auth.readAuthCookie('cros-internal', sink);
           // Fetch from some internal Gerrit change
-          const out = await api.fetchOrThrow(
-            'cros-internal',
-            'changes/I6743130cd3a84635a66f54f81fa839060f3fcb39/comments',
-            authCookie
-          );
+          const infos: api.FilePathToBaseCommentInfos | undefined =
+            await api.fetchOrThrow(
+              'cros-internal',
+              'changes/I6743130cd3a84635a66f54f81fa839060f3fcb39/comments',
+              authCookie
+            );
+          const out = infos && JSON.stringify(infos);
           sink.appendLine(
             '[Internal] Output for the Gerrit auth test:\n' + out
           );
@@ -184,7 +186,37 @@ class Gerrit implements vscode.Disposable {
     'CrOS IDE Gerrit'
   );
 
-  private readonly subscriptions = [this.commentController];
+  private readonly subscriptions = [
+    this.commentController,
+    vscode.commands.registerCommand(
+      'cros-ide.gerrit.reply',
+      async ({thread, text}: vscode.CommentReply) => {
+        await this.reply(thread as VscodeCommentThread, text);
+      }
+    ),
+    vscode.commands.registerCommand(
+      'cros-ide.gerrit.replyAndResolve',
+      async ({thread, text}: vscode.CommentReply) => {
+        await this.reply(
+          thread as VscodeCommentThread,
+          text,
+          /* unresolved = */ false
+        );
+      }
+    ),
+    vscode.commands.registerCommand(
+      'cros-ide.gerrit.replyAndUnresolve',
+      async ({thread, text}: vscode.CommentReply) => {
+        await this.reply(
+          thread as VscodeCommentThread,
+          text,
+          /* unresolved = */ true
+        );
+      }
+    ),
+  ];
+
+  private readonly gerritComments;
 
   constructor(
     private readonly sink: Sink,
@@ -192,12 +224,12 @@ class Gerrit implements vscode.Disposable {
     gitDirsWatcher: services.GitDirsWatcher,
     private readonly preEventHandleForTesting?: () => Promise<void>
   ) {
-    const gerritComments = new GerritComments(
+    this.gerritComments = new GerritComments(
       gitDirsWatcher,
       sink,
       this.subscriptions
     );
-    gerritComments.onDidUpdateComments(async ({gitDir, changes}) => {
+    this.gerritComments.onDidUpdateComments(async ({gitDir, changes}) => {
       await this.showChanges(gitDir, changes);
       onDidHandleEventForTestingEmitter.fire();
     });
@@ -370,6 +402,59 @@ class Gerrit implements vscode.Disposable {
     this.statusBar.text = `$(comment) ${nUnresolved}`;
     this.statusBar.tooltip = `Gerrit comments: ${nUnresolved} unresolved (${nAll} total)`;
     this.statusBar.show();
+  }
+
+  private async reply(
+    thread: VscodeCommentThread,
+    message: string,
+    unresolved?: boolean
+  ): Promise<void> {
+    const {
+      repoId,
+      changeId,
+      lastComment: {commentId},
+      revisionNumber,
+      filePath,
+    } = thread.gerritCommentThread;
+    const authCookie = await auth.readAuthCookie(repoId, this.sink);
+    if (!authCookie) return;
+
+    // Comment shown until real draft is fetched from Gerrit.
+    const tentativeComment: vscode.Comment = {
+      body: message,
+      mode: vscode.CommentMode.Preview,
+      author: {name: 'Draft being created'},
+    };
+
+    thread.comments = [...thread.comments, tentativeComment];
+    thread.canReply = false;
+
+    try {
+      await api.createDraftOrThrow(
+        repoId,
+        authCookie,
+        changeId,
+        revisionNumber.toString(),
+        {
+          in_reply_to: commentId,
+          path: filePath,
+          message,
+          unresolved,
+        },
+        this.sink
+      );
+    } catch (e) {
+      const err = e as Error;
+      const message = `Failed to create draft: ${err}`;
+      this.sink.show({
+        log: message,
+        metrics: message,
+        noErrorStatus: true,
+      });
+      void vscode.window.showErrorMessage(message);
+    }
+
+    await this.gerritComments.refresh();
   }
 
   dispose(): void {

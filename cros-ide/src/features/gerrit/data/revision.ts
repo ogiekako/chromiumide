@@ -55,7 +55,8 @@ export class Revision {
             changeId,
             changeNumber,
             this.revisionNumber,
-            commentInfos
+            commentInfos,
+            filePath
           )
         );
       }

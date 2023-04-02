@@ -42,6 +42,7 @@ function newVscodeSpy() {
       'registerCommand',
       'registerTextEditorCommand',
       'executeCommand',
+      'getCommands',
     ]),
     env: jasmine.createSpyObj<typeof vscode.env>('vscode.env', [
       'openExternal',
@@ -286,6 +287,21 @@ export function installVscodeDouble(): {
       vscodeSpy.workspace,
       vscodeEmitters.workspace,
       vscodeGetters.workspace
+    );
+
+    const fakeCommands = new fakes.FakeCommands(vscode.window);
+    vscodeSpy.commands.registerCommand.and.callFake((id, callback, thisArg) =>
+      fakeCommands.registerCommand(id, callback, thisArg)
+    );
+    vscodeSpy.commands.registerTextEditorCommand.and.callFake(
+      (id, callback, thisArg) =>
+        fakeCommands.registerTextEditorCommand(id, callback, thisArg)
+    );
+    vscodeSpy.commands.executeCommand.and.callFake((id, ...args) =>
+      fakeCommands.executeCommand(id, ...args)
+    );
+    vscodeSpy.commands.getCommands.and.callFake(() =>
+      fakeCommands.getCommands()
     );
   });
   afterEach(() => {

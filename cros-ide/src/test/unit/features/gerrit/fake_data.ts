@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as api from '../../../../features/gerrit/api';
+import {RevisionInfo} from '../../../../features/gerrit/api';
 
 type PartialCommentInfo = {
   id?: string;
@@ -30,8 +31,14 @@ export function changeInfo(
   changeId: string,
   commitIds: string[]
 ): api.ChangeInfo {
-  const revisions: {[commitId: string]: Object} = {};
-  for (const commitId of commitIds) revisions[commitId] = {};
+  const revisions: {[commitId: string]: RevisionInfo} = {};
+  commitIds.forEach((commitId, i) => {
+    revisions[commitId] = {
+      _number: i,
+      uploader: AUTHOR,
+      created: '1970-01-01 00:00:00.000000000',
+    };
+  });
   return {change_id: changeId, revisions} as api.ChangeInfo;
 }
 

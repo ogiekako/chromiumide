@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as git from '../git';
+import * as https from '../https';
+import {Sink} from '../sink';
+
 // APIs Gerrit defines
 
 /**
@@ -103,3 +107,38 @@ export type CommentRange = {
   readonly end_line: number; // 1-based
   readonly end_character: number; // 0-based
 };
+
+/**
+ * https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#comment-input
+ */
+export type CommentInput = {
+  in_reply_to: string;
+  path: string;
+  message: string;
+  unresolved?: boolean;
+};
+
+/**
+ * Creates a draft on Gerrit. Throws an error if the request is not fulfilled.
+ */
+export async function createDraftOrThrow(
+  repoId: git.RepoId,
+  authCookie: string | undefined,
+  changeId: string,
+  revisionId: string,
+  req: CommentInput,
+  sink: Sink
+): Promise<BaseCommentInfo> {
+  const urlBase = git.gerritUrl(repoId);
+  const url = `${urlBase}/changes/${changeId}/revisions/${revisionId}/drafts`;
+
+  const options =
+    authCookie !== undefined ? {headers: {cookie: authCookie}} : undefined;
+
+  const res = await https.putJsonOrThrow(url, req, options, sink);
+  return parseResponse(res);
+}
+
+export function parseResponse<T>(res: string): T {
+  return JSON.parse(res.substring(')]}\n'.length));
+}

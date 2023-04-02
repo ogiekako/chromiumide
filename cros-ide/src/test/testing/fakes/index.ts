@@ -4,6 +4,7 @@
 
 export {FakeCancellationToken} from './cancellation_token';
 export {installFakeCipd} from './cipd';
+export {FakeCommands} from './commands';
 export {FakeWorkspaceConfiguration} from './configuration';
 export {FakeCrosfleet, installFakeCrosfleet} from './crosfleet';
 export {installChrootCommandHandler} from './cros_sdk';

@@ -35,16 +35,16 @@ export function accountName(a: api.AccountInfo): string {
  * returning undefined on 404 error.
  * It can throw an error from https.getOrThrow.
  */
-export async function fetchOrThrow(
+export async function fetchOrThrow<T>(
   repoId: git.RepoId,
   path: string,
   authCookie?: string
-): Promise<string | undefined> {
+): Promise<T | undefined> {
   const url = `${git.gerritUrl(repoId)}/${path}`;
   const options =
     authCookie !== undefined ? {headers: {cookie: authCookie}} : undefined;
   const str = await https.getOrThrow(url, options);
-  return str?.substring(')]}\n'.length);
+  return str === undefined ? undefined : api.parseResponse(str);
 }
 
 /** Fetches the user's account info */
@@ -52,9 +52,7 @@ export async function fetchMyAccountInfoOrThrow(
   repoId: git.RepoId,
   authCookie?: string
 ): Promise<api.AccountInfo | undefined> {
-  const str = await fetchOrThrow(repoId, 'accounts/me', authCookie);
-  if (!str) return undefined;
-  return JSON.parse(str) as api.AccountInfo;
+  return fetchOrThrow(repoId, 'accounts/me', authCookie);
 }
 
 /** Fetches the change with all revisions */
@@ -63,13 +61,11 @@ export async function fetchChangeOrThrow(
   changeId: string,
   authCookie?: string
 ): Promise<api.ChangeInfo | undefined> {
-  const str = await fetchOrThrow(
+  return await fetchOrThrow(
     repoId,
     `changes/${changeId}?o=ALL_REVISIONS`,
     authCookie
   );
-  if (!str) return undefined;
-  return JSON.parse(str) as api.ChangeInfo;
 }
 
 /** Fetches all public comments of the change */
@@ -78,13 +74,10 @@ export async function fetchPublicCommentsOrThrow(
   changeId: string,
   authCookie?: string
 ): Promise<FilePathToCommentInfos | undefined> {
-  const str = await fetchOrThrow(
-    repoId,
-    `changes/${changeId}/comments`,
-    authCookie
-  );
-  if (!str) return undefined;
-  const baseCommentInfosMap = JSON.parse(str) as api.FilePathToBaseCommentInfos;
+  const baseCommentInfosMap: api.FilePathToBaseCommentInfos | undefined =
+    await fetchOrThrow(repoId, `changes/${changeId}/comments`, authCookie);
+  if (!baseCommentInfosMap) return undefined;
+
   const res: {[filePath: string]: CommentInfo[]} = {};
   for (const [filePath, baseCommentInfos] of Object.entries(
     baseCommentInfosMap
@@ -105,13 +98,10 @@ export async function fetchDraftCommentsOrThrow(
   myAccountInfo: api.AccountInfo,
   authCookie?: string
 ): Promise<FilePathToCommentInfos | undefined> {
-  const str = await fetchOrThrow(
-    repoId,
-    `changes/${changeId}/drafts`,
-    authCookie
-  );
-  if (!str) return undefined;
-  const baseCommentInfosMap = JSON.parse(str) as api.FilePathToBaseCommentInfos;
+  const baseCommentInfosMap: api.FilePathToBaseCommentInfos | undefined =
+    await fetchOrThrow(repoId, `changes/${changeId}/drafts`, authCookie);
+  if (!baseCommentInfosMap) return undefined;
+
   const res: {[filePath: string]: CommentInfo[]} = {};
   for (const [filePath, baseCommentInfos] of Object.entries(
     baseCommentInfosMap
