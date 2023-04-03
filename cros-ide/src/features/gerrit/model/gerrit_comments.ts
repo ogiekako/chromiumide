@@ -8,7 +8,6 @@ import * as api from '../api';
 import * as auth from '../auth';
 import {Change} from '../gerrit';
 import * as git from '../git';
-import {showTopLevelError} from '../helpers';
 import {Sink} from '../sink';
 import {Clock} from './clock';
 import {Ticket} from './ticket';
@@ -90,7 +89,12 @@ export class GerritComments implements vscode.Disposable {
       }
       changes = cs;
     } catch (e) {
-      showTopLevelError(e as Error, this.sink);
+      const err = e as Error;
+      this.sink.show({
+        log: `Failed to fetch changes: ${err.message}`,
+        metrics: `Failed to fetch changes: ${err.message}`,
+        noErrorStatus: true,
+      });
       return;
     }
 
@@ -189,7 +193,7 @@ async function fetchChangesOrThrow(
           `Drafts for ${changeId} could not be fetched from Gerrit`
         );
         // Don't skip here, because we want to show public information
-        // even when authentication has failedgit
+        // even when authentication has failed
       }
     }
 
