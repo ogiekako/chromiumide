@@ -5,10 +5,17 @@
 import {TextEncoder} from 'util';
 import * as vscode from 'vscode';
 import * as boilerplate from '../../../features/boilerplate';
-import {cleanState, installVscodeDouble} from '../../testing';
+import * as config from '../../../services/config';
+
+import {
+  cleanState,
+  installVscodeDouble,
+  installFakeConfigs,
+} from '../../testing';
 
 describe('file boilerplate insertion', () => {
-  const {vscodeProperties} = installVscodeDouble();
+  const {vscodeSpy, vscodeEmitters, vscodeProperties} = installVscodeDouble();
+  installFakeConfigs(vscodeSpy, vscodeEmitters);
 
   const state = cleanState(() => {
     const fs = jasmine.createSpyObj<vscode.FileSystem>('vscode.workspace.fs', {
@@ -21,9 +28,11 @@ describe('file boilerplate insertion', () => {
     return {fs};
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jasmine.clock().install();
     jasmine.clock().mockDate();
+
+    await config.boilerplate.guessNamespace.update(true);
   });
 
   afterEach(() => {
@@ -179,17 +188,17 @@ namespace cmfcmf {
       )
       .forEach(({withNamespace, fileName}) => {
         it(`generates header include for cpp files while stripping test suffixes (${fileName})`, async () => {
-          if (withNamespace) {
-            state.fs.readDirectory.and.resolveTo([
-              ['a.cc', vscode.FileType.File],
-            ]);
-            state.fs.readFile.and.resolveTo(
-              new TextEncoder().encode(`\
+          state.fs.readDirectory.and.resolveTo([
+            ['a.cc', vscode.FileType.File],
+          ]);
+          state.fs.readFile.and.resolveTo(
+            new TextEncoder().encode(`\
 namespace cmfcmf {
-  int x;
+int x;
 }`)
-            );
-          }
+          );
+
+          await config.boilerplate.guessNamespace.update(withNamespace);
 
           const generator = new boilerplate.ChromiumBoilerplateGenerator(
             '/chromium/src'

@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import {TextDecoder} from 'util';
+import * as config from '../services/config';
 
 /**
  * Inserts boilerplate (such as the copyright header) into newly created files. Whenever a new file
@@ -46,6 +47,10 @@ export class BoilerplateInserter implements vscode.Disposable {
   }
 
   private async handle(uri: vscode.Uri) {
+    if (!config.boilerplate.enabled.get()) {
+      return;
+    }
+
     const document = await vscode.workspace.openTextDocument(uri);
     for (const generator of this.boilerplateGenerators) {
       if (generator.supportsDocument(document)) {
@@ -349,6 +354,10 @@ ${isTestFile ? '}  // namespace\n' : ''}\
  * from them. Will timeout after 500ms in case there are too many files.
  */
 async function guessNamespace(directory: vscode.Uri): Promise<string | null> {
+  if (!config.boilerplate.guessNamespace.get()) {
+    return null;
+  }
+
   const startTime = Date.now();
   const namespaces = new Map<string, number>();
   for (const [name, fileType] of await vscode.workspace.fs.readDirectory(

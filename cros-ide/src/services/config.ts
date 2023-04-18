@@ -68,6 +68,11 @@ export const boardsAndPackages = {
   ),
 };
 
+export const boilerplate = {
+  enabled: new ConfigValue<boolean>('boilerplate.enabled'),
+  guessNamespace: new ConfigValue<boolean>('boilerplate.guessNamespace'),
+};
+
 export const codeSearch = {
   // TODO: Consider aligning the setting name.
   instance: new ConfigValue<'public' | 'internal' | 'gitiles'>('codeSearch'),
