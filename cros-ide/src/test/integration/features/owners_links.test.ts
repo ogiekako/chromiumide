@@ -106,6 +106,22 @@ foo # include /path
         )
       );
     });
+
+    it(`extracts ${type} links with special characters`, async () => {
+      const text = `${prefix}/styleguide/c++/OWNERS`;
+
+      const {links, documentUri} = await getLinks(text);
+      assert.ok(links);
+      assert.strictEqual(links.length, 1);
+      assert.deepStrictEqual(
+        links[0],
+        new ownersLinkProvider.OwnersLink(
+          '/styleguide/c++/OWNERS',
+          documentUri,
+          new vscode.Range(0, 0, 0, text.length)
+        )
+      );
+    });
   });
 
   it('correctly extracts the clickable range', async () => {

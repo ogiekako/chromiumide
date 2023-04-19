@@ -88,7 +88,7 @@ export class OwnersLinkProvider
   // The second part matches the file path itself. The third part matches whitespace, optionally
   // followed by a comment, followed by the end of the line.
   private static readonly PATTERN =
-    /^(?:(?<prefix1>[^\S\r\n]*)include[^\S\r\n]+|(?<prefix2>[^\r\n#]*)file:)(?<path>[.a-zA-Z_0-9/-]+)(?<suffix>[^\S\r\n]*(?:#.*|))$/gm;
+    /^(?:(?<prefix1>[^\S\r\n]*)include[^\S\r\n]+|(?<prefix2>[^\r\n#]*)file:)(?<path>[^\s:]+)(?<suffix>[^\S\r\n]*(?:#.*|))$/gm;
 
   provideDocumentLinks(
     document: vscode.TextDocument,
