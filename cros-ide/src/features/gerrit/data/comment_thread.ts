@@ -4,7 +4,6 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {underDevelopment} from '../../../services/config';
 import * as gitDocument from '../../../services/git_document';
 import * as api from '../api';
 import * as git from '../git';
@@ -83,9 +82,7 @@ export class CommentThread {
   }
 
   private get canReply(): boolean {
-    return (
-      underDevelopment.gerrit.get() && this.lastComment.commentInfo.isPublic
-    );
+    return this.lastComment.commentInfo.isPublic;
   }
 
   /**
