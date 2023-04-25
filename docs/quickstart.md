@@ -79,40 +79,34 @@ Finally, open a folder with sources to let CrOS IDE detect the chroot. Select
 *File &rarr; Open Folder...*, choose, for example, `~/chromiumos/src/platform2`,
 and you are good to go.
 
-## Using CrOS IDE
+# Using CrOS IDE
 
-Check out [go/cros-ide-user-guide] to learn more about features, known issues,
+Check out **[go/cros-ide-features]** to learn more about features, known issues,
 and useful tips.
 
-[go/cros-ide-user-guide]: http://go/cros-ide-user-guide
+## Selected Features
 
-### Filing bugs
+See [go/cros-ide-features] for all the features.
 
-If you find issues or have feature requests, feel free to file bugs at
-[go/cros-ide-new-bug].
+[go/cros-ide-features]: http://go/cros-ide-features
 
-[go/cros-ide-new-bug]: http://go/cros-ide-new-bug
-
-# Selected Features
-
-### Code Completion and Navigation
+### [Code Completion and Navigation]
 
 Code completion in C++ is available in platform2 packages which support
 `USE=compdb_only`. Press F12 to [Go to Definition], Ctrl+F12 to Go to
 Implementation, and so on.
 
-![Example of Code Completion](https://storage.googleapis.com/chromeos-velocity/ide/img/code-completion.gif)
-
 [go to definition]: https://code.visualstudio.com/docs/editor/editingevolved#_go-to-definition
+[Code Completion and Navigation]: http://go/cros-ide-doc-platform2-cpp
 
-### Device Management
+### [Device Management]
 
 CrOS IDE provides a view to manage your test devices. With the built-in VNC
 client, you can control a device remotely.
 
-![Connecting to device with VNC](https://storage.googleapis.com/chromeos-velocity/ide/img/vnc-viewer.gif)
+[Device Management]: http://go/cros-ide-doc-device-management
 
-### Linter Integration
+### [Linter Integration]
 
 CrOS IDE exposes lint errors found by `cros lint` and similar tools in C++,
 Python, shell, and GN files. We run linters every time a file is saved, and mark
@@ -120,24 +114,30 @@ errors with squiggly lines in the editor and show them in the *Problems* box and
 on mouse hover. This feature brings to your attention errors which block `repo
 upload`.
 
-![Lint Errors in the IDE](https://storage.googleapis.com/chromeos-velocity/ide/img/lint-virtual.png)
+[Linter Integration]: http://go/cros-ide-doc-linting
 
-### Boards and Packages
+### [Boards and Packages]
 
 CrOS IDE shows which packages you are working on and lets you run `cros_workon
 start/stop` directly from the UI. Access it by clicking on *CrOS Development*
-[activity bar]. Use +/– buttons to start and stop working on packages.
-
-![Boards and Packages in the IDE](https://storage.googleapis.com/chromeos-velocity/ide/img/boards-and-packages.gif)
+[activity bar] (Chrome icon). Use +/– buttons to start and stop working on packages.
 
 [activity bar]: https://code.visualstudio.com/docs/getstarted/userinterface
+[Boards and Packages]: http://go/cros-ide-doc-boards-pkgs
 
-### Code Search
+### [Code Search]
 
 You can easily open the current file in Code Search from the context menu in a
 text editor. Go to [settings] to choose whether to chose which instance to use
 (public, internal, or Gitiles).
 
-![Code Search integration](https://storage.googleapis.com/chromeos-velocity/ide/img/code-search.gif)
-
 [settings]: https://code.visualstudio.com/docs/getstarted/settings
+[Code Search]: http://go/cros-ide-doc-code-search
+
+### Filing bugs
+
+If you find issues or have feature requests, feel free to file bugs at
+[go/cros-ide-new-bug]. You can also do it by clicking the [feedback button].
+
+[go/cros-ide-new-bug]: http://go/cros-ide-new-bug
+[feedback button]: http://go/cros-ide-doc-feedback-button
