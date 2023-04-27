@@ -13,13 +13,18 @@ describe('Suggest extension module', () => {
   const subscriptions: vscode.Disposable[] = [];
 
   beforeEach(() => {
+    vscodeSpy.commands.registerCommand('extension.open', () => {});
+    vscodeSpy.commands.registerCommand(
+      'workbench.extensions.installExtension',
+      () => {}
+    );
+
     vscode.Disposable.from(...subscriptions).dispose();
     subscriptions.splice(0);
     spyOn(metrics, 'send');
   });
 
-  // TODO(b:279826781): Enable it.
-  xit('suggests an extension', async () => {
+  it('suggests an extension', async () => {
     subscriptions.push(
       activateSingle(
         {
