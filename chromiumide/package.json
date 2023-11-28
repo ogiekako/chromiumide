@@ -1277,6 +1277,7 @@
     },
     "cq-test": {
       "dependencies": [
+        "unit-test",
         "integration-test",
         "check",
         "lint"

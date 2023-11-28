@@ -35,6 +35,10 @@ cipd ensure -ensure-file .node_cipd_ensure -root "${temp_dir}/cipd"
 # Augment the path.
 PATH=${temp_dir}/cipd/bin:${PATH}
 
+# Workaround unit test failures that happen when it's run in docker.
+# https://github.com/orgs/nodejs/discussions/43184#discussioncomment-2802262
+export OPENSSL_CONF=/dev/null
+
 echo "Node version: $(node -v)"
 echo "NPM version: $(npm -v)"
 
