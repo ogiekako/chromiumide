@@ -98,8 +98,8 @@ export class CipdRepository {
     output: vscode.OutputChannel
   ): Promise<string> {
     await this.ensurePackage(
-      'infra/tricium/function/spellchecker',
-      'live',
+      'infra/tricium/legacy_functions/spellchecker/linux-amd64',
+      'latest',
       output
     );
     return path.join(this.installDir, 'spellchecker');
