@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import {BoardOrHost} from '../../../common/chromiumos/board_or_host';
+import {LruCache} from '../../../common/lru_cache';
 import * as services from '../../../services';
 import {
   listPackages,
@@ -30,6 +31,17 @@ class QuickPickItemWithDescription implements vscode.QuickPickItem {
   ) {}
 }
 
+const packageAsQuickPickItem = (p: Package) =>
+  new QuickPickItemWithDescription(
+    `${p.category}/${p.name}`,
+    p.workon === 'started' ? '(workon)' : undefined
+  );
+
+const CACHE_CAPACITY = 10;
+const GLOBAL_BOARD_TO_PACKAGE_CACHE = new LruCache<string, Package[]>(
+  CACHE_CAPACITY
+);
+
 export async function deployToDevice(
   context: CommandContext,
   chrootService?: services.chromiumos.ChrootService,
@@ -55,20 +67,11 @@ export async function deployToDevice(
 
   const clientInfo = await retrieveClientInfoWithProgress(client);
 
-  context.output.show();
-  const targetPackage = await vscode.window
-    .showQuickPick(
-      await packagesSortedAsQuickPickItems(
-        context,
-        chrootService,
-        clientInfo.board
-      ),
-      {
-        title: 'Package to deploy',
-        ignoreFocusOut: true,
-      }
-    )
-    .then(i => i?.label);
+  const targetPackage = await promptTargetPackageWithCache(
+    clientInfo.board,
+    GLOBAL_BOARD_TO_PACKAGE_CACHE,
+    () => loadPackagesOnBoardOrThrow(clientInfo.board, context, chrootService)
+  );
   if (!targetPackage) return;
 
   // Port forwarding is necessary for connecting to device to run cros deploy from chroot.
@@ -112,11 +115,73 @@ export async function deployToDevice(
   );
 }
 
-async function packagesSortedAsQuickPickItems(
+export async function promptTargetPackageWithCache(
+  board: string,
+  boardToPackages: LruCache<string, Package[]>,
+  loadPackagesOrThrow: () => Promise<Package[]>,
+  onDidChangePickerItemsForTesting?: vscode.EventEmitter<
+    readonly vscode.QuickPickItem[]
+  >
+): Promise<string | undefined> {
+  const picker = vscode.window.createQuickPick();
+  const subscriptions: vscode.Disposable[] = [];
+  const task: Promise<string | undefined> = new Promise(resolve => {
+    Object.assign(picker, {
+      ignoreFocusOut: true,
+      title: 'Package to deploy',
+    });
+    picker.items = [];
+
+    const cachedPackages = boardToPackages.get(board);
+    if (cachedPackages) {
+      // Show cached packages to reduce user waiting time since `cros-workon list` could take a long
+      // time.
+      picker.items = cachedPackages.map(packageAsQuickPickItem);
+      onDidChangePickerItemsForTesting?.fire(picker.items);
+    }
+
+    subscriptions.push(
+      picker.onDidAccept(() => {
+        resolve(picker.activeItems[0].label);
+      }),
+      picker.onDidHide(() => {
+        resolve(undefined);
+      })
+    );
+
+    picker.show();
+
+    // Update cache and the list of packages shown to user for selection.
+    void loadPackagesOrThrow()
+      .then(packages => {
+        boardToPackages.set(board, packages);
+        picker.items = packages.map(packageAsQuickPickItem);
+        onDidChangePickerItemsForTesting?.fire(picker.items);
+      })
+      .catch(e => {
+        // If there is a cached package list
+        if (cachedPackages) {
+          void vscode.window.showWarningMessage(
+            `Cached packages list are shown and might be outdated: ${e}`
+          );
+        } else {
+          void vscode.window.showErrorMessage(e);
+        }
+      });
+  });
+
+  return task.finally(() => {
+    picker.hide();
+    picker.dispose();
+    vscode.Disposable.from(...subscriptions).dispose();
+  });
+}
+
+async function loadPackagesOnBoardOrThrow(
+  board: string,
   context: CommandContext,
-  chrootService: services.chromiumos.ChrootService,
-  board: string
-): Promise<QuickPickItemWithDescription[]> {
+  chrootService: services.chromiumos.ChrootService
+): Promise<Package[]> {
   const allPackages = await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Window,
@@ -134,15 +199,7 @@ async function packagesSortedAsQuickPickItems(
       `Failed to get list of packages on board ${board}: ${allPackages.message}`
     );
   }
-
-  allPackages.sort(packageCmp);
-  return allPackages.map(
-    (p: Package) =>
-      new QuickPickItemWithDescription(
-        `${p.category}/${p.name}`,
-        p.workon === 'started' ? '(workon)' : undefined
-      )
-  );
+  return allPackages.sort(packageCmp);
 }
 
 async function retrieveClientInfoWithProgress(

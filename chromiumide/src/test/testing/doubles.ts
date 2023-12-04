@@ -19,6 +19,7 @@ type SpiableVscodeWindow = Omit<
 > & {
   // Original type doesn't work due to
   // https://github.com/DefinitelyTyped/DefinitelyTyped/issues/42455 .
+  createQuickPick: jasmine.Func;
   showErrorMessage: jasmine.Func;
   showInformationMessage: jasmine.Func;
   showQuickPick: jasmine.Func;
@@ -49,6 +50,7 @@ function newVscodeSpy() {
     ]),
     window: jasmine.createSpyObj<SpiableVscodeWindow>('vscode.window', [
       'createOutputChannel',
+      'createQuickPick',
       'createStatusBarItem',
       'showErrorMessage',
       'showInformationMessage',
