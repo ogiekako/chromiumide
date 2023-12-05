@@ -197,12 +197,11 @@ export async function flashPrebuiltImage(
   }
 
   const client = new deviceClient.DeviceClient(
-    hostname,
     context.sshIdentity,
     context.output
   );
 
-  const defaultBoard = await retrieveBoardWithProgress(client);
+  const defaultBoard = await retrieveBoardWithProgress(client, hostname);
 
   const board = await vscode.window.showInputBox({
     title: 'Board Name to Flash',
@@ -263,7 +262,8 @@ export async function flashPrebuiltImage(
 }
 
 async function retrieveBoardWithProgress(
-  client: deviceClient.DeviceClient
+  client: deviceClient.DeviceClient,
+  hostname: string
 ): Promise<string> {
   return vscode.window.withProgress(
     {
@@ -271,7 +271,7 @@ async function retrieveBoardWithProgress(
       title: 'Flash Prebuilt Image: Auto-detecting board name',
     },
     async () => {
-      const lsbRelease = await client.readLsbRelease();
+      const lsbRelease = await client.readLsbRelease(hostname);
       return lsbRelease.board;
     }
   );

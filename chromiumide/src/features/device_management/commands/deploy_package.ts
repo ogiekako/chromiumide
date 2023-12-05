@@ -60,12 +60,11 @@ export async function deployToDevice(
   if (!hostname) return;
 
   const client = new deviceClient.DeviceClient(
-    hostname,
     context.sshIdentity,
     context.output
   );
 
-  const clientInfo = await retrieveClientInfoWithProgress(client);
+  const clientInfo = await retrieveClientInfoWithProgress(client, hostname);
 
   const targetPackage = await promptTargetPackageWithCache(
     clientInfo.board,
@@ -203,7 +202,8 @@ async function loadPackagesOnBoardOrThrow(
 }
 
 async function retrieveClientInfoWithProgress(
-  client: deviceClient.DeviceClient
+  client: deviceClient.DeviceClient,
+  hostname: string
 ): Promise<ClientInfo> {
   return vscode.window.withProgress(
     {
@@ -211,7 +211,7 @@ async function retrieveClientInfoWithProgress(
       title: 'Deploy Package: Auto-detecting board name',
     },
     async () => {
-      const lsbRelease = await client.readLsbRelease();
+      const lsbRelease = await client.readLsbRelease(hostname);
       return {
         board: lsbRelease.board,
       };

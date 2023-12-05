@@ -17,14 +17,13 @@ export interface LsbRelease {
  */
 export class DeviceClient {
   constructor(
-    private readonly hostname: string,
     private readonly sshIdentity: SshIdentity,
     private readonly logger: vscode.OutputChannel
   ) {}
 
-  async readLsbRelease(): Promise<LsbRelease> {
+  async readLsbRelease(hostname: string): Promise<LsbRelease> {
     const args = sshUtil.buildSshCommand(
-      this.hostname,
+      hostname,
       this.sshIdentity,
       [],
       'cat /etc/lsb-release'

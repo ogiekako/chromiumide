@@ -16,7 +16,6 @@ describe('Device client', () => {
     const server = new FakeSshServer();
     await server.listen();
     const client = new deviceClient.DeviceClient(
-      `localhost:${server.listenPort}`,
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
       vscode.window.createOutputChannel('void')
     );
@@ -28,7 +27,9 @@ describe('Device client', () => {
   });
 
   it('reads /etc/lsb-release', async () => {
-    const lsbRelease = await state.client.readLsbRelease();
+    const lsbRelease = await state.client.readLsbRelease(
+      `localhost:${state.server.listenPort}`
+    );
     expect(lsbRelease).toEqual({
       board: 'hatch',
       builderPath: 'hatch-release/R104-14901.0.0',
