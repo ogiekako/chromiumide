@@ -5,20 +5,35 @@
 import 'jasmine';
 import * as abandonedDevices from '../../../../../features/device_management/abandoned_devices';
 import * as crosfleet from '../../../../../features/device_management/crosfleet';
+import * as deviceClient from '../../../../../features/device_management/device_client';
 import * as repository from '../../../../../features/device_management/device_repository';
+import {SshIdentity} from '../../../../../features/device_management/ssh_identity';
+import {ChromiumosServiceModule} from '../../../../../services/chromiumos';
 import * as config from '../../../../../services/config';
 import * as testing from '../../../../testing';
 import * as fakes from '../../../../testing/fakes';
 
 describe('Owned device repository', () => {
+  const {vscodeEmitters, vscodeSpy} = testing.installVscodeDouble();
+  testing.installFakeConfigs(vscodeSpy, vscodeEmitters);
   beforeEach(async () => {
     // Initialize devices to an empty list.
     await config.deviceManagement.devices.update([]);
   });
 
-  const state = testing.cleanState(() => ({
-    ownedDeviceRepository: new repository.OwnedDeviceRepository(),
-  }));
+  const state = testing.cleanState(async () => {
+    return {
+      ownedDeviceRepository: new repository.OwnedDeviceRepository(
+        new deviceClient.DeviceClient(
+          new SshIdentity(
+            testing.getExtensionUri(),
+            new ChromiumosServiceModule()
+          ),
+          new fakes.VoidOutputChannel()
+        )
+      ),
+    };
+  });
 
   afterEach(() => {
     state.ownedDeviceRepository.dispose();
@@ -74,6 +89,8 @@ describe('Owned device repository', () => {
 });
 
 describe('Leased device repository', () => {
+  const {vscodeEmitters, vscodeSpy} = testing.installVscodeDouble();
+  testing.installFakeConfigs(vscodeSpy, vscodeEmitters);
   const clock = jasmine.clock();
   beforeEach(() => {
     clock.install();
@@ -94,6 +111,13 @@ describe('Leased device repository', () => {
     const leasedDeviceRepository = new repository.LeasedDeviceRepository(
       new crosfleet.CrosfleetRunner(
         cipdRepository,
+        new fakes.VoidOutputChannel()
+      ),
+      new deviceClient.DeviceClient(
+        new SshIdentity(
+          testing.getExtensionUri(),
+          new ChromiumosServiceModule()
+        ),
         new fakes.VoidOutputChannel()
       ),
       abandonedDuts
@@ -274,6 +298,8 @@ describe('Leased device repository', () => {
 });
 
 describe('Device repository', () => {
+  const {vscodeEmitters, vscodeSpy} = testing.installVscodeDouble();
+  testing.installFakeConfigs(vscodeSpy, vscodeEmitters);
   const clock = jasmine.clock();
   beforeEach(() => {
     clock.install();
@@ -291,6 +317,13 @@ describe('Device repository', () => {
     const deviceRepository = new repository.DeviceRepository(
       new crosfleet.CrosfleetRunner(
         cipdRepository,
+        new fakes.VoidOutputChannel()
+      ),
+      new deviceClient.DeviceClient(
+        new SshIdentity(
+          testing.getExtensionUri(),
+          new ChromiumosServiceModule()
+        ),
         new fakes.VoidOutputChannel()
       ),
       new abandonedDevices.AbandonedDevices(new fakes.Memento())

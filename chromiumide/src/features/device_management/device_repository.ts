@@ -8,6 +8,7 @@ import * as commonUtil from '../../common/common_util';
 import * as config from '../../services/config';
 import * as abandonedDevices from './abandoned_devices';
 import * as crosfleet from './crosfleet';
+import * as deviceClient from './device_client';
 
 // Represents the type of a device.
 export enum DeviceCategory {
@@ -46,7 +47,7 @@ export class OwnedDeviceRepository implements vscode.Disposable {
     this.onDidChangeEmitter,
   ];
 
-  constructor() {
+  constructor(private readonly client: deviceClient.DeviceClient) {
     this.subscriptions.push(
       config.deviceManagement.devices.onDidChange(() =>
         this.onDidChangeEmitter.fire()
@@ -114,6 +115,7 @@ export class LeasedDeviceRepository implements vscode.Disposable {
 
   constructor(
     private readonly crosfleetRunner: crosfleet.CrosfleetRunner,
+    private readonly client: deviceClient.DeviceClient,
     private readonly abandonedDevice: abandonedDevices.AbandonedDevices
   ) {
     this.subscriptions.push(
@@ -227,10 +229,15 @@ export class DeviceRepository {
 
   constructor(
     crosfleetRunner: crosfleet.CrosfleetRunner,
+    client: deviceClient.DeviceClient,
     abandonedDevices: abandonedDevices.AbandonedDevices
   ) {
-    this.owned = new OwnedDeviceRepository();
-    this.leased = new LeasedDeviceRepository(crosfleetRunner, abandonedDevices);
+    this.owned = new OwnedDeviceRepository(client);
+    this.leased = new LeasedDeviceRepository(
+      crosfleetRunner,
+      client,
+      abandonedDevices
+    );
 
     this.subscriptions.push(this.owned, this.leased);
 
