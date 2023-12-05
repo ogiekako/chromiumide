@@ -200,7 +200,6 @@ export class EbuildLinkProvider implements vscode.DocumentLinkProvider {
           `vscode-remote://ssh-remote+${os.hostname()}${absPath}`
         );
       }
-      console.log(`hscham debugging, this.remoteName is ${this.remoteName()}`);
       // b/311555429: In code-server or code serve-web, file scheme URI is not valid to open a
       // folder in new window.
       return undefined;
