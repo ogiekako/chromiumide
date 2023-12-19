@@ -51,7 +51,7 @@ export class DeviceClient implements vscode.Disposable {
     // Refresh every minute to make sure device attributes are up-to-date, since users might be
     // flashing image on terminal (outside of the IDE).
     const timerId = setInterval(() => {
-      this.refresh();
+      void this.refresh();
     }, 60 * 1000);
     this.subscriptions.push(
       config.deviceManagement.devices.onDidChange(() => this.refresh()),
@@ -65,12 +65,13 @@ export class DeviceClient implements vscode.Disposable {
     vscode.Disposable.from(...this.subscriptions).dispose();
   }
 
-  private refresh(): void {
-    void this.refreshDevicesAttributes();
+  async refresh(hostnames: string[] | undefined = undefined): Promise<void> {
+    const hostnamesToRefresh =
+      hostnames ?? (await this.deviceRepository.getHostnames());
+    void this.refreshDevicesAttributes(hostnamesToRefresh);
   }
 
-  private async refreshDevicesAttributes(): Promise<void> {
-    const hostnames = await this.deviceRepository.getHostnames();
+  private async refreshDevicesAttributes(hostnames: string[]): Promise<void> {
     const updatedDevicesAttributes: DeviceAttributesWithHostname[] = [];
     await Promise.all(
       hostnames.map(hostname =>

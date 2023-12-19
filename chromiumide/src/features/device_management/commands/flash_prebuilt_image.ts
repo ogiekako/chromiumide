@@ -5,8 +5,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import {getCrosPath} from '../../../common/chromiumos/cros_client';
+import {Source, exec} from '../../../common/common_util';
 import * as services from '../../../services';
 import {Metrics} from '../../metrics/metrics';
+import {DeviceClient} from '../device_client';
 import * as provider from '../device_tree_data_provider';
 import * as prebuiltUtil from '../prebuilt_util';
 import {
@@ -236,6 +239,58 @@ async function showImageVersionInputBoxWithDynamicSuggestions(
   });
 }
 
+async function flashImageToDevice(
+  hostname: string,
+  imagePath: string,
+  deviceClient: DeviceClient,
+  root: Source,
+  output: vscode.OutputChannel
+): Promise<void> {
+  const res = await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      cancellable: true,
+      title: `Flashing ${imagePath} to ${hostname}`,
+    },
+    async (_progress, token) => {
+      output.show(); // Open output channel to show logs of running `cros flash`.
+      return await exec(
+        getCrosPath(root),
+        ['flash', `ssh://${hostname}`, imagePath],
+        {
+          logger: output,
+          logStdout: true,
+          cancellationToken: token,
+          cwd: root,
+          env: {
+            BOTO_CONFIG: `${root}/${BOTO_PATH}`,
+            // cros flash cannot find python path with sys.executable in gs.py without this provided
+            // explicitly in environment variable.
+            PYTHONEXECUTABLE: '/usr/bin/python3',
+          },
+        }
+      );
+    }
+  );
+  if (res instanceof Error) {
+    void (async () => {
+      const choice = await vscode.window.showErrorMessage(
+        res.message,
+        'Open logs'
+      );
+      if (choice) {
+        output.show();
+      }
+    })();
+    return;
+  }
+  void vscode.window.showInformationMessage(
+    `cros flash ${imagePath} to ${hostname} succeeded`
+  );
+
+  void deviceClient.refresh([hostname]);
+}
+
 export async function flashPrebuiltImage(
   context: CommandContext,
   chrootService?: services.chromiumos.ChrootService,
@@ -245,8 +300,6 @@ export async function flashPrebuiltImage(
     void showMissingInternalRepoErrorMessage('Flashing prebuilt image');
     return;
   }
-
-  const source = chrootService.source;
 
   const hostname = await promptKnownHostnameIfNeeded(
     'Device to Flash',
@@ -309,14 +362,15 @@ export async function flashPrebuiltImage(
     description: 'flash prebuilt image',
     image_type: imageType,
   });
-
-  const terminal = vscode.window.createTerminal({
-    name: `cros flash: ${hostname}`,
-    iconPath: new vscode.ThemeIcon('cloud-download'),
-    cwd: source.root,
-  });
-  terminal.sendText(
-    `env BOTO_CONFIG=${source.root}/${BOTO_PATH} cros flash ssh://${hostname} ${imagePath}`
+  await flashImageToDevice(
+    hostname,
+    imagePath,
+    context.deviceClient,
+    chrootService.source.root,
+    context.output
   );
-  terminal.show();
 }
+
+export const TEST_ONLY = {
+  flashImageToDevice,
+};
