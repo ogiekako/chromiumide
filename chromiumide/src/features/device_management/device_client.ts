@@ -9,15 +9,16 @@ import * as repository from './device_repository';
 import {SshIdentity} from './ssh_identity';
 import * as sshUtil from './ssh_util';
 
-export interface LsbRelease {
+export interface DeviceAttributes {
   board: string;
   builderPath: string | undefined;
 }
-type DeviceMetadata = LsbRelease & {
+
+type DeviceAttributesWithHostname = DeviceAttributes & {
   hostname: string;
 };
 
-function equalLsbReleases(a: LsbRelease, b: LsbRelease): boolean {
+function equalAttributes(a: DeviceAttributes, b: DeviceAttributes): boolean {
   return a.board === b.board && a.builderPath === b.builderPath;
 }
 
@@ -26,7 +27,7 @@ function equalLsbReleases(a: LsbRelease, b: LsbRelease): boolean {
  */
 export class DeviceClient implements vscode.Disposable {
   private readonly onDidChangeEmitter = new vscode.EventEmitter<
-    DeviceMetadata[]
+    DeviceAttributesWithHostname[]
   >();
   readonly onDidChange = this.onDidChangeEmitter.event;
 
@@ -38,9 +39,12 @@ export class DeviceClient implements vscode.Disposable {
     private readonly deviceRepository: repository.DeviceRepository,
     private readonly sshIdentity: SshIdentity,
     private readonly logger: vscode.OutputChannel,
-    private readonly cachedDevicesWithMetaData = new Map<string, LsbRelease>()
+    private readonly cachedDevicesWithAttributes = new Map<
+      string,
+      DeviceAttributes
+    >()
   ) {
-    // Refresh every minute to make sure device metadata is up-to-date, since users might be
+    // Refresh every minute to make sure device attributes are up-to-date, since users might be
     // flashing image on terminal (outside of the IDE).
     const timerId = setInterval(() => {
       this.refresh();
@@ -58,48 +62,50 @@ export class DeviceClient implements vscode.Disposable {
   }
 
   private refresh(): void {
-    void this.refreshDevicesMetadata();
+    void this.refreshDevicesAttributes();
   }
 
-  private async refreshDevicesMetadata(): Promise<void> {
+  private async refreshDevicesAttributes(): Promise<void> {
     const hostnames = await this.deviceRepository.getHostnames();
-    const updatedDevicesMetadata: DeviceMetadata[] = [];
+    const updatedDevicesAttributes: DeviceAttributesWithHostname[] = [];
     await Promise.all(
       hostnames.map(hostname =>
-        this.readLsbReleaseFromDevice(hostname).then(lsbRelease => {
-          if (!(lsbRelease instanceof Error)) {
-            const cache = this.cachedDevicesWithMetaData.get(hostname);
-            // Do nothing if there is no change to device metadata.
-            if (cache && equalLsbReleases(cache, lsbRelease)) return;
+        this.readLsbReleaseFromDevice(hostname).then(attributes => {
+          if (!(attributes instanceof Error)) {
+            const cache = this.cachedDevicesWithAttributes.get(hostname);
+            // Do nothing if there is no change to device attributes.
+            if (cache && equalAttributes(cache, attributes)) return;
 
             // Otherwise, update cache and fire event to notify device client etc.
-            this.cachedDevicesWithMetaData.set(hostname, lsbRelease);
-            updatedDevicesMetadata.push({hostname, ...lsbRelease});
+            this.cachedDevicesWithAttributes.set(hostname, attributes);
+            updatedDevicesAttributes.push({hostname, ...attributes});
           }
         })
       )
     );
-    if (updatedDevicesMetadata.length > 0) {
-      this.onDidChangeEmitter.fire(updatedDevicesMetadata);
+    if (updatedDevicesAttributes.length > 0) {
+      this.onDidChangeEmitter.fire(updatedDevicesAttributes);
     }
   }
 
   /*
-   * Returns lsb-release content cached from refreshes if available, otherwise connect to device and
+   * Returns device attributes cached from refreshes if available, otherwise connect to device and
    * read the file directly.
    * Note that user may manually flash an image outside of ChromiumIDE (from external terminal) and
    * until the next refresh the value would be stale.
    */
-  async readLsbRelease(hostname: string): Promise<LsbRelease | Error> {
+  async getDeviceAttributes(
+    hostname: string
+  ): Promise<DeviceAttributes | Error> {
     {
-      const lsbRelease = this.cachedDevicesWithMetaData?.get(hostname);
+      const lsbRelease = this.cachedDevicesWithAttributes?.get(hostname);
       if (lsbRelease) return lsbRelease;
     }
     // Retry once if the device data has not been cached. Update cache and fire event if the retry
     // succeeded.
     const lsbRelease = await this.readLsbReleaseFromDevice(hostname);
     if (!(lsbRelease instanceof Error)) {
-      this.cachedDevicesWithMetaData.set(hostname, lsbRelease);
+      this.cachedDevicesWithAttributes.set(hostname, lsbRelease);
       this.onDidChangeEmitter.fire([{hostname, ...lsbRelease}]);
     }
     return lsbRelease;
@@ -107,7 +113,7 @@ export class DeviceClient implements vscode.Disposable {
 
   private async readLsbReleaseFromDevice(
     hostname: string
-  ): Promise<LsbRelease | Error> {
+  ): Promise<DeviceAttributes | Error> {
     const args = sshUtil.buildSshCommand(
       hostname,
       this.sshIdentity,
@@ -124,7 +130,7 @@ export class DeviceClient implements vscode.Disposable {
   }
 }
 
-function parseLsbRelease(content: string): LsbRelease {
+function parseLsbRelease(content: string): DeviceAttributes {
   const boardMatch = /CHROMEOS_RELEASE_BOARD=(.*)/.exec(content);
   if (!boardMatch) {
     throw new Error('CHROMEOS_RELEASE_BOARD is missing');

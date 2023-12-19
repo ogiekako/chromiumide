@@ -8,21 +8,21 @@ import * as client from './device_client';
 import * as repository from './device_repository';
 
 export enum ItemKind {
-  INFO,
+  ATTRIBUTE,
   DEVICE,
   CATEGORY,
   PLACEHOLDER,
   LOGIN,
 }
 
-export type DeviceInfoKey = 'board' | 'model' | 'builder path';
+export type DeviceAttributeKey = 'board' | 'model' | 'builder path';
 
-export class DeviceInfoItem extends vscode.TreeItem {
-  readonly kind = ItemKind.INFO;
+export class DeviceAttributeItem extends vscode.TreeItem {
+  readonly kind = ItemKind.ATTRIBUTE;
   override readonly contextValue: string;
   readonly value: string;
 
-  constructor(key: DeviceInfoKey, value: string) {
+  constructor(key: DeviceAttributeKey, value: string) {
     super(value);
     this.description = `(${key})`;
     this.value = value;
@@ -36,7 +36,7 @@ export class DeviceItem extends vscode.TreeItem {
   override readonly iconPath = new vscode.ThemeIcon('device-desktop');
 
   constructor(readonly device: repository.Device) {
-    // Expand by default to show device info. There are at most three items now (board, model,
+    // Expand by default to show device attributes. There are at most three items now (board, model,
     // builder path) so the view is not too cramped. Revisit the choice if more items are added.
     super(device.hostname, vscode.TreeItemCollapsibleState.Expanded);
     this.hostname = device.hostname;
@@ -102,7 +102,7 @@ export class LoginItem extends vscode.TreeItem {
 }
 
 type Item =
-  | DeviceInfoItem
+  | DeviceAttributeItem
   | OwnedDeviceItem
   | LeasedDeviceItem
   | CategoryItem
@@ -204,18 +204,20 @@ export class DeviceTreeDataProvider
 
     if (parent.kind === ItemKind.DEVICE) {
       const items: Item[] = [];
-      const lsbRelease = await this.deviceClient.readLsbRelease(
+      const attributes = await this.deviceClient.getDeviceAttributes(
         parent.hostname
       );
-      if (lsbRelease instanceof Error) return [];
+      if (attributes instanceof Error) return [];
 
-      items.push(new DeviceInfoItem('board', lsbRelease.board));
+      items.push(new DeviceAttributeItem('board', attributes.board));
 
       if (parent instanceof LeasedDeviceItem && parent.device.model) {
-        items.push(new DeviceInfoItem('model', parent.device.model));
+        items.push(new DeviceAttributeItem('model', parent.device.model));
       }
-      if (lsbRelease.builderPath) {
-        items.push(new DeviceInfoItem('builder path', lsbRelease.builderPath));
+      if (attributes.builderPath) {
+        items.push(
+          new DeviceAttributeItem('builder path', attributes.builderPath)
+        );
       }
       return items;
     }

@@ -195,9 +195,9 @@ export async function flashPrebuiltImage(
     return;
   }
 
-  const lsbRelease = await context.deviceClient.readLsbRelease(hostname);
+  const attributes = await context.deviceClient.getDeviceAttributes(hostname);
   const defaultBoard =
-    lsbRelease instanceof Error ? undefined : lsbRelease.board;
+    attributes instanceof Error ? undefined : attributes.board;
   const board = await vscode.window.showInputBox({
     title: 'Board Name to Flash',
     value: defaultBoard,

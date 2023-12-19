@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 import {
   DeviceClient,
-  LsbRelease,
+  DeviceAttributes,
 } from '../../../../../features/device_management/device_client';
 import {DeviceCategory} from '../../../../../features/device_management/device_repository';
 import {SshIdentity} from '../../../../../features/device_management/ssh_identity';
@@ -57,7 +57,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
     vscode.Disposable.from(...subscriptions.splice(0)).dispose();
   });
 
-  it('gets /etc/lsb-release cached', async () => {
+  it('gets device attributes cached', async () => {
     const client = new DeviceClient(
       FakeDeviceRepository.create([
         {
@@ -67,20 +67,20 @@ CHROMEOS_RELEASE_UNIBUILD=1
       ]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
       vscode.window.createOutputChannel('void'),
-      new Map<string, LsbRelease>([
+      new Map<string, DeviceAttributes>([
         [hostname, {board: 'board1', builderPath: 'board1-release/R1-2.0.0'}],
       ])
     );
 
     // TODO(hscham): add eventReader for client.onDidChange to assert event not fired.
-    const lsbRelease = await client.readLsbRelease(hostname);
-    expect(lsbRelease).toEqual({
+    const attributes = await client.getDeviceAttributes(hostname);
+    expect(attributes).toEqual({
       board: 'board1',
       builderPath: 'board1-release/R1-2.0.0',
     });
   });
 
-  it('gets /etc/lsb-release uncached', async () => {
+  it('gets device attributes uncached', async () => {
     const client = new DeviceClient(
       FakeDeviceRepository.create([
         {
@@ -97,12 +97,12 @@ CHROMEOS_RELEASE_UNIBUILD=1
     );
     subscriptions.push(onDidChangeDeviceClientReader);
 
-    const lsbRelease = await client.readLsbRelease(hostname);
+    const attributes = await client.getDeviceAttributes(hostname);
 
-    // Check event was fired with updated device info.
-    const updatedDevicesMetadata = await onDidChangeDeviceClientReader.read();
-    expect(updatedDevicesMetadata.length === 1);
-    expect(updatedDevicesMetadata).toEqual([
+    // Check event was fired with updated device attributes.
+    const updatedDevicesAttributes = await onDidChangeDeviceClientReader.read();
+    expect(updatedDevicesAttributes.length === 1);
+    expect(updatedDevicesAttributes).toEqual([
       {
         hostname: hostname,
         board: 'hatch',
@@ -110,16 +110,16 @@ CHROMEOS_RELEASE_UNIBUILD=1
       },
     ]);
 
-    expect(lsbRelease).toEqual({
+    expect(attributes).toEqual({
       board: 'hatch',
       builderPath: 'hatch-release/R104-14901.0.0',
     });
 
     // TODO(hscham): add eventReader for client.onDidChange to assert event not fired when
-    // readLsbRelease is called again.
+    // getDevicettributes is called again.
   });
 
-  it('gets /etc/lsb-release not in repository', async () => {
+  it('gets device attributes not in repository', async () => {
     const client = new DeviceClient(
       FakeDeviceRepository.create([]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
@@ -131,12 +131,12 @@ CHROMEOS_RELEASE_UNIBUILD=1
     );
     subscriptions.push(onDidChangeDeviceClientReader);
 
-    const lsbRelease = await client.readLsbRelease(hostname);
+    const attributes = await client.getDeviceAttributes(hostname);
 
-    // Check event was fired with updated device info.
-    const updatedDevicesMetadata = await onDidChangeDeviceClientReader.read();
-    expect(updatedDevicesMetadata.length === 1);
-    expect(updatedDevicesMetadata).toEqual([
+    // Check event was fired with updated device attributes.
+    const updatedDevicesAttributes = await onDidChangeDeviceClientReader.read();
+    expect(updatedDevicesAttributes.length === 1);
+    expect(updatedDevicesAttributes).toEqual([
       {
         hostname: hostname,
         board: 'hatch',
@@ -144,13 +144,13 @@ CHROMEOS_RELEASE_UNIBUILD=1
       },
     ]);
 
-    expect(lsbRelease).toEqual({
+    expect(attributes).toEqual({
       board: 'hatch',
       builderPath: 'hatch-release/R104-14901.0.0',
     });
 
     // TODO(hscham): add eventReader for client.onDidChange to assert event not fired when
-    // readLsbRelease is called again.
+    // getDevicettributes is called again.
   });
 
   it('refreshes device metadata every minute', async () => {
@@ -163,7 +163,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
       ]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
       vscode.window.createOutputChannel('void'),
-      new Map<string, LsbRelease>([
+      new Map<string, DeviceAttributes>([
         [hostname, {board: 'board1', builderPath: 'board1-release/R1-2.0.0'}],
       ])
     );
@@ -174,18 +174,18 @@ CHROMEOS_RELEASE_UNIBUILD=1
     subscriptions.push(onDidChangeDeviceClientReader);
 
     // Cache is used.
-    expect(await client.readLsbRelease(hostname)).toEqual({
+    expect(await client.getDeviceAttributes(hostname)).toEqual({
       board: 'board1',
       builderPath: 'board1-release/R1-2.0.0',
     });
 
     // After one minute and wait for refresh (by reading the lsb-release on device) to finish.
     jasmine.clock().tick(1 * 60 * 1000);
-    const updatedDevicesMetadata = await onDidChangeDeviceClientReader.read();
+    const updatedDevicesAttributes = await onDidChangeDeviceClientReader.read();
 
-    // Check event was fired with updated device info.
-    expect(updatedDevicesMetadata.length === 1);
-    expect(updatedDevicesMetadata).toEqual([
+    // Check event was fired with updated device attributes.
+    expect(updatedDevicesAttributes.length === 1);
+    expect(updatedDevicesAttributes).toEqual([
       {
         hostname: hostname,
         board: 'hatch',
@@ -195,7 +195,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
 
     // Cache have been updated.
     // TODO(hscham): add eventReader for client.onDidChange to assert event not fired.
-    expect(await client.readLsbRelease(hostname)).toEqual({
+    expect(await client.getDeviceAttributes(hostname)).toEqual({
       board: 'hatch',
       builderPath: 'hatch-release/R104-14901.0.0',
     });
@@ -220,11 +220,11 @@ CHROMEOS_RELEASE_UNIBUILD=1
 
     // After one minute and wait for refresh (by reading the lsb-release on device) to finish.
     jasmine.clock().tick(1 * 60 * 1000);
-    const updatedDevicesMetadata = await onDidChangeDeviceClientReader.read();
+    const updatedDevicesAttributes = await onDidChangeDeviceClientReader.read();
 
-    // Check event was fired with updated device info.
-    expect(updatedDevicesMetadata.length === 1);
-    expect(updatedDevicesMetadata).toEqual([
+    // Check event was fired with updated device attributes.
+    expect(updatedDevicesAttributes.length === 1);
+    expect(updatedDevicesAttributes).toEqual([
       {
         hostname: hostname,
         board: 'hatch',
@@ -234,7 +234,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
 
     // Cache have been updated.
     // TODO(hscham): add eventReader for client.onDidChange to assert event not fired.
-    expect(await client.readLsbRelease(hostname)).toEqual({
+    expect(await client.getDeviceAttributes(hostname)).toEqual({
       board: 'hatch',
       builderPath: 'hatch-release/R104-14901.0.0',
     });

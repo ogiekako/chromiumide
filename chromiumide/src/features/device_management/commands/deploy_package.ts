@@ -54,16 +54,16 @@ export async function deployToDevice(
   );
   if (!hostname) return;
 
-  const lsbRelease = await context.deviceClient.readLsbRelease(hostname);
+  const attributes = await context.deviceClient.getDeviceAttributes(hostname);
   const board =
-    lsbRelease instanceof Error
+    attributes instanceof Error
       ? await vscode.window.showInputBox({
           title: "Device's Board Name",
           value: '',
           prompt: 'Failed to get board from device, please input board name',
           ignoreFocusOut: true,
         })
-      : lsbRelease.board;
+      : attributes.board;
   if (!board) {
     return;
   }

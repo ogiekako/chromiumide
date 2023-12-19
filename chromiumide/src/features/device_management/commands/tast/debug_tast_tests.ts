@@ -290,9 +290,9 @@ async function ensureDutHasDelve(
     context.sshIdentity,
     context.output
   );
-  const lsbRelease = await deviceClient.readLsbRelease(hostname);
-  if (lsbRelease instanceof Error) {
-    context.output.appendLine(`${lsbRelease.message}`);
+  const attributes = await deviceClient.getDeviceAttributes(hostname);
+  if (attributes instanceof Error) {
+    context.output.appendLine(`${attributes.message}`);
     showPromptWithOpenLogChoice(
       context,
       "debugging didn't start: failed to get board information from DUT",
@@ -300,7 +300,7 @@ async function ensureDutHasDelve(
     );
     return false;
   }
-  const board = lsbRelease.board;
+  const board = attributes.board;
 
   context.output.appendLine(`The device board name: ${board}`);
 
