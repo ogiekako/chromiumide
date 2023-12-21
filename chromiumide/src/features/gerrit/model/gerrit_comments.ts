@@ -14,7 +14,7 @@ import {Sink} from '../sink';
 import {Clock} from './clock';
 import {Ticket} from './ticket';
 
-export const POLL_INTERVAL_MILLIS = 10 * 1000;
+export const POLL_INTERVAL_MILLIS = 60 * 1000;
 
 /**
  * Retrieves and holds current comments from Gerrit. It does this by fetching
