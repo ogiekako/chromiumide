@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as semver from 'semver';
-import * as shutil from '../src/common/shutil';
+import {execute} from './common';
 
 const USAGE = `
  Usage:
@@ -37,73 +36,6 @@ const USAGE = `
      Specify the remote release branch such as refs/ide/0.4.0 .
      This option is meaningful only for the publish command.
 `;
-
-async function execute(
-  name: string,
-  args: string[],
-  opts?: {
-    logStdout?: boolean;
-    cwd?: string;
-  }
-): Promise<string> {
-  const {logStdout, cwd} = opts || {};
-  const logger = new (class {
-    append(s: string) {
-      process.stdout.write(s);
-    }
-  })();
-
-  return new Promise((resolve, reject) => {
-    logger.append(shutil.escapeArray([name, ...args]) + '\n');
-
-    const command = childProcess.spawn(name, args, {
-      cwd,
-    });
-
-    command.stdout.setEncoding('utf-8');
-    command.stderr.setEncoding('utf-8');
-
-    let stdout = '';
-    let lastChar = '';
-    command.stdout.on('data', (data: string) => {
-      if (logger && logStdout) {
-        logger.append(data);
-        lastChar = data[data.length - 1];
-      }
-      stdout += data;
-    });
-
-    command.on('close', exitStatus => {
-      if (logger && lastChar !== '' && lastChar !== '\n') {
-        logger.append('\n');
-      }
-      if (exitStatus !== 0) {
-        reject(
-          new Error(
-            `"${shutil.escapeArray([
-              name,
-              ...args,
-            ])}" failed, exit status: ${exitStatus}`
-          )
-        );
-      }
-
-      resolve(stdout);
-    });
-
-    // 'error' happens when the command is not available
-    command.on('error', err => {
-      if (logger && lastChar !== '' && lastChar !== '\n') {
-        logger.append('\n');
-      }
-      reject(
-        new Error(
-          `"${shutil.escapeArray([name, ...args])}" failed: ${err.message}`
-        )
-      );
-    });
-  });
-}
 
 async function withTempDir(
   f: (tempDir: string) => Promise<void>
