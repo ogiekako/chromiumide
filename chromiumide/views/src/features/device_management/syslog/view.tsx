@@ -85,16 +85,17 @@ function SyslogView(props: {ctx: SyslogViewContext}): JSX.Element {
   } = props;
 
   // Create MUI theme.
-  const muiTheme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          text: {primary: TEXT_COLOR},
-          background: {default: BACKGROUND_COLOR},
+  const muiTheme = useMemo(() => {
+    return createTheme({
+      palette: {
+        text: {
+          primary: TEXT_COLOR,
+          secondary: TEXT_COLOR,
         },
-      }),
-    []
-  );
+        background: {default: BACKGROUND_COLOR},
+      },
+    });
+  }, []);
   // Manage the filter.
   const [processFilter, setProcessFilter] = useState<TextFilter>(
     initialTextFilter()
