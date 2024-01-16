@@ -19,20 +19,17 @@ export class Https {
   /**
    * Fetches a raw string from https.
    *
-   * Returns the response if it is successful or undefined on 404 error.
+   * Returns the response if it is successful.
    * Everything else throws an HttpsError.
    */
   static async getOrThrow(
     url: string,
     options: https.RequestOptions = {}
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       https
         .get(url, {...options, method: 'GET'}, res => {
           const chunks: Uint8Array[] = [];
-          if (res.statusCode === 404) {
-            resolve(undefined);
-          }
           if (res.statusCode !== 200) {
             reject(
               new HttpsError(

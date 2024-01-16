@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {Https} from '../../../common/https';
+import {Https, HttpsError} from '../../../common/https';
 import * as git from '../git';
 import type * as api from '.';
 
@@ -11,8 +11,10 @@ import type * as api from '.';
  */
 export class RawGerritClient {
   /**
-   * Gets a raw string from Gerrit REST API with an auth cookie, returning
-   * undefined on 404 error. It can throw an error from https.getOrThrow.
+   * Gets a raw string from Gerrit REST API with an auth cookie.
+   * It can throw an error from https.getOrThrow. Catch 404 (not found) error and return undefined
+   * as a special case that a local change has not been uploaded to gerrit yet, re-throw all other
+   * errors.
    */
   async fetchOrThrow<T>(
     repoId: git.RepoId,
@@ -22,7 +24,14 @@ export class RawGerritClient {
     const url = `${git.gerritUrl(repoId)}/${path}`;
     const options =
       authCookie !== undefined ? {headers: {cookie: authCookie}} : undefined;
-    const str = await Https.getOrThrow(url, options);
+    const str = await Https.getOrThrow(url, options).catch(
+      (error: HttpsError) => {
+        if (error.statusCode === 404) {
+          return undefined;
+        }
+        throw error;
+      }
+    );
     return str === undefined ? undefined : parseResponse(str);
   }
 }

@@ -59,7 +59,7 @@ describe('http get request', () => {
     );
   });
 
-  it('returns undefined on 404 (not found)', async () => {
+  it('throws on 404 (not found)', async () => {
     const port = await netUtil.findUnusedPort();
     server = https
       .createServer(serverOptions, (_req, resp) => {
@@ -70,7 +70,9 @@ describe('http get request', () => {
 
     await expectAsync(
       Https.getOrThrow(`https://localhost:${port}/`, requestOptions)
-    ).toBeResolvedTo(undefined);
+    ).toBeRejectedWith(
+      new Error(`GET https://localhost:${port}/: status code: 404: `)
+    );
   });
 
   it('throws on error', async () => {
@@ -130,22 +132,6 @@ describe('http delete request', () => {
       Https.deleteOrThrow(`https://localhost:${port}/`, requestOptions)
     ).toBeRejectedWith(
       new HttpsError('DELETE', `https://localhost:${port}/`, '', 403)
-    );
-  });
-
-  it('throws on 404 (not found)', async () => {
-    const port = await netUtil.findUnusedPort();
-    server = https
-      .createServer(serverOptions, (_req, resp) => {
-        resp.writeHead(404);
-        resp.end();
-      })
-      .listen(port);
-
-    await expectAsync(
-      Https.deleteOrThrow(`https://localhost:${port}/`, requestOptions)
-    ).toBeRejectedWith(
-      new HttpsError('DELETE', `https://localhost:${port}/`, '', 404)
     );
   });
 
@@ -209,22 +195,6 @@ describe('http put request', () => {
     );
   });
 
-  it('throws on 404 (not found)', async () => {
-    const port = await netUtil.findUnusedPort();
-    server = https
-      .createServer(serverOptions, (_req, resp) => {
-        resp.writeHead(404);
-        resp.end();
-      })
-      .listen(port);
-
-    await expectAsync(
-      Https.putJsonOrThrow(`https://localhost:${port}/`, 'hi', requestOptions)
-    ).toBeRejectedWith(
-      new HttpsError('PUT', `https://localhost:${port}/`, '', 404)
-    );
-  });
-
   it('throws on error', async () => {
     const port = await netUtil.findUnusedPort();
     server = https
@@ -282,22 +252,6 @@ describe('http post request', () => {
       Https.postJsonOrThrow(`https://localhost:${port}/`, 'hi', requestOptions)
     ).toBeRejectedWith(
       new HttpsError('POST', `https://localhost:${port}/`, '', 403)
-    );
-  });
-
-  it('throws on 404 (not found)', async () => {
-    const port = await netUtil.findUnusedPort();
-    server = https
-      .createServer(serverOptions, (_req, resp) => {
-        resp.writeHead(404);
-        resp.end();
-      })
-      .listen(port);
-
-    await expectAsync(
-      Https.postJsonOrThrow(`https://localhost:${port}/`, 'hi', requestOptions)
-    ).toBeRejectedWith(
-      new HttpsError('POST', `https://localhost:${port}/`, '', 404)
     );
   });
 

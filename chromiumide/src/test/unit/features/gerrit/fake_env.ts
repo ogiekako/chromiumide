@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as https from 'https';
-import {Https} from '../../../../common/https';
+import {Https, HttpsError} from '../../../../common/https';
 import * as api from '../../../../features/gerrit/api';
 import * as git from '../../../../features/gerrit/git';
 import * as fakeData from './fake_data';
@@ -102,7 +102,9 @@ export class FakeGerrit {
           );
         const id = match[3];
         const changeInfo = this.idToChangeInfo.get(id);
-        if (!changeInfo) return undefined;
+        if (!changeInfo) {
+          return Promise.reject(new HttpsError('GET', url, '', 404));
+        }
         const path = match[1];
         switch (path) {
           case `changes/${id}?o=ALL_REVISIONS`:
