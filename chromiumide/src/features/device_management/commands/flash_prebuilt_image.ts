@@ -8,6 +8,7 @@ import * as process from 'process';
 import * as vscode from 'vscode';
 import {getCrosPath} from '../../../common/chromiumos/cros_client';
 import {Source, exec} from '../../../common/common_util';
+import {ImageVersion, getChromeMilestones} from '../../../common/image_version';
 import * as services from '../../../services';
 import {Metrics} from '../../metrics/metrics';
 import {DeviceClient} from '../device_client';
@@ -27,9 +28,7 @@ import {
 const BOTO_PATH =
   'src/private-overlays/chromeos-overlay/googlestorage_account.boto';
 
-function matchInputAsImageVersion(
-  input: string
-): prebuiltUtil.ImageVersion | undefined {
+function matchInputAsImageVersion(input: string): ImageVersion | undefined {
   // Match input string as having a Chrome version if it is a number
   //   1. starting with 2-9 and has at least 2 digits, or
   //   2. starting with 1 and has at least 3 digits, or
@@ -124,7 +123,7 @@ async function showImageVersionInputBoxWithDynamicSuggestions(
   let queries_count = 0;
 
   const chromeMilestonesItems: (ChromeMilestoneItem | SimplePickItem)[] = (
-    await prebuiltUtil.getChromeMilestones()
+    await getChromeMilestones()
   ).map((milestone: number) => new ChromeMilestoneItem(milestone));
   chromeMilestonesItems.unshift(
     new SimplePickItem(
