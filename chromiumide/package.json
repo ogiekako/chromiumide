@@ -132,6 +132,11 @@
         "icon": "$(cloud-download)"
       },
       {
+        "command": "chromiumide.deviceManagement.checkDeviceImageCompatibilityOrSuggest",
+        "category": "CrOS",
+        "title": "Check Compatibility for deploying package"
+      },
+      {
         "command": "chromiumide.deviceManagement.deployToDevice",
         "category": "CrOS",
         "title": "Deploy Package to Device",
@@ -649,6 +654,11 @@
           "group": "2_operation@1"
         },
         {
+          "command": "chromiumide.deviceManagement.checkDeviceImageCompatibilityOrSuggest",
+          "when": "view == devices && viewItem =~ /^device-/",
+          "group": "2_operation@2"
+        },
+        {
           "command": "chromiumide.deviceManagement.deployToDevice",
           "when": "view == devices && viewItem =~ /^device-/",
           "group": "inline@3"
@@ -954,6 +964,19 @@
           "description": "Format files with 'cros format'",
           "default": true
         },
+        "chromiumide.deviceManagement.devices": {
+          "type": "array",
+          "scope": "machine-overridable",
+          "description": "List of developer-owned device hostnames",
+          "items": {
+            "type": "string"
+          }
+        },
+        "chromiumide.deviceManagement.imageVersionMaxSkew": {
+          "type": "number",
+          "description": "The maximum difference in CrOS major version for device and local image above which warning would be shown.",
+          "default": 7
+        },
         "chromiumide.dirMetadata.links": {
           "type": "boolean",
           "description": "Make references to components in DIR_METADATA files clickable.",
@@ -1065,14 +1088,6 @@
           "type": "boolean",
           "description": "Enable tast tests debugging",
           "default": true
-        },
-        "chromiumide.deviceManagement.devices": {
-          "type": "array",
-          "scope": "machine-overridable",
-          "description": "List of developer-owned device hostnames",
-          "items": {
-            "type": "string"
-          }
         },
         "chromiumide.metrics.collectMetrics": {
           "type": "boolean",

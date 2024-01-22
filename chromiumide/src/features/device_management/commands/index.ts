@@ -15,6 +15,7 @@ import {SshIdentity} from '../ssh_identity';
 import * as ssh from '../ssh_session';
 import * as vnc from '../vnc_session';
 import {addExistingHostsCommand} from './add_existing_hosts';
+import {checkDeviceImageCompatibilityOrSuggest} from './check_image';
 import {CommandContext} from './common';
 import {connectToDeviceForShell} from './connect_ssh';
 import {connectToDeviceForScreen} from './connect_vnc';
@@ -154,10 +155,7 @@ function registerChromiumosCommands(
         'chromiumide.deviceManagement.flashPrebuiltImage',
         (item?: provider.DeviceItem) =>
           flashPrebuiltImage(context, chrootService, item?.hostname)
-      )
-    );
-
-    subscriptions.push(
+      ),
       vscodeRegisterCommand(
         'chromiumide.deviceManagement.deployToDevice',
         (item?: provider.DeviceItem) =>
@@ -167,6 +165,15 @@ function registerChromiumosCommands(
 
     if (chrootService) {
       subscriptions.push(
+        vscodeRegisterCommand(
+          'chromiumide.deviceManagement.checkDeviceImageCompatibilityOrSuggest',
+          (item: provider.DeviceItem) =>
+            checkDeviceImageCompatibilityOrSuggest(
+              context,
+              chrootService,
+              item?.hostname
+            )
+        ),
         vscodeRegisterCommand('chromiumide.deviceManagement.runTastTests', () =>
           runTastTests(context, chrootService)
         )
