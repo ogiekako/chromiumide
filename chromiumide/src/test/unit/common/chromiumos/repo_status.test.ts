@@ -1,7 +1,7 @@
 // Copyright 2024 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import {BoardOrHost} from '../../../../common/chromiumos/board_or_host';
+import {Board} from '../../../../common/chromiumos/board_or_host';
 import {getCrosPrebuiltVersionsFromBinHost} from '../../../../common/chromiumos/repo_status';
 import * as services from '../../../../services';
 import * as testing from '../../../testing';
@@ -37,7 +37,7 @@ describe('repo status', () => {
   it('gets CrOS prebuilt image versions of a private board', async () => {
     await expectAsync(
       getCrosPrebuiltVersionsFromBinHost(
-        BoardOrHost.newBoard('betty'),
+        Board.newBoard('betty'),
         state.chrootService
       )
     ).toBeResolvedTo([
@@ -79,7 +79,7 @@ describe('repo status', () => {
   it('gets CrOS prebuilt image versions of a public board', async () => {
     await expectAsync(
       getCrosPrebuiltVersionsFromBinHost(
-        BoardOrHost.newBoard('amd64-generic'),
+        Board.newBoard('amd64-generic'),
         state.chrootService
       )
     ).toBeResolvedTo([
@@ -122,29 +122,18 @@ describe('repo status', () => {
     expect(
       (
         (await getCrosPrebuiltVersionsFromBinHost(
-          BoardOrHost.newBoard('foo'),
+          Board.newBoard('foo'),
           state.chrootService
         )) as Error
       ).message
     ).toContain('Binhost file for foo does not contain valid prebuilt path');
   });
 
-  it('returns error on querying CrOS major version of host', async () => {
-    expect(
-      (
-        (await getCrosPrebuiltVersionsFromBinHost(
-          BoardOrHost.HOST,
-          state.chrootService
-        )) as Error
-      ).message
-    ).toEqual('Binhost does not exist for host.');
-  });
-
   it('returns error on binhost file not found', async () => {
     expect(
       (
         (await getCrosPrebuiltVersionsFromBinHost(
-          BoardOrHost.newBoard('bar'),
+          Board.newBoard('bar'),
           state.chrootService
         )) as Error
       ).message

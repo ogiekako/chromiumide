@@ -2,7 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {BoardOrHost} from '../../../../../common/chromiumos/board_or_host';
+import {
+  Board,
+  BoardOrHost,
+  HOST,
+} from '../../../../../common/chromiumos/board_or_host';
 import {getUseFlagsInstalled} from '../../../../../common/chromiumos/portage/equery';
 import * as commonUtil from '../../../../../common/common_util';
 import * as services from '../../../../../services';
@@ -18,7 +22,7 @@ function installEmergeForUseFlagsCommandHandler(
   stderr?: string,
   exitSatus?: number
 ): void {
-  const cmd = `emerge${board.isHost ? '' : `-${board.toBoardName()}`}`;
+  const cmd = board.suffixedExecutable('emerge');
   const args = [
     '--pretend',
     '--verbose',
@@ -52,7 +56,7 @@ describe('equery use flag', () => {
   it('on board trogdor', async () => {
     await testing.buildFakeChroot(tempDir.path);
 
-    const board = BoardOrHost.newBoard('trogdor');
+    const board = Board.newBoard('trogdor');
     const packageName = 'chromeos-base/libchrome';
     const fakeStdout = `
 These are the packages that would be merged, in order:
@@ -91,7 +95,7 @@ Total: 1 package (1 reinstall, 1 binary), Size of downloads: 0 KiB
   it('on host', async () => {
     await testing.buildFakeChroot(tempDir.path);
 
-    const board = BoardOrHost.HOST;
+    const board = HOST;
     const packageName = 'chromeos-base/libbrillo';
     const fakeStdout = `
 These are the packages that would be merged, in order:
@@ -128,7 +132,7 @@ Total: 1 package (1 reinstall, 1 binary), Size of downloads: 0 KiB
   it('fails with command not found error', async () => {
     await testing.buildFakeChroot(tempDir.path);
 
-    const board = BoardOrHost.newBoard('hatch');
+    const board = Board.newBoard('hatch');
     const packageName = 'chromeos-base/libchrome';
     installEmergeForUseFlagsCommandHandler(
       fakeExec,
@@ -154,7 +158,7 @@ Total: 1 package (1 reinstall, 1 binary), Size of downloads: 0 KiB
   it('fails with no binary package error with no suggestion', async () => {
     await testing.buildFakeChroot(tempDir.path);
 
-    const board = BoardOrHost.newBoard('trogdor');
+    const board = Board.newBoard('trogdor');
     const packageName = 'abcdef';
     const fakeStdErr = `
 emerge: there are no binary packages to satisfy "abcdef" for /build/trogdor/.
@@ -186,7 +190,7 @@ emerge: searching for similar names... nothing similar found.
     // Do not install fake chroot command handler i.e. should give command not found error.
     await testing.buildFakeChroot(tempDir.path);
 
-    const board = BoardOrHost.newBoard('trogdor');
+    const board = Board.newBoard('trogdor');
     const packageName = 'foo';
     const fakeStdErr = `
 emerge: there are no binary packages to satisfy "foo" for /build/trogdor/.
@@ -208,7 +212,7 @@ emerge: Maybe you meant sys-block/fio?
     expect(
       (
         (await getUseFlagsInstalled(
-          BoardOrHost.newBoard('trogdor'),
+          Board.newBoard('trogdor'),
           'foo',
           services.chromiumos.ChrootService.maybeCreate(tempDir.path, false)!
         )) as Error
@@ -222,7 +226,7 @@ emerge: Maybe you meant sys-block/fio?
     // Do not install fake chroot command handler i.e. should give command not found error.
     await testing.buildFakeChroot(tempDir.path);
 
-    const board = BoardOrHost.newBoard('trogdor');
+    const board = Board.newBoard('trogdor');
     const packageName = 'libchro';
     const fakeStdErr = `
 emerge: there are no binary packages to satisfy "libchro" for /build/trogdor/.

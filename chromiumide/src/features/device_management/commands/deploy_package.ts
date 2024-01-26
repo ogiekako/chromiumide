@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {BoardOrHost} from '../../../common/chromiumos/board_or_host';
+import {Board} from '../../../common/chromiumos/board_or_host/board';
 import {LruCache} from '../../../common/lru_cache';
 import * as services from '../../../services';
 import {
@@ -192,7 +192,7 @@ async function loadPackagesOnBoardOrThrow(
     async () => {
       return await listPackages(
         {chrootService: chrootService, output: context.output},
-        BoardOrHost.newBoard(board)
+        Board.newBoard(board)
       );
     }
   );

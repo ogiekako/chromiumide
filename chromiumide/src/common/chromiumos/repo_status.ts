@@ -10,7 +10,7 @@ import {
   ImageVersion,
   parseFullCrosVersion,
 } from '../image_version';
-import {BoardOrHost} from './board_or_host';
+import {Board} from './board_or_host';
 
 const PRIVATE_BINHOST_DIR =
   'src/private-overlays/chromeos-partner-overlay/chromeos/binhost/target/';
@@ -50,12 +50,9 @@ async function getCrosPrebuiltVersionsFromFile(
  * during repo sync and reflect the postsubmit versions closest to the state of the local repo.
  */
 export async function getCrosPrebuiltVersionsFromBinHost(
-  board: BoardOrHost,
+  board: Board,
   chrootService: chromiumos.ChrootService
 ): Promise<ImageVersion[] | Error> {
-  if (board === BoardOrHost.HOST) {
-    return new Error('Binhost does not exist for host.');
-  }
   const target = board.toBoardName();
 
   const [binHostFilePrivate, binHostFilePublic] = [

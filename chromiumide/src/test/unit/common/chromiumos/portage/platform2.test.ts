@@ -4,7 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import {BoardOrHost} from '../../../../../common/chromiumos/board_or_host';
+import {parseBoardOrHost} from '../../../../../common/chromiumos/board_or_host';
 import {
   Platform2Package,
   platform2TestWorkingDirectory,
@@ -65,7 +65,7 @@ describe('platform2TestWorkingDirectory works for', () => {
   for (const tc of testCases) {
     it(tc.name, () => {
       const got = platform2TestWorkingDirectory(
-        BoardOrHost.parse(tc.board),
+        parseBoardOrHost(tc.board),
         tc.pkg
       );
       expect(got).toEqual(tc.want);

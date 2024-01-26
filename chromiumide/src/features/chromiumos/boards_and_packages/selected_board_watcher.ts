@@ -3,7 +3,10 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {BoardOrHost} from '../../../common/chromiumos/board_or_host';
+import {
+  BoardOrHost,
+  parseBoardOrHost,
+} from '../../../common/chromiumos/board_or_host';
 import {Breadcrumbs} from './item';
 
 /**
@@ -37,7 +40,7 @@ export class SelectedBoardWatcher implements vscode.Disposable {
         const board = selection[0].breadcrumbs[0];
 
         if (this.board?.toString() !== board) {
-          this.board = BoardOrHost.parse(board);
+          this.board = parseBoardOrHost(board);
           this.onDidChangeSelectedBoardEmitter.fire(this.board);
         }
       })

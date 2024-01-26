@@ -3,7 +3,11 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {BoardOrHost} from '../../../../common/chromiumos/board_or_host';
+import {
+  BoardOrHost,
+  Board,
+  HOST,
+} from '../../../../common/chromiumos/board_or_host';
 import {getSetupBoardsAlphabetic} from '../../../../common/cros';
 import {Context} from '../context';
 import {BoardItem} from './board_item';
@@ -20,16 +24,16 @@ export class RootItem implements Item {
   constructor() {}
 
   async refreshChildren(ctx: Context): Promise<void> {
-    const boards = (
+    const boards: BoardOrHost[] = (
       await getSetupBoardsAlphabetic(
         ctx.chrootService.chroot,
         ctx.chrootService.out
       )
-    ).map(b => BoardOrHost.newBoard(b));
+    ).map(b => Board.newBoard(b));
 
     this.children.splice(0);
 
-    for (const board of boards.concat([BoardOrHost.HOST])) {
+    for (const board of boards.concat([HOST])) {
       this.children.push(BoardItem.create(this.breadcrumbs, board));
     }
   }

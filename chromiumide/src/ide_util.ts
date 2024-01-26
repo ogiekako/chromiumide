@@ -8,7 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {BoardOrHost} from './common/chromiumos/board_or_host';
+import {BoardOrHost, parseBoardOrHost} from './common/chromiumos/board_or_host';
 import * as commonUtil from './common/common_util';
 import {Chroot} from './common/common_util';
 import * as cros from './common/cros';
@@ -46,7 +46,7 @@ export async function getOrSelectTargetBoard(
 ): Promise<BoardOrHost | null | NoBoardError> {
   const board = config.board.get();
   if (board) {
-    return BoardOrHost.parse(board);
+    return parseBoardOrHost(board);
   }
   return await selectAndUpdateTargetBoard(chroot, {suggestMostRecent: true});
 }
@@ -115,7 +115,7 @@ async function selectBoard(
     }
     switch (selection.title) {
       case 'Yes':
-        return BoardOrHost.parse(mostRecent);
+        return parseBoardOrHost(mostRecent);
       case 'Customize':
         break;
       default:
@@ -127,7 +127,7 @@ async function selectBoard(
     title: 'Target board',
   });
 
-  return typeof choice === 'string' ? BoardOrHost.parse(choice) : null;
+  return typeof choice === 'string' ? parseBoardOrHost(choice) : null;
 }
 
 /**

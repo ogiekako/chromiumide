@@ -2,28 +2,33 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {BoardOrHost} from '../../../../common/chromiumos/board_or_host';
+import {
+  parseBoardOrHost,
+  HOST,
+  Board,
+  HOST_AS_STRING,
+} from '../../../../common/chromiumos/board_or_host';
 
 describe('BoardOrHost', () => {
-  const host = BoardOrHost.parse('host');
-  const betty = BoardOrHost.parse('betty');
+  const host = parseBoardOrHost('host');
+  const betty = parseBoardOrHost('betty');
 
   it('can parse and produce string', () => {
-    expect(host).toEqual(BoardOrHost.HOST);
-    expect(betty).toEqual(BoardOrHost.newBoard('betty'));
+    expect(host).toEqual(HOST);
+    expect(betty).toEqual(Board.newBoard('betty'));
 
-    expect(host.toString()).toEqual(BoardOrHost.HOST_AS_STRING);
+    expect(host.toString()).toEqual(HOST_AS_STRING);
     expect(betty.toString()).toEqual('betty');
   });
 
   it('toBoardName returns SDK board name for host', () => {
-    expect(BoardOrHost.HOST.toBoardName()).toEqual('amd64-host');
-    expect(BoardOrHost.newBoard('betty').toBoardName()).toEqual('betty');
+    expect(HOST.toBoardName()).toEqual('amd64-host');
+    expect(Board.newBoard('betty').toBoardName()).toEqual('betty');
   });
 
   it('throws if board name is host', () => {
     try {
-      BoardOrHost.newBoard(BoardOrHost.HOST_AS_STRING);
+      Board.newBoard(HOST_AS_STRING);
       fail('got no error; want error');
     } catch {
       // OK
@@ -40,5 +45,10 @@ describe('BoardOrHost', () => {
 
     expect(host.map(double, 'v')).toEqual('v');
     expect(betty.map(double, 'v')).toEqual('bettybetty');
+  });
+
+  it('returns correct portage executables', () => {
+    expect(host.suffixedExecutable('emerge')).toEqual('emerge');
+    expect(betty.suffixedExecutable('emerge')).toEqual('emerge-betty');
   });
 });

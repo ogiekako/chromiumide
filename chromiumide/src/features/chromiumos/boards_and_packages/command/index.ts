@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {BoardOrHost} from '../../../../common/chromiumos/board_or_host';
+import {parseBoardOrHost} from '../../../../common/chromiumos/board_or_host';
 import {vscodeRegisterCommand} from '../../../../common/vscode/commands';
 import {Context} from '../context';
 import {Breadcrumbs} from '../item';
@@ -76,22 +76,22 @@ export class BoardsAndPackagesCommands implements vscode.Disposable {
       this.register(
         CommandName.BUILD,
         ({breadcrumbs: [board, category, name]}: Breadcrumbs) =>
-          build(ctx, BoardOrHost.parse(board), {category, name})
+          build(ctx, parseBoardOrHost(board), {category, name})
       ),
       this.register(
         CommandName.CROS_WORKON_START,
         ({breadcrumbs: [board, category, name]}: Breadcrumbs) =>
-          crosWorkon(ctx, BoardOrHost.parse(board), {category, name}, 'start')
+          crosWorkon(ctx, parseBoardOrHost(board), {category, name}, 'start')
       ),
       this.register(
         CommandName.CROS_WORKON_STOP,
         ({breadcrumbs: [board, category, name]}: Breadcrumbs) =>
-          crosWorkon(ctx, BoardOrHost.parse(board), {category, name}, 'stop')
+          crosWorkon(ctx, parseBoardOrHost(board), {category, name}, 'stop')
       ),
       this.register(
         CommandName.OPEN_EBUILD,
         ({breadcrumbs: [board, category, name]}: Breadcrumbs) =>
-          openEbuild(ctx, BoardOrHost.parse(board), {category, name})
+          openEbuild(ctx, parseBoardOrHost(board), {category, name})
       )
     );
   }

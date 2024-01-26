@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import * as path from 'path';
-import {BoardOrHost} from '../../common/chromiumos/board_or_host';
+import {Board} from '../../common/chromiumos/board_or_host/board';
 import {WrapFs} from '../../common/cros';
 import * as ideUtil from '../../ide_util';
 import * as config from '../../services/config';
@@ -108,7 +108,7 @@ describe('getOrSelectTargetBoard', () => {
     const chroot = await testing.buildFakeChroot(tempDir.path);
 
     expect(await ideUtil.getOrSelectTargetBoard(new WrapFs(chroot))).toEqual(
-      BoardOrHost.newBoard('amd64-generic')
+      Board.newBoard('amd64-generic')
     );
   });
 
@@ -137,7 +137,7 @@ describe('getOrSelectTargetBoard', () => {
       .and.returnValue({title: 'Yes'});
 
     expect(await ideUtil.getOrSelectTargetBoard(new WrapFs(chroot))).toEqual(
-      BoardOrHost.newBoard('amd64-generic')
+      Board.newBoard('amd64-generic')
     );
     expect(config.board.get()).toBe('amd64-generic');
   });
@@ -167,7 +167,7 @@ describe('getOrSelectTargetBoard', () => {
       .and.returnValue('coral');
 
     expect(await ideUtil.getOrSelectTargetBoard(new WrapFs(chroot))).toEqual(
-      BoardOrHost.newBoard('coral')
+      Board.newBoard('coral')
     );
     expect(config.board.get()).toBe('coral');
   });
