@@ -56,7 +56,7 @@ export async function getUseFlagsInstalled(
   });
   if (result instanceof Error) {
     if (result instanceof AbnormalExitError && result.exitStatus === 127) {
-      return Error(
+      return new Error(
         `Failed to get USE flags of ${targetPackage} on ${board}: command not found: have you setup board ${board} on chroot?`
       );
     }
@@ -69,7 +69,7 @@ export async function getUseFlagsInstalled(
       const suggestedPackageMsgMatch = result.stderr.match(
         suggestedPackageMsgRe
       );
-      return Error(
+      return new Error(
         `Failed to get USE flags of ${targetPackage} on ${board}: binary package not found: ${
           suggestedPackageMsgMatch
             ? suggestedPackageMsgMatch[0]
@@ -95,7 +95,7 @@ export async function getUseFlagsInstalled(
   for (const flag of match[1].split(' ')) {
     const fmatch = flagRe.exec(flag);
     if (!fmatch) {
-      return Error(
+      return new Error(
         `Failed to parse USE flag "${flag}" for ${targetPackage} on ${board}: must match ${flagRe.source}`
       );
     }

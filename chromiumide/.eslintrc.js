@@ -59,6 +59,11 @@ module.exports = {
     'no-restricted-syntax': [
       'error',
       {
+        selector: 'CallExpression[callee.name="Error"]',
+        message:
+          'Always use new Error() when instantiating exceptions, instead of just calling Error()',
+      },
+      {
         selector:
           'MemberExpression' +
           '[object.type="MemberExpression"]' +

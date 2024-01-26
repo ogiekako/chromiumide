@@ -130,7 +130,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
     fakeExec.installCallback(
       getCrosPath(state.source),
       jasmine.arrayContaining(['flash', `ssh://${hostname}`]),
-      async () => Error('cros flash failed'),
+      async () => new Error('cros flash failed'),
       jasmine.anything()
     );
 
