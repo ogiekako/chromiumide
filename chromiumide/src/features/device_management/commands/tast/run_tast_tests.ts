@@ -11,7 +11,7 @@ import * as config from '../../../../services/config';
 import {Metrics} from '../../../metrics/metrics';
 import {CommandContext} from '../common';
 import {
-  askTestNames,
+  chooseTest,
   preTestSetUp,
   showPromptWithOpenLogChoice,
 } from './tast_common';
@@ -87,7 +87,7 @@ export async function runTastTests(
   // Get list of available tests.
   const target = `localhost:${port}`;
 
-  const testNames = await askTestNames(
+  const testNames = await chooseTest(
     context,
     chrootService,
     hostname,

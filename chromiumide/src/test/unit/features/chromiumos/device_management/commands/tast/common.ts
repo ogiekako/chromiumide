@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../../../../../common/common_util';
 import {CommandContext} from '../../../../../../../features/device_management/commands/common';
+import {TEST_ONLY} from '../../../../../../../features/device_management/commands/tast/tast_common';
 import {DeviceCategory} from '../../../../../../../features/device_management/device_repository';
 import {Metrics} from '../../../../../../../features/metrics/metrics';
 import * as testing from '../../../../../../testing';
@@ -76,7 +77,10 @@ export async function prepareCommonFakes(
     .withArgs([hostname, 'other'], jasmine.anything())
     .and.resolveTo(hostname);
   vscodeSpy.window.showQuickPick
-    .withArgs(jasmine.arrayContaining(testsToPick), jasmine.anything())
+    .withArgs(
+      jasmine.arrayContaining(testsToPick),
+      jasmine.objectContaining({title: TEST_ONLY.SELECT_TEST_TITLE})
+    )
     .and.resolveTo(testsToPick);
 
   // Prepare external command responses.

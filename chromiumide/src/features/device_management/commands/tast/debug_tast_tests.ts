@@ -20,7 +20,7 @@ import {diagnoseSshError} from '../../diagnostic';
 import * as sshUtil from '../../ssh_util';
 import {CommandContext} from '../common';
 import {
-  askTestNames,
+  chooseTest,
   preTestSetUp,
   showPromptWithOpenLogChoice,
 } from './tast_common';
@@ -108,7 +108,7 @@ export async function debugTastTests(
     }
   }
 
-  const testNames = await askTestNames(
+  const testNames = await chooseTest(
     context,
     chrootService,
     hostname,

@@ -8,6 +8,7 @@ import {
   TestResult,
   runTastTests,
 } from '../../../../../../../features/device_management/commands/tast/run_tast_tests';
+import {TEST_ONLY} from '../../../../../../../features/device_management/commands/tast/tast_common';
 import {ChrootService} from '../../../../../../../services/chromiumos';
 import * as testing from '../../../../../../testing';
 import {installChrootCommandHandler} from '../../../../../../testing/fakes';
@@ -50,7 +51,8 @@ func ChromeFixture(ctx context.Context, s *testing.State) {}
 `,
         },
         tastListResult: 'example.ChromeFixture\n',
-        testsToPick: ['example.ChromeFixture'],
+        // No tests to pick. If there is only one runnable test, it will be run automatically.
+        testsToPick: [],
       },
       subscriptions
     );
@@ -99,6 +101,10 @@ func ChromeFixture(ctx context.Context, s *testing.State) {}
     expect(vscodeSpy.window.showInformationMessage).toHaveBeenCalledOnceWith(
       'All 1 test(s) passed',
       jasmine.anything()
+    );
+
+    expect(vscodeSpy.window.showQuickPick).not.toHaveBeenCalledWith(
+      jasmine.objectContaining({title: TEST_ONLY.SELECT_TEST_TITLE})
     );
   });
 

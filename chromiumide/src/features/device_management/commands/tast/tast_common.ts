@@ -68,7 +68,15 @@ function findTestCase(): parser.ParsedTestCase | undefined {
   return undefined;
 }
 
-export async function askTestNames(
+/** The title shown on the quick pick to select the test(s) to run. */
+const SELECT_TEST_TITLE = 'Test Options';
+
+/**
+ * Chooses the test(s) to run. If there are multiple runnable tests, it asks the user to choose
+ * which to run. It returns undefined in case of failure showing the user an error message as
+ * needed.
+ */
+export async function chooseTest(
   context: CommandContext,
   chrootService: ChrootService,
   hostname: string,
@@ -99,13 +107,19 @@ export async function askTestNames(
   }
   if (testList.length === 0) {
     void vscode.window.showInformationMessage(
-      `This is not a test available for ${hostname}`
+      `There is no test available for ${hostname}`
     );
     return null;
   }
+
+  // If there is only one runnable test, run it.
+  if (testList.length === 1) {
+    return testList;
+  }
+
   // Show available test options.
   const choice = await vscode.window.showQuickPick(testList, {
-    title: 'Test Options',
+    title: SELECT_TEST_TITLE,
     canPickMany: true,
     ignoreFocusOut: true,
   });
@@ -204,3 +218,7 @@ export function showPromptWithOpenLogChoice(
     }
   })();
 }
+
+export const TEST_ONLY = {
+  SELECT_TEST_TITLE,
+};
