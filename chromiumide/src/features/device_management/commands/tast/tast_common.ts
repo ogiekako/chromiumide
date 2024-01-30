@@ -107,6 +107,7 @@ export async function askTestNames(
   const choice = await vscode.window.showQuickPick(testList, {
     title: 'Test Options',
     canPickMany: true,
+    ignoreFocusOut: true,
   });
   if (!choice || choice.length <= 0) {
     return null;
