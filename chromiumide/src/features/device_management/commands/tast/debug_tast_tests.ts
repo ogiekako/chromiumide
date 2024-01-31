@@ -34,7 +34,7 @@ export class DebugTastTestsResult {
 
 /**
  * Prompts a user for tast tests to debug, and runs the selected tests
- * under debugger. Returns null when the tests aren't run.
+ * under debugger. Returns undefined when the tests aren't run.
  * @param context The current command context.
  * @param chrootService The chroot to run commands in.
  */
@@ -42,7 +42,7 @@ export async function debugTastTests(
   context: CommandContext,
   chrootService: services.chromiumos.ChrootService,
   homedir = os.homedir()
-): Promise<DebugTastTestsResult | null | Error> {
+): Promise<DebugTastTestsResult | undefined | Error> {
   Metrics.send({
     category: 'interactive',
     group: 'device',
@@ -52,12 +52,12 @@ export async function debugTastTests(
 
   const targetFile = vscode.window.activeTextEditor?.document.fileName;
   if (!targetFile) {
-    return null;
+    return undefined;
   }
 
   const preTestResult = await preTestSetUp(context);
   if (!preTestResult) {
-    return null;
+    return undefined;
   }
   const {hostname, testCase, port} = preTestResult;
 
@@ -74,7 +74,7 @@ export async function debugTastTests(
     dlvEbuildVersion
   );
   if (!dutHasDelve) {
-    return null;
+    return undefined;
   }
 
   const delveInHost = await ensureHostHasDelve(
@@ -83,7 +83,7 @@ export async function debugTastTests(
     homedir
   );
   if (!delveInHost) {
-    return null;
+    return undefined;
   }
 
   const alternateTools = config.goExtension.alternateTools.get() ?? {};
@@ -116,7 +116,7 @@ export async function debugTastTests(
     testCase
   );
   if (!testNames) {
-    return null;
+    return undefined;
   }
 
   try {

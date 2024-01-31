@@ -16,25 +16,28 @@ import {
  * Lays the foundation for running Tast tests. It involes parsing the active document for test
  * cases, asking the user the device to run the tests on, and ensuring an SSH session to the device.
  *
- * It returns null in case of failure showing the user an error message as needed.
+ * It returns undefined in case of failure showing the user an error message as needed.
  */
-export async function preTestSetUp(context: CommandContext): Promise<null | {
-  hostname: string;
-  testCase: parser.ParsedTestCase;
-  port: number;
-}> {
+export async function preTestSetUp(context: CommandContext): Promise<
+  | undefined
+  | {
+      hostname: string;
+      testCase: parser.ParsedTestCase;
+      port: number;
+    }
+> {
   const testCase = findTestCase();
-  if (!testCase) return null;
+  if (!testCase) return undefined;
 
   const hostname = await promptKnownHostnameIfNeeded(
     'Connect to Device',
     undefined,
     context.deviceRepository
   );
-  if (!hostname) return null;
+  if (!hostname) return undefined;
 
   const port = await ensureSshSession(context, hostname);
-  if (!port) return null;
+  if (!port) return undefined;
 
   return {hostname, testCase, port};
 }
@@ -82,7 +85,7 @@ export async function chooseTest(
   hostname: string,
   target: string,
   testCase: parser.ParsedTestCase
-): Promise<null | string[]> {
+): Promise<undefined | string[]> {
   let testList = undefined;
   try {
     testList = await getAvailableTestsOrThrow(
@@ -99,17 +102,17 @@ export async function chooseTest(
         : 'Error finding available tests.',
       true
     );
-    return null;
+    return undefined;
   }
   if (testList === undefined) {
     void vscode.window.showWarningMessage('Cancelled getting available tests.');
-    return null;
+    return undefined;
   }
   if (testList.length === 0) {
     void vscode.window.showInformationMessage(
       `There is no test available for ${hostname}`
     );
-    return null;
+    return undefined;
   }
 
   // If there is only one runnable test, run it.
@@ -124,7 +127,7 @@ export async function chooseTest(
     ignoreFocusOut: true,
   });
   if (!choice || choice.length <= 0) {
-    return null;
+    return undefined;
   }
 
   return choice;

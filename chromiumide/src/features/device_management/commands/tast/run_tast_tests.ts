@@ -63,14 +63,14 @@ export type TestError = {
 
 /**
  * Prompts a user for tast tests to run, and returns the results of
- * running the selected tests. Returns null when the tests aren't run.
+ * running the selected tests. Returns undefined when the tests aren't run.
  * @param context The current command context.
  * @param chrootService The chroot to run commands in.
  */
 export async function runTastTests(
   context: CommandContext,
   chrootService: ChrootService
-): Promise<RunTastTestsResult | null | Error> {
+): Promise<RunTastTestsResult | undefined | Error> {
   Metrics.send({
     category: 'interactive',
     group: 'device',
@@ -80,7 +80,7 @@ export async function runTastTests(
 
   const preTestResult = await preTestSetUp(context);
   if (!preTestResult) {
-    return null;
+    return undefined;
   }
   const {hostname, testCase, port} = preTestResult;
 
@@ -95,7 +95,7 @@ export async function runTastTests(
     testCase
   );
   if (!testNames) {
-    return null;
+    return undefined;
   }
 
   const extraArgs = config.tast.extraArgs.get();

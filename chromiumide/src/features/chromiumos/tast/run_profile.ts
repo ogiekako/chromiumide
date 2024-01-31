@@ -56,14 +56,14 @@ export class RunProfile implements vscode.Disposable {
         if (this.debug) {
           runResult = (await vscode.commands.executeCommand(
             'chromiumide.deviceManagement.debugTastTests'
-          )) as DebugTastTestsResult | null | Error;
+          )) as DebugTastTestsResult | undefined | Error;
         } else {
           runResult = (await vscode.commands.executeCommand(
             'chromiumide.deviceManagement.runTastTests'
-          )) as RunTastTestsResult | null | Error;
+          )) as RunTastTestsResult | undefined | Error;
         }
 
-        if (runResult !== null) {
+        if (runResult !== undefined) {
           const duration =
             new Date().getMilliseconds() - start.getMilliseconds();
           run.passed(testItem, duration);
