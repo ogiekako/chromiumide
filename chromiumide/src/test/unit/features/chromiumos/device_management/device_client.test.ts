@@ -91,6 +91,7 @@ describe('Device client parses lsb-release', () => {
       builderPath: 'hatch-release/R104-14901.0.0',
       imageType: 'release',
       chromeosMajorVersion: 14901,
+      chromeosReleaseVersion: '14901.0.0',
     });
   });
 
@@ -100,6 +101,7 @@ describe('Device client parses lsb-release', () => {
       builderPath: 'trogdor-snapshot/R122-15739.0.0-93122-8759326004410150929',
       imageType: 'snapshot',
       chromeosMajorVersion: 15739,
+      chromeosReleaseVersion: '15739.0.0',
     });
   });
 
@@ -109,6 +111,7 @@ describe('Device client parses lsb-release', () => {
       builderPath: undefined,
       imageType: 'local',
       chromeosMajorVersion: 15661,
+      chromeosReleaseVersion: '15661.0.0',
     });
   });
 });
@@ -154,6 +157,7 @@ describe('Device client', () => {
             builderPath: 'board1-release/R1-2.0.0',
             imageType: 'release',
             chromeosMajorVersion: 2,
+            chromeosReleaseVersion: '2.0.0',
           },
         ],
       ])
@@ -170,6 +174,7 @@ describe('Device client', () => {
       builderPath: 'board1-release/R1-2.0.0',
       imageType: 'release',
       chromeosMajorVersion: 2,
+      chromeosReleaseVersion: '2.0.0',
     });
     expect(await onDidChangeDeviceClientReader.times()).toEqual(0);
   });
@@ -203,6 +208,7 @@ describe('Device client', () => {
         builderPath: 'hatch-release/R104-14901.0.0',
         imageType: 'release',
         chromeosMajorVersion: 14901,
+        chromeosReleaseVersion: '14901.0.0',
       },
     ]);
     expect(await onDidChangeDeviceClientReader.times()).toEqual(1);
@@ -212,6 +218,7 @@ describe('Device client', () => {
       builderPath: 'hatch-release/R104-14901.0.0',
       imageType: 'release',
       chromeosMajorVersion: 14901,
+      chromeosReleaseVersion: '14901.0.0',
     });
 
     await client.getDeviceAttributes(hostname);
@@ -242,6 +249,7 @@ describe('Device client', () => {
         builderPath: 'hatch-release/R104-14901.0.0',
         imageType: 'release',
         chromeosMajorVersion: 14901,
+        chromeosReleaseVersion: '14901.0.0',
       },
     ]);
     expect(await onDidChangeDeviceClientReader.times()).toEqual(1);
@@ -251,6 +259,7 @@ describe('Device client', () => {
       builderPath: 'hatch-release/R104-14901.0.0',
       imageType: 'release',
       chromeosMajorVersion: 14901,
+      chromeosReleaseVersion: '14901.0.0',
     });
 
     await client.getDeviceAttributes(hostname);
@@ -275,6 +284,7 @@ describe('Device client', () => {
             builderPath: 'board1-release/R1-2.0.0',
             imageType: 'release',
             chromeosMajorVersion: 2,
+            chromeosReleaseVersion: '2.0.0',
           },
         ],
       ])
@@ -295,6 +305,7 @@ describe('Device client', () => {
       builderPath: 'board1-release/R1-2.0.0',
       imageType: 'release',
       chromeosMajorVersion: 2,
+      chromeosReleaseVersion: '2.0.0',
     });
     expect(await onDidChangeDeviceClientReader.times()).toEqual(0);
 
@@ -312,6 +323,7 @@ describe('Device client', () => {
         builderPath: 'hatch-release/R104-14901.0.0',
         imageType: 'release',
         chromeosMajorVersion: 14901,
+        chromeosReleaseVersion: '14901.0.0',
       },
     ]);
 
@@ -321,6 +333,7 @@ describe('Device client', () => {
       builderPath: 'hatch-release/R104-14901.0.0',
       imageType: 'release',
       chromeosMajorVersion: 14901,
+      chromeosReleaseVersion: '14901.0.0',
     });
     expect(await onDidChangeDeviceClientReader.times()).toEqual(1);
 
@@ -360,6 +373,7 @@ describe('Device client', () => {
         builderPath: 'hatch-release/R104-14901.0.0',
         imageType: 'release',
         chromeosMajorVersion: 14901,
+        chromeosReleaseVersion: '14901.0.0',
       },
     ]);
 
@@ -369,6 +383,7 @@ describe('Device client', () => {
       builderPath: 'hatch-release/R104-14901.0.0',
       imageType: 'release',
       chromeosMajorVersion: 14901,
+      chromeosReleaseVersion: '14901.0.0',
     });
     expect(await onDidChangeDeviceClientReader.times()).toEqual(1);
   });

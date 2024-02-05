@@ -176,6 +176,11 @@
         "title": "Copy Model"
       },
       {
+        "command": "chromiumide.deviceManagement.copyCrOsReleaseVersion",
+        "category": "CrOS",
+        "title": "Copy CrOS Release Version"
+      },
+      {
         "command": "chromiumide.deviceManagement.copyBuilderPath",
         "category": "CrOS",
         "title": "Copy Builder Path"
@@ -679,6 +684,11 @@
           "group": "8_copy"
         },
         {
+          "command": "chromiumide.deviceManagement.copyCrOsReleaseVersion",
+          "when": "view == devices && viewItem == 'CrOS release version'",
+          "group": "8_copy"
+        },
+        {
           "command": "chromiumide.deviceManagement.copyBuilderPath",
           "when": "view == devices && viewItem == 'builder path'",
           "group": "8_copy"
@@ -802,6 +812,10 @@
         },
         {
           "command": "chromiumide.deviceManagement.copyModel",
+          "when": "false"
+        },
+        {
+          "command": "chromiumide.deviceManagement.copyCrOsReleaseVersion",
           "when": "false"
         },
         {

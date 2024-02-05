@@ -94,6 +94,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
             builderPath: 'board1-release/R1-2.0.0',
             imageType: 'release',
             chromeosMajorVersion: 2,
+            chromeosReleaseVersion: '2.0.0',
           },
         ],
       ])
@@ -122,6 +123,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
         builderPath: 'hatch-release/R104-14901.0.0',
         imageType: 'release',
         chromeosMajorVersion: 14901,
+        chromeosReleaseVersion: '14901.0.0',
       },
     ]);
   });
@@ -151,6 +153,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
             builderPath: 'board1-release/R1-2.0.0',
             imageType: 'release',
             chromeosMajorVersion: 2,
+            chromeosReleaseVersion: '2.0.0',
           },
         ],
       ])

@@ -14,6 +14,7 @@ export interface DeviceAttributes {
   builderPath: string | undefined;
   imageType: string;
   chromeosMajorVersion: number;
+  chromeosReleaseVersion: string;
 }
 
 type DeviceAttributesWithHostname = DeviceAttributes & {
@@ -169,19 +170,21 @@ function parseLsbRelease(content: string): DeviceAttributes {
 
   // CHROMEOS_RELEASE_VERSION should be present on both prebuilt and manually built images.
   const chromeosReleaseVersionMatch =
-    /CHROMEOS_RELEASE_VERSION=(\d+).\d+.\d+/.exec(content);
+    /CHROMEOS_RELEASE_VERSION=((\d+).\d+.\d+)/.exec(content);
   if (!chromeosReleaseVersionMatch) {
     throw new Error(
       `CHROMEOS_RELEASE_VERSION is missing or is not in correct format (XXX-YYYYY.Z.W), content = ${content}`
     );
   }
-  const chromeosMajorVersion = parseInt(chromeosReleaseVersionMatch[1]);
+  const chromeosReleaseVersion = chromeosReleaseVersionMatch[1];
+  const chromeosMajorVersion = parseInt(chromeosReleaseVersionMatch[2]);
 
   return {
     board,
     builderPath,
     imageType,
     chromeosMajorVersion,
+    chromeosReleaseVersion,
   };
 }
 

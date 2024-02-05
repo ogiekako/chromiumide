@@ -15,7 +15,11 @@ export enum ItemKind {
   LOGIN,
 }
 
-export type DeviceAttributeKey = 'board' | 'model' | 'builder path';
+export type DeviceAttributeKey =
+  | 'board'
+  | 'model'
+  | 'CrOS release version'
+  | 'builder path';
 
 export class DeviceAttributeItem extends vscode.TreeItem {
   readonly kind = ItemKind.ATTRIBUTE;
@@ -213,6 +217,14 @@ export class DeviceTreeDataProvider
 
       if (parent instanceof LeasedDeviceItem && parent.device.model) {
         items.push(new DeviceAttributeItem('model', parent.device.model));
+      }
+      if (attributes.chromeosReleaseVersion) {
+        items.push(
+          new DeviceAttributeItem(
+            'CrOS release version',
+            attributes.chromeosReleaseVersion
+          )
+        );
       }
       if (attributes.builderPath) {
         items.push(

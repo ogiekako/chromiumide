@@ -119,6 +119,10 @@ export function registerCommands(
       (item: provider.DeviceAttributeItem) => copyAttribute(context, item)
     ),
     vscodeRegisterCommand(
+      'chromiumide.deviceManagement.copyCrOsReleaseVersion',
+      (item: provider.DeviceAttributeItem) => copyAttribute(context, item)
+    ),
+    vscodeRegisterCommand(
       'chromiumide.deviceManagement.copyBuilderPath',
       (item: provider.DeviceAttributeItem) => copyAttribute(context, item)
     ),
