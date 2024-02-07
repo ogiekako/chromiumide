@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import assert from 'assert';
 import * as shutil from '../../../common/shutil';
 
 describe('Shell Utility', () => {
@@ -24,14 +23,11 @@ describe('Shell Utility', () => {
       ["Tast's", "'Tast'\"'\"'s'"],
     ];
     for (const [input, expected] of testData) {
-      assert.deepStrictEqual(shutil.escape(input), expected);
+      expect(shutil.escape(input)).toEqual(expected);
     }
   });
 
   it('escapes string arrays', () => {
-    assert.deepStrictEqual(
-      shutil.escapeArray(['abc', 'def ghi']),
-      "abc 'def ghi'"
-    );
+    expect(shutil.escapeArray(['abc', 'def ghi'])).toEqual("abc 'def ghi'");
   });
 });

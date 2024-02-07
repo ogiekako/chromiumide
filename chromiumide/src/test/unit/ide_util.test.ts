@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import assert from 'assert';
 import * as path from 'path';
 import {Board} from '../../common/chromiumos/board_or_host/board';
 import {WrapFs} from '../../common/cros';
@@ -60,11 +59,9 @@ describe('IDE utilities', () => {
       });
       const appRoot = path.join(home, tc.appRoot);
       const expected = path.join(home, tc.exe);
-      assert.strictEqual(
-        ideUtil.vscodeExecutablePath(appRoot, tc.appName, tc.remoteName),
-        expected,
-        tc.name
-      );
+      expect(ideUtil.vscodeExecutablePath(appRoot, tc.appName, tc.remoteName))
+        .withContext(tc.name)
+        .toEqual(expected);
     }
   });
 
@@ -75,25 +72,16 @@ describe('IDE utilities', () => {
     });
 
     // Assert test is properly set up
-    assert.strictEqual(
-      ideUtil.vscodeExecutablePath(path.join(home, 'foo'), 'code-server'),
-      path.join(home, 'foo/bin/code-server')
-    );
+    expect(
+      ideUtil.vscodeExecutablePath(path.join(home, 'foo'), 'code-server')
+    ).toEqual(path.join(home, 'foo/bin/code-server'));
 
-    assert(
-      ideUtil.vscodeExecutablePath(
-        path.join(home, 'bar'),
-        'code-server'
-      ) instanceof Error,
-      'not found'
-    );
-    assert(
-      ideUtil.vscodeExecutablePath(
-        path.join(home, 'foo'),
-        'unknown app'
-      ) instanceof Error,
-      'unknown app'
-    );
+    expect(
+      ideUtil.vscodeExecutablePath(path.join(home, 'bar'), 'code-server')
+    ).toBeInstanceOf(Error);
+    expect(
+      ideUtil.vscodeExecutablePath(path.join(home, 'foo'), 'unknown app')
+    ).toBeInstanceOf(Error);
   });
 });
 

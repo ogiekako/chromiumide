@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as commonUtil from '../../../common/common_util';
@@ -36,34 +35,31 @@ describe('Boards that are set up', () => {
   it('are listed most recent first', async () => {
     const [chroot, out] = await prepareBoardsDir(tempDir.path);
 
-    assert.deepStrictEqual(
+    expect(
       await cros.getSetupBoardsRecentFirst(
         new cros.WrapFs(chroot),
         new cros.WrapFs(out)
-      ),
-      ['coral', 'amd64-generic', 'betty-pi-arc']
-    );
+      )
+    ).toEqual(['coral', 'amd64-generic', 'betty-pi-arc']);
   });
 
   it('are listed in alphabetic order', async () => {
     const [chroot, out] = await prepareBoardsDir(tempDir.path);
 
-    assert.deepStrictEqual(
+    expect(
       await cros.getSetupBoardsAlphabetic(
         new cros.WrapFs(chroot),
         new cros.WrapFs(out)
-      ),
-      ['amd64-generic', 'betty-pi-arc', 'coral']
-    );
+      )
+    ).toEqual(['amd64-generic', 'betty-pi-arc', 'coral']);
   });
 
   it('can be listed, even if /build does not exist', async () => {
-    assert.deepStrictEqual(
+    expect(
       await cros.getSetupBoardsAlphabetic(
         new cros.WrapFs(tempDir.path as commonUtil.Chroot),
         new cros.WrapFs(tempDir.path as commonUtil.CrosOut)
-      ),
-      []
-    );
+      )
+    ).toEqual([]);
   });
 });

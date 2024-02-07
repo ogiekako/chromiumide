@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as ownersLinkProvider from '../../../features/owners_links';
@@ -25,7 +24,7 @@ async function getLinks(text: string) {
 // Uses `OwnersLinkProvider` to resolve an `OwnersLink`.
 function resolveLink(link: ownersLinkProvider.OwnersLink) {
   const provider = new ownersLinkProvider.OwnersLinkProvider();
-  assert.strictEqual(link.target, undefined);
+  expect(link.target).toBeUndefined();
   provider.resolveDocumentLink(link, new FakeCancellationToken());
 }
 
@@ -42,8 +41,7 @@ include project:branch:/path
 `;
 
     const {links} = await getLinks(text);
-    assert.ok(links);
-    assert.deepStrictEqual(links, []);
+    expect(links).toEqual([]);
   });
 
   it('ignores links in comments', async () => {
@@ -55,8 +53,7 @@ foo # include /path
 `;
 
     const {links} = await getLinks(text);
-    assert.ok(links);
-    assert.deepStrictEqual(links, []);
+    expect(links).toEqual([]);
   });
 
   (['file', 'include'] as const).forEach(type => {
@@ -66,64 +63,52 @@ foo # include /path
       const text = `${prefix}//tools/translation/TRANSLATION_OWNERS`;
 
       const {links, documentUri} = await getLinks(text);
-      assert.ok(links);
-      assert.strictEqual(links.length, 1);
-      assert.deepStrictEqual(
-        links[0],
+      expect(links).toEqual([
         new ownersLinkProvider.OwnersLink(
           '/tools/translation/TRANSLATION_OWNERS',
           documentUri,
           new vscode.Range(0, 0, 0, text.length)
-        )
-      );
+        ),
+      ]);
     });
 
     it(`extracts absolute ${type} links with a single slash`, async () => {
       const text = `${prefix}/tools/translation/TRANSLATION_OWNERS`;
 
       const {links, documentUri} = await getLinks(text);
-      assert.ok(links);
-      assert.strictEqual(links.length, 1);
-      assert.deepStrictEqual(
-        links[0],
+      expect(links).toEqual([
         new ownersLinkProvider.OwnersLink(
           '/tools/translation/TRANSLATION_OWNERS',
           documentUri,
           new vscode.Range(0, 0, 0, text.length)
-        )
-      );
+        ),
+      ]);
     });
 
     it(`extracts relative ${type} links`, async () => {
       const text = `${prefix}tools/../translation/TRANSLATION_OWNERS`;
 
       const {links, documentUri} = await getLinks(text);
-      assert.ok(links);
-      assert.strictEqual(links.length, 1);
-      assert.deepStrictEqual(
-        links[0],
+      expect(links).toEqual([
         new ownersLinkProvider.OwnersLink(
           'tools/../translation/TRANSLATION_OWNERS',
           documentUri,
           new vscode.Range(0, 0, 0, text.length)
-        )
-      );
+        ),
+      ]);
     });
 
     it(`extracts ${type} links with special characters`, async () => {
       const text = `${prefix}/styleguide/c++/OWNERS`;
 
       const {links, documentUri} = await getLinks(text);
-      assert.ok(links);
-      assert.strictEqual(links.length, 1);
-      assert.deepStrictEqual(
-        links[0],
+      expect(links).toEqual([
         new ownersLinkProvider.OwnersLink(
           '/styleguide/c++/OWNERS',
           documentUri,
           new vscode.Range(0, 0, 0, text.length)
-        )
-      );
+        ),
+      ]);
     });
   });
 
@@ -133,9 +118,7 @@ foo # include /path
 per-file foo.txt =   file:/path2
   include   /path3  # test`;
     const {links, documentUri} = await getLinks(text);
-    assert.ok(links);
-    assert.strictEqual(links.length, 3);
-    assert.deepStrictEqual(links, [
+    expect(links).toEqual([
       new ownersLinkProvider.OwnersLink(
         '/path1',
         documentUri,
@@ -162,7 +145,7 @@ per-file foo.txt =   file:/path2
     );
 
     resolveLink(link);
-    assert.deepStrictEqual(link.target, vscode.Uri.file('/some/foo/bar'));
+    expect(link.target).toEqual(vscode.Uri.file('/some/foo/bar'));
   });
 
   it('resolves link with absolute path', async () => {
@@ -187,8 +170,7 @@ per-file foo.txt =   file:/path2
     );
 
     resolveLink(link);
-    assert.deepStrictEqual(
-      link.target,
+    expect(link.target).toEqual(
       vscode.Uri.file(path.join(tempDir.path, 'foo/bar'))
     );
   });

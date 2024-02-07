@@ -2,6 +2,59 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+/** Syntax restricted in our code. https://eslint.org/docs/latest/rules/no-restricted-syntax */
+const COMMON_RESTRICTED_SYNTAX = [
+  {
+    selector: 'CallExpression[callee.name="Error"]',
+    message:
+      'Always use new Error() when instantiating exceptions, instead of just calling Error()',
+  },
+  {
+    selector:
+      'MemberExpression' +
+      '[object.type="MemberExpression"]' +
+      '[object.object.name="vscode"]' +
+      '[object.property.name="workspace"]' +
+      '[property.name="getConfiguration"]',
+    message:
+      'vscode.workspace.getConfiguration should not be called directly; ' +
+      'use services/configs.ts instead',
+  },
+  {
+    selector:
+      'MemberExpression' +
+      '[object.type="MemberExpression"]' +
+      '[object.object.name="vscode"]' +
+      '[object.property.name="workspace"]' +
+      '[property.name="onDidChangeConfiguration"]',
+    message:
+      'vscode.workspace.onDidChangeConfiguration should not be called ' +
+      'directly; use services/configs.ts instead',
+  },
+  {
+    selector:
+      'MemberExpression' +
+      '[object.type="MemberExpression"]' +
+      '[object.object.name="vscode"]' +
+      '[object.property.name="commands"]' +
+      '[property.name="registerCommand"]',
+    message:
+      'vscode.commands.registerCommand should not be called directly; ' +
+      'use vscodeRegisterCommand instead',
+  },
+  {
+    selector:
+      'MemberExpression' +
+      '[object.type="MemberExpression"]' +
+      '[object.object.name="vscode"]' +
+      '[object.property.name="commands"]' +
+      '[property.name="registerTextEditorCommand"]',
+    message:
+      'vscode.commands.registerTextEditorCommand should not be called ' +
+      'directly; use vscodeRegisterTextEditorCommand instead',
+  },
+];
+
 module.exports = {
   env: {
     browser: true,
@@ -56,58 +109,7 @@ module.exports = {
       },
     ],
 
-    'no-restricted-syntax': [
-      'error',
-      {
-        selector: 'CallExpression[callee.name="Error"]',
-        message:
-          'Always use new Error() when instantiating exceptions, instead of just calling Error()',
-      },
-      {
-        selector:
-          'MemberExpression' +
-          '[object.type="MemberExpression"]' +
-          '[object.object.name="vscode"]' +
-          '[object.property.name="workspace"]' +
-          '[property.name="getConfiguration"]',
-        message:
-          'vscode.workspace.getConfiguration should not be called directly; ' +
-          'use services/configs.ts instead',
-      },
-      {
-        selector:
-          'MemberExpression' +
-          '[object.type="MemberExpression"]' +
-          '[object.object.name="vscode"]' +
-          '[object.property.name="workspace"]' +
-          '[property.name="onDidChangeConfiguration"]',
-        message:
-          'vscode.workspace.onDidChangeConfiguration should not be called ' +
-          'directly; use services/configs.ts instead',
-      },
-      {
-        selector:
-          'MemberExpression' +
-          '[object.type="MemberExpression"]' +
-          '[object.object.name="vscode"]' +
-          '[object.property.name="commands"]' +
-          '[property.name="registerCommand"]',
-        message:
-          'vscode.commands.registerCommand should not be called directly; ' +
-          'use vscodeRegisterCommand instead',
-      },
-      {
-        selector:
-          'MemberExpression' +
-          '[object.type="MemberExpression"]' +
-          '[object.object.name="vscode"]' +
-          '[object.property.name="commands"]' +
-          '[property.name="registerTextEditorCommand"]',
-        message:
-          'vscode.commands.registerTextEditorCommand should not be called ' +
-          'directly; use vscodeRegisterTextEditorCommand instead',
-      },
-    ],
+    'no-restricted-syntax': ['error', ...COMMON_RESTRICTED_SYNTAX],
     // Disallow variables called `namespace`, because they mess up Gerrit's
     // syntax highlighting.
     'id-match': ['error', '^(?!(namespace)$)'],
@@ -156,6 +158,14 @@ module.exports = {
           files: ['*.test.ts'],
           rules: {
             '@typescript-eslint/unbound-method': 'off',
+            'no-restricted-syntax': [
+              'error',
+              {
+                selector: 'ImportDeclaration[source.value="assert"]',
+                message: 'Use jasmine APIs such as expect instead of assert',
+              },
+              ...COMMON_RESTRICTED_SYNTAX,
+            ],
           },
         },
       ],

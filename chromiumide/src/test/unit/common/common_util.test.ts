@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import assert from 'assert';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -32,7 +31,7 @@ describe('Job manager', () => {
     await testing.flushMicrotasks();
 
     const p2 = manager.offer(async () => {
-      assert.fail('Intermediate job should not run');
+      fail('Intermediate job should not run');
     });
 
     let p3Run = false;
@@ -42,16 +41,16 @@ describe('Job manager', () => {
     });
 
     // Cancelled job should return immediately.
-    assert.strictEqual(await p2, null);
+    expect(await p2).toEqual(null);
 
-    assert.strictEqual(p3Run, false); // p3 should not run while p1 is running
+    expect(p3Run).toEqual(false); // p3 should not run while p1 is running
 
     guard.unblock();
 
-    assert.strictEqual(await p1, true);
+    expect(await p1).toEqual(true);
     await p3;
 
-    assert.strictEqual(p3Run, true);
+    expect(p3Run).toEqual(true);
   });
 
   it('handles errors', async () => {
@@ -67,7 +66,7 @@ describe('Job manager', () => {
     await testing.flushMicrotasks();
 
     const p2 = manager.offer(async () => {
-      assert.fail('Intermediate job should not run');
+      fail('Intermediate job should not run');
     });
     const p3 = manager.offer(async () => {
       throw new Error('p3');
@@ -76,8 +75,8 @@ describe('Job manager', () => {
     await p2;
 
     guard.unblock();
-    await assert.rejects(p1);
-    await assert.rejects(p3);
+    await expectAsync(p1).toBeRejected();
+    await expectAsync(p3).toBeRejected();
   });
 });
 
@@ -91,9 +90,8 @@ describe('Logging exec', () => {
         logs += log;
       }),
     });
-    assert(!(res instanceof Error));
-    assert.strictEqual(res.stdout, 'foo\n');
-    assert.strictEqual(logs, "sh -c 'echo foo; echo bar 1>&2'\nbar\n");
+    expect(res).toEqual(jasmine.objectContaining({stdout: 'foo\n'}));
+    expect(logs).toEqual("sh -c 'echo foo; echo bar 1>&2'\nbar\n");
   });
 
   it('mixes stdout and stderr if logStdout flag is true', async () => {
@@ -104,8 +102,7 @@ describe('Logging exec', () => {
       }),
       logStdout: true,
     });
-    assert.strictEqual(
-      logs.length,
+    expect(logs.length).toEqual(
       "sh -c 'echo foo; echo bar 1>&2'\nfoo\nbar\n".length
     );
   });
@@ -118,12 +115,10 @@ describe('Logging exec', () => {
       }),
       logStdout: true,
     });
-    assert(res instanceof commonUtil.AbnormalExitError);
-    assert(
-      res.message.includes("sh -c 'echo foo 1>&2; exit 1'"),
-      'actual message: ' + res.message
+    expect((res as commonUtil.AbnormalExitError).message).toContain(
+      "sh -c 'echo foo 1>&2; exit 1'"
     );
-    assert.strictEqual(logs, "sh -c 'echo foo 1>&2; exit 1'\nfoo\n");
+    expect(logs).toEqual("sh -c 'echo foo 1>&2; exit 1'\nfoo\n");
   });
 
   it('returns error on non-zero exit status when no flags are specified', async () => {
@@ -133,12 +128,10 @@ describe('Logging exec', () => {
         logs += log;
       }),
     });
-    assert(res instanceof commonUtil.AbnormalExitError);
-    assert(
-      res.message.includes("sh -c 'echo foo 1>&2; exit 1'"),
-      'actual message: ' + res.message
+    expect((res as commonUtil.AbnormalExitError).message).toContain(
+      "sh -c 'echo foo 1>&2; exit 1'"
     );
-    assert.strictEqual(logs, "sh -c 'echo foo 1>&2; exit 1'\nfoo\n");
+    expect(logs).toEqual("sh -c 'echo foo 1>&2; exit 1'\nfoo\n");
   });
 
   it('ignores non-zero exit status if ignoreNonZeroExit flag is true', async () => {
@@ -153,12 +146,11 @@ describe('Logging exec', () => {
         ignoreNonZeroExit: true,
       }
     );
-    assert(!(res instanceof Error));
-    const {exitStatus, stdout, stderr} = res;
-    assert.strictEqual(exitStatus, 1);
-    assert.strictEqual(stdout, 'bar\n');
-    assert.strictEqual(stderr, 'foo\n');
-    assert.strictEqual(logs, "sh -c 'echo foo 1>&2; echo bar; exit 1'\nfoo\n");
+    const {exitStatus, stdout, stderr} = res as commonUtil.ExecResult;
+    expect(exitStatus).toEqual(1);
+    expect(stdout).toEqual('bar\n');
+    expect(stderr).toEqual('foo\n');
+    expect(logs).toEqual("sh -c 'echo foo 1>&2; echo bar; exit 1'\nfoo\n");
   });
 
   it('appends new lines to log', async () => {
@@ -173,9 +165,8 @@ describe('Logging exec', () => {
         logStdout: true,
       }
     );
-    assert(!(res instanceof Error));
-    assert.strictEqual(res.stdout, 'foo');
-    assert.deepStrictEqual(logs.split('\n'), [
+    expect((res as commonUtil.ExecResult).stdout).toEqual('foo');
+    expect(logs.split('\n')).toEqual([
       "sh -c 'echo -n foo; echo -n bar 1>&2;'",
       'foobar',
       '',
@@ -184,17 +175,12 @@ describe('Logging exec', () => {
 
   it('can supply stdin', async () => {
     const res = await commonUtil.exec('cat', [], {pipeStdin: 'foo'});
-    assert(!(res instanceof Error));
-    assert.strictEqual(res.stdout, 'foo');
+    expect((res as commonUtil.ExecResult).stdout).toEqual('foo');
   });
 
   it('returns error when the command fails', async () => {
     const res = await commonUtil.exec('does_not_exist', ['--version']);
-    assert(res instanceof commonUtil.ProcessError);
-    assert(
-      res.message.includes('does_not_exist --version'),
-      'actual message: ' + res.message
-    );
+    expect((res as Error).message).toContain('does_not_exist --version');
   });
 
   it('can abort command execution', async () => {
@@ -213,8 +199,10 @@ describe('Logging exec', () => {
     const MARKER = crypto.randomUUID() + crypto.randomUUID();
     async function countRunning() {
       const psAux = await commonUtil.exec('ps', ['ax', '-o', 'command']);
-      assert(!(psAux instanceof Error));
-      return psAux.stdout.match(new RegExp(MARKER, 'g'))?.length ?? 0;
+      return (
+        (psAux as commonUtil.ExecResult).stdout.match(new RegExp(MARKER, 'g'))
+          ?.length ?? 0
+      );
     }
 
     expect(await countRunning()).toBe(0);
@@ -248,23 +236,21 @@ subprocess.run(['python3', '-c', 'import time; time.sleep(10) # ${MARKER}'])
 
   it('changes the directory if cwd is specified', async () => {
     const res = await commonUtil.exec('pwd', [], {cwd: temp.path});
-    assert(!(res instanceof Error));
-    expect(res.stdout).toContain(temp.path);
+    expect((res as commonUtil.ExecResult).stdout).toContain(temp.path);
   });
 });
 
 describe('withTimeout utility', () => {
   it('returns before timeout', async () => {
-    assert.strictEqual(
-      await commonUtil.withTimeout(Promise.resolve(true), 1 /* millis*/),
-      true
-    );
+    expect(
+      await commonUtil.withTimeout(Promise.resolve(true), 1 /* millis*/)
+    ).toEqual(true);
   });
 
   it('returns undefined after timeout', async () => {
     const f = await testing.BlockingPromise.new(true);
     try {
-      assert.strictEqual(await commonUtil.withTimeout(f.promise, 1), undefined);
+      expect(await commonUtil.withTimeout(f.promise, 1)).toEqual(undefined);
     } finally {
       f.unblock();
     }
