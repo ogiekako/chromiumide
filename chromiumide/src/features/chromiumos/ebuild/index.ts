@@ -3,13 +3,13 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as ebuildLinkProvider from './ebuild_link_provider';
+import * as linkProvider from './link_provider';
 import * as portageReference from './portage_reference';
 
 export function activate(
   context: vscode.ExtensionContext,
   chromiumosRoot: string
 ): void {
-  ebuildLinkProvider.activate(context, chromiumosRoot);
+  linkProvider.activate(context, chromiumosRoot);
   portageReference.activate(context);
 }

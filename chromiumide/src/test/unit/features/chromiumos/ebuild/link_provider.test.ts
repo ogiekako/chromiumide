@@ -6,7 +6,7 @@ import * as os from 'os';
 import * as vscode from 'vscode';
 import dedent from 'dedent';
 import mockFs from 'mock-fs';
-import {EbuildLinkProvider} from '../../../../../features/chromiumos/ebuild/ebuild_link_provider';
+import {EbuildLinkProvider} from '../../../../../features/chromiumos/ebuild/link_provider';
 import * as testing from '../../../../testing';
 import {
   FakeCancellationToken,
