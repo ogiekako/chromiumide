@@ -53,9 +53,7 @@ export class DeviceItem extends vscode.TreeItem {
       // the desktop prefix.
       isDefault ? 'vm-active' : 'device-desktop'
     );
-    if (isDefault) {
-      this.description = 'default';
-    }
+    this.description = isDefault ? 'default' : '';
   }
 }
 
@@ -196,13 +194,7 @@ export class DeviceTreeDataProvider
           items.push(
             ...this.deviceRepository.owned
               .getDevices()
-              .map(
-                d =>
-                  new OwnedDeviceItem(
-                    d,
-                    d.hostname === this.deviceRepository.defaultDevice
-                  )
-              )
+              .map(d => new OwnedDeviceItem(d, repository.isDefaultDevice(d)))
           );
           break;
         case repository.DeviceCategory.LEASED:
@@ -211,11 +203,7 @@ export class DeviceTreeDataProvider
           } else {
             items.push(
               ...(await this.deviceRepository.leased.getDevices()).map(
-                d =>
-                  new LeasedDeviceItem(
-                    d,
-                    d.hostname === this.deviceRepository.defaultDevice
-                  )
+                d => new LeasedDeviceItem(d, repository.isDefaultDevice(d))
               )
             );
           }

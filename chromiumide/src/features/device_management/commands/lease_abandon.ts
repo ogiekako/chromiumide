@@ -20,7 +20,8 @@ export async function abandonLease(
   const hostname = await promptKnownHostnameIfNeeded(
     'Device to Abandon',
     selectedHostname,
-    context.deviceRepository.leased
+    context.deviceRepository.leased,
+    false // User probably does not want to abandon their default device.
   );
   if (!hostname) {
     return;

@@ -5,7 +5,10 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../../../../../common/common_util';
-import {CommandContext} from '../../../../../../../features/device_management/commands/common';
+import {
+  CommandContext,
+  SimplePickItem,
+} from '../../../../../../../features/device_management/commands/common';
 import {TEST_ONLY} from '../../../../../../../features/device_management/commands/tast/tast_common';
 import {DeviceCategory} from '../../../../../../../features/device_management/device_repository';
 import {Metrics} from '../../../../../../../features/metrics/metrics';
@@ -73,9 +76,11 @@ export async function prepareCommonFakes(
 
   // Prepare user responses.
   spyOn(Metrics, 'send');
+  const hostnameItem = new SimplePickItem(hostname);
+  const otherHostnameItem = new SimplePickItem('other');
   vscodeSpy.window.showQuickPick
-    .withArgs([hostname, 'other'], jasmine.anything())
-    .and.resolveTo(hostname);
+    .withArgs([hostnameItem, otherHostnameItem], jasmine.anything())
+    .and.resolveTo(hostnameItem);
   vscodeSpy.window.showQuickPick
     .withArgs(
       jasmine.arrayContaining(testsToPick),

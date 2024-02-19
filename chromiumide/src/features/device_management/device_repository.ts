@@ -9,6 +9,10 @@ import * as config from '../../services/config';
 import * as abandonedDevices from './abandoned_devices';
 import * as crosfleet from './crosfleet';
 
+export function isDefaultDevice(device: OwnedDevice | LeasedDevice): boolean {
+  return config.deviceManagement.default.get() === device.hostname;
+}
+
 // Represents the type of a device.
 export enum DeviceCategory {
   // An owned device is a device owned by the user.
@@ -224,7 +228,6 @@ export class DeviceRepository {
 
   readonly owned: OwnedDeviceRepository;
   readonly leased: LeasedDeviceRepository;
-  private defaultDeviceInternal: string;
 
   constructor(
     crosfleetRunner: crosfleet.CrosfleetRunner,
@@ -232,7 +235,6 @@ export class DeviceRepository {
   ) {
     this.owned = new OwnedDeviceRepository();
     this.leased = new LeasedDeviceRepository(crosfleetRunner, abandonedDevices);
-    this.defaultDeviceInternal = config.deviceManagement.default.get();
 
     this.subscriptions.push(this.owned, this.leased);
 
@@ -243,8 +245,7 @@ export class DeviceRepository {
       this.leased.onDidChange(() => {
         this.onDidChangeEmitter.fire();
       }),
-      config.deviceManagement.default.onDidChange(defaultDevice => {
-        this.defaultDeviceInternal = defaultDevice;
+      config.deviceManagement.default.onDidChange(() => {
         this.onDidChangeEmitter.fire();
       })
     );
@@ -262,9 +263,5 @@ export class DeviceRepository {
 
   async getHostnames(): Promise<string[]> {
     return (await this.getDevices()).map(device => device.hostname);
-  }
-
-  get defaultDevice(): string {
-    return this.defaultDeviceInternal;
   }
 }

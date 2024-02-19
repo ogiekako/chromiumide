@@ -42,8 +42,9 @@ export async function promptNewHostname(
 }
 
 /**
- * Prompt known hostnames on quick pick or shows an error
- * if no devices are set up.
+ * Prompt known hostnames on quick pick or shows an error if no devices are set up.
+ *
+ * @param prioritizeDefaultDevice show the default device on the top of the quickpick list.
  */
 export async function promptKnownHostnameIfNeeded(
   title: string,
@@ -51,18 +52,30 @@ export async function promptKnownHostnameIfNeeded(
   deviceRepository:
     | repository.DeviceRepository
     | repository.OwnedDeviceRepository
-    | repository.LeasedDeviceRepository
+    | repository.LeasedDeviceRepository,
+  prioritizeDefaultDevice = true
 ): Promise<string | undefined> {
   if (hostname) {
     return hostname;
   }
 
-  const devices = await deviceRepository.getDevices();
-  const hostnames = devices.map(device => device.hostname);
-  if (hostnames.length > 0) {
-    return await vscode.window.showQuickPick(hostnames, {
-      title,
-    });
+  const hostnameItems: SimplePickItem[] = [];
+  for (const device of await deviceRepository.getDevices()) {
+    if (prioritizeDefaultDevice && repository.isDefaultDevice(device)) {
+      hostnameItems.unshift(
+        new SimplePickItem(device.hostname, undefined, '(default)')
+      );
+    } else {
+      hostnameItems.push(new SimplePickItem(device.hostname));
+    }
+  }
+  if (hostnameItems.length > 0) {
+    return (
+      await vscode.window.showQuickPick(hostnameItems, {
+        title,
+        ignoreFocusOut: true,
+      })
+    )?.label;
   }
   const CONFIGURE = 'Configure';
   void (async () => {
@@ -82,7 +95,8 @@ export async function promptKnownHostnameIfNeeded(
 export class SimplePickItem implements vscode.QuickPickItem {
   constructor(
     readonly label: string,
-    readonly kind?: vscode.QuickPickItemKind
+    readonly kind?: vscode.QuickPickItemKind,
+    readonly description?: string
   ) {}
 }
 

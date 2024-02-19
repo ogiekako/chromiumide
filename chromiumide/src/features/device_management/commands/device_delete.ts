@@ -21,7 +21,8 @@ export async function deleteDevice(
   const hostname = await promptKnownHostnameIfNeeded(
     'Delete Device',
     selectedHostname,
-    context.deviceRepository.owned
+    context.deviceRepository.owned,
+    false // User probably does not want to delete their default device.
   );
   if (!hostname) {
     return;
