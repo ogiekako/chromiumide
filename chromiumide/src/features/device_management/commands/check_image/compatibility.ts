@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {getQualifiedPackageName} from '../../../../common/chromiumos/portage/ebuild';
+import {PrebuiltImageType, PREBUILT_IMAGE_TYPES} from '../../prebuilt_util';
 import {CheckerOutput, CheckerConfig, CheckerInput, CheckResult} from './types';
 
 /*
@@ -65,7 +66,7 @@ export class CompatibilityChecker {
 
   private debugFlagAndImageTypeMatch(
     localDebugFlag: boolean | undefined,
-    imageType: string
+    imageType: PrebuiltImageType | 'local'
   ): boolean {
     // No need to have consistent cros-debug flag if flag does not exist for package.
     if (localDebugFlag === undefined) {
@@ -94,6 +95,17 @@ export class CompatibilityChecker {
         `failed to get device image type: ${this.input.device.message}`
       );
     }
+    if (
+      this.input.device.imageType !== 'local' &&
+      !(PREBUILT_IMAGE_TYPES as readonly string[]).includes(
+        this.input.device.imageType
+      )
+    ) {
+      return this.result(
+        'ERROR',
+        `unknown device image type: ${this.input.device.imageType}`
+      );
+    }
     if (this.input.local.debugFlag instanceof Error) {
       return this.result(
         'ERROR',
@@ -103,7 +115,7 @@ export class CompatibilityChecker {
     return this.result(
       this.debugFlagAndImageTypeMatch(
         this.input.local.debugFlag,
-        this.input.device.imageType
+        this.input.device.imageType as PrebuiltImageType | 'local'
       )
         ? 'PASSED'
         : 'FAILED',

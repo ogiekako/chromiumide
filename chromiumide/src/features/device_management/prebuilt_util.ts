@@ -8,6 +8,15 @@ import {
   parseFullCrosVersion,
 } from '../../common/image_version';
 import * as services from '../../services';
+
+export const PREBUILT_IMAGE_TYPES = [
+  'release',
+  'cq',
+  'postsubmit',
+  'snapshot',
+] as const;
+export type PrebuiltImageType = typeof PREBUILT_IMAGE_TYPES[number];
+
 /**
  * Returns a list of prebuilt images available for the given board and image type, matching the
  * version pattern (all versions by default).
@@ -15,7 +24,7 @@ import * as services from '../../services';
  */
 export async function listPrebuiltVersions(
   board: string,
-  imageType: string,
+  imageType: PrebuiltImageType,
   chrootService: services.chromiumos.ChrootService,
   logger: vscode.OutputChannel,
   versionPattern = '*'

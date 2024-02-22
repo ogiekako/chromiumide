@@ -110,7 +110,7 @@ class ChromeOsVersionItem extends SimplePickItem {
  */
 async function showImageVersionInputBoxWithDynamicSuggestions(
   board: string,
-  imageType: string,
+  imageType: prebuiltUtil.PrebuiltImageType,
   chrootService: services.chromiumos.ChrootService,
   logger: vscode.OutputChannel,
   options?: {
@@ -340,7 +340,7 @@ export async function flashPrebuiltImage(
   }
 
   const imageType = await vscode.window.showQuickPick(
-    ['release', 'postsubmit', 'snapshot', 'cq', 'local'],
+    [...prebuiltUtil.PREBUILT_IMAGE_TYPES, 'local'],
     {ignoreFocusOut: true}
   );
   if (!imageType) {
@@ -354,7 +354,7 @@ export async function flashPrebuiltImage(
         })
       : await showImageVersionInputBoxWithDynamicSuggestions(
           board,
-          imageType,
+          imageType as prebuiltUtil.PrebuiltImageType,
           chrootService,
           context.output,
           {
