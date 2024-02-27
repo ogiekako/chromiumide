@@ -29,7 +29,8 @@ export async function listPrebuiltVersions(
   imageType: PrebuiltImageType,
   chrootService: services.chromiumos.ChrootService,
   logger: vscode.OutputChannel,
-  versionPattern = '*'
+  versionPattern = '*',
+  cancellationToken?: vscode.CancellationToken
 ): Promise<string[] | Error> {
   // gs://chromeos-image-archive/ contains prebuilt image files.
   // https://chromium.googlesource.com/chromiumos/docs/+/HEAD/gsutil.md
@@ -42,6 +43,7 @@ export async function listPrebuiltVersions(
     {
       logger: logger,
       sudoReason: 'to list available prebuilt images',
+      cancellationToken,
     }
   );
   if (result instanceof Error) {

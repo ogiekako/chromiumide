@@ -2,10 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as vscode from 'vscode';
 import {
   ExecOptions,
   setExecForTesting,
   exec as commonUtilExec,
+  CancelledError,
 } from '../../common/common_util';
 import {cleanState} from './clean_state';
 
@@ -53,7 +55,32 @@ export class FakeExec
   ): void {
     this.withArgs(name, args, options).and.callFake(
       async (name, args, options) => {
-        const res = await callback(name, args, options);
+        let done = false;
+        const promises = [callback(name, args, options)];
+        // Use array of Disposable instead of one Disposable instance since it would be mistakenly
+        // reported that the single subscription to be always undefined and the
+        // subscription.dispose() is called on never after Promise.race.
+        const subscriptions: vscode.Disposable[] = [];
+        if (options?.cancellationToken) {
+          const token = options.cancellationToken;
+          promises.push(
+            new Promise(resolve => {
+              if (done) return; // Callback finished before the token is cancelled.
+              if (token.isCancellationRequested) {
+                resolve(new CancelledError(name, args));
+                return;
+              }
+              subscriptions.push(
+                token.onCancellationRequested(() => {
+                  resolve(new CancelledError(name, args));
+                })
+              );
+            })
+          );
+        }
+        const res = await Promise.race(promises);
+        vscode.Disposable.from(...subscriptions).dispose();
+        done = true;
         if (typeof res === 'string') {
           return {exitStatus: 0, stdout: res, stderr: ''};
         }

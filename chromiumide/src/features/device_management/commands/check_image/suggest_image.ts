@@ -143,6 +143,7 @@ async function showAllMatchingImagesQuickPick(
   onDidChangePickerItemsForTesting?.fire(picker.items);
   picker.busy = false;
 
+  const tokenSource = new vscode.CancellationTokenSource();
   const subscriptions: vscode.Disposable[] = [];
   const task: Promise<string | undefined> = new Promise(resolve => {
     subscriptions.push(
@@ -230,7 +231,8 @@ async function showAllMatchingImagesQuickPick(
             chrootService,
             logger,
             version,
-            onFetchedImageVersionsEmitter
+            onFetchedImageVersionsEmitter,
+            tokenSource.token
           );
         }
       }),
@@ -241,8 +243,8 @@ async function showAllMatchingImagesQuickPick(
   });
   return task.finally(() => {
     picker.hide();
-    picker.dispose();
-    vscode.Disposable.from(...subscriptions).dispose();
+    tokenSource.cancel();
+    vscode.Disposable.from(...subscriptions, picker, tokenSource).dispose();
   });
 }
 
@@ -252,14 +254,16 @@ async function fetchAllPrebuiltVersionsInParallel(
   chrootService: ChrootService,
   logger: vscode.OutputChannel,
   chromeosMajorVersion: number,
-  onFetchedImageVersionsEmitter: vscode.EventEmitter<Error | string[]>
+  onFetchedImageVersionsEmitter: vscode.EventEmitter<Error | string[]>,
+  token: vscode.CancellationToken
 ): Promise<void> {
   const versions = await listPrebuiltVersions(
     board,
     imageType,
     chrootService,
     logger,
-    `*-${chromeosMajorVersion}.*`
+    `*-${chromeosMajorVersion}.*`,
+    token
   );
   onFetchedImageVersionsEmitter.fire(versions);
 }
