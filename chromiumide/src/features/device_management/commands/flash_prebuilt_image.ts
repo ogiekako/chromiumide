@@ -120,7 +120,7 @@ async function showImageVersionInputBoxWithDynamicSuggestions(
 ): Promise<string | undefined> {
   const picker = vscode.window.createQuickPick();
   const subscriptions: vscode.Disposable[] = [];
-  let queries_count = 0;
+  let queriesCount = 0;
 
   const chromeMilestonesItems: (ChromeMilestoneItem | SimplePickItem)[] = (
     await getChromeMilestones()
@@ -175,40 +175,42 @@ async function showImageVersionInputBoxWithDynamicSuggestions(
 
         fetchedVersionPatterns.push(pattern);
 
-        queries_count += 1;
+        queriesCount += 1;
         picker.busy = true;
-        let versions;
-        try {
-          versions = await prebuiltUtil.listPrebuiltVersions(
-            board,
-            imageType,
-            chrootService,
-            logger,
-            pattern
-          );
-        } finally {
-          queries_count -= 1;
-          if (queries_count === 0) picker.busy = false;
-        }
+        let versions = await prebuiltUtil.listPrebuiltVersions(
+          board,
+          imageType,
+          chrootService,
+          logger,
+          pattern
+        );
+        queriesCount -= 1;
+        if (queriesCount === 0) picker.busy = false;
 
-        // Concatenate new version candidates to the list of items, instead of resetting, and let vscode quickpick handle showing subset matching with real current input.
-        // This is to avoid overwriting picker.items with results from an obsolete prebuiltUtil.listPrebuiltVersions request that finishes later (for example if the pattern has a lot more matches on gsutil list).
-        // Remove duplicates by casting to and back from a set.
-        versions = [
-          ...new Set(
-            fetchedVersionItems.map(item => item.label).concat(versions)
-          ),
-        ];
-        fetchedVersionItems = versions.map(
-          label => new ChromeOsVersionItem(label)
-        );
-        fetchedVersionItems.unshift(
-          new SimplePickItem(
-            'Full CrOS image versions available for flashing device',
-            vscode.QuickPickItemKind.Separator
-          )
-        );
-        picker.items = fetchedVersionItems;
+        if (versions instanceof Error) {
+          void vscode.window.showWarningMessage(
+            `Image flash: failed to fetch paths matching gs://chromeos-image-archive/${board}-${imageType}/${pattern}/image.zip: ${versions.message}`
+          );
+        } else {
+          // Concatenate new version candidates to the list of items, instead of resetting, and let vscode quickpick handle showing subset matching with real current input.
+          // This is to avoid overwriting picker.items with results from an obsolete prebuiltUtil.listPrebuiltVersions request that finishes later (for example if the pattern has a lot more matches on gsutil list).
+          // Remove duplicates by casting to and back from a set.
+          versions = [
+            ...new Set(
+              fetchedVersionItems.map(item => item.label).concat(versions)
+            ),
+          ];
+          fetchedVersionItems = versions.map(
+            label => new ChromeOsVersionItem(label)
+          );
+          fetchedVersionItems.unshift(
+            new SimplePickItem(
+              'Full CrOS image versions available for flashing device',
+              vscode.QuickPickItemKind.Separator
+            )
+          );
+          picker.items = fetchedVersionItems;
+        }
       }),
       picker.onDidAccept(() => {
         const selectedItem = picker.activeItems[0];

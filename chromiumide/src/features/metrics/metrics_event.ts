@@ -32,6 +32,7 @@ type FeatureGroup =
   | 'lint'
   | 'misc'
   | 'owners'
+  | 'prebuilt_utils'
   | 'spellchecker'
   | 'tast'
   // 'virtualdocument' should be used in features that rely on virtual documents,
@@ -402,6 +403,15 @@ interface OwnersEvent extends EventBase {
   name: 'owners_clicked_file_or_link';
 }
 
+type PrebuiltUtilsEvent = EventBase & {
+  group: 'prebuilt_utils';
+  category: 'error';
+  name: 'prebuilt_utils_fetch_gs_images_error';
+  board: string;
+  image_type: string;
+  pattern: string;
+};
+
 type BoardsAndPackagesEvent = EventBase & {
   group: 'boards_and_packages';
 } & (
@@ -485,6 +495,7 @@ export type Event =
   | LintEvent
   | MiscEvent
   | OwnersEvent
+  | PrebuiltUtilsEvent
   | SpellcheckerEvent
   | TargetBoardEvent
   | TastEvent

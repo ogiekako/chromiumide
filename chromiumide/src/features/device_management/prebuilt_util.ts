@@ -9,6 +9,7 @@ import {
   parseFullCrosVersion,
 } from '../../common/image_version';
 import * as services from '../../services';
+import {Metrics} from '../metrics/metrics';
 
 export const PREBUILT_IMAGE_TYPES = [
   'release',
@@ -29,7 +30,7 @@ export async function listPrebuiltVersions(
   chrootService: services.chromiumos.ChrootService,
   logger: vscode.OutputChannel,
   versionPattern = '*'
-): Promise<string[]> {
+): Promise<string[] | Error> {
   // gs://chromeos-image-archive/ contains prebuilt image files.
   // https://chromium.googlesource.com/chromiumos/docs/+/HEAD/gsutil.md
   const result = await chrootService.exec(
@@ -51,7 +52,16 @@ export async function listPrebuiltVersions(
     ) {
       return [];
     }
-    throw result;
+    Metrics.send({
+      category: 'error',
+      group: 'prebuilt_utils',
+      name: 'prebuilt_utils_fetch_gs_images_error',
+      description: result.message,
+      board: board,
+      image_type: imageType,
+      pattern: versionPattern,
+    });
+    return result;
   }
 
   const versionRegexp = /\/(R\d+-\d+\.\d+\.\d+(-\d+-\d+)?)\//gm;

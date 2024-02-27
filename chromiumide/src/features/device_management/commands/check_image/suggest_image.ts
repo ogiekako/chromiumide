@@ -117,18 +117,28 @@ async function showAllMatchingImagesQuickPick(
   // This is because most users probably want the one closest to their local repository, and
   // fetching all eligible versions (current + default 7 * 2 before and after) will take too long.
   picker.busy = true; // Set status to busy until version items are fetched.
-  let versionItems: ChromeOsVersionItem[] = (
-    await listPrebuiltVersions(
-      board,
-      imageType,
-      chrootService,
-      logger,
-      `*-${chromeosMajorVersion}.*`
-    )
-  ).map(
-    label => new ChromeOsVersionItem(label, 'Local repo ChromeOS major version')
+  const versions = await listPrebuiltVersions(
+    board,
+    imageType,
+    chrootService,
+    logger,
+    `*-${chromeosMajorVersion}.*`
   );
-  picker.items = versionItems;
+
+  let versionItems: ChromeOsVersionItem[] = [];
+  if (versions instanceof Error) {
+    void vscode.window.showWarningMessage(
+      `Suggest image: failed to fetch paths matching gs://chromeos-image-archive/${board}-${imageType}/${`*-${chromeosMajorVersion}.*`}/image.zip: ${
+        versions.message
+      }`
+    );
+  } else {
+    versionItems = versions.map(
+      label =>
+        new ChromeOsVersionItem(label, 'Local repo ChromeOS major version')
+    );
+    picker.items = versionItems;
+  }
   picker.items = picker.items.concat(LOAD_ALL_VERSIONS_PICK_ITEM);
   onDidChangePickerItemsForTesting?.fire(picker.items);
   picker.busy = false;
@@ -169,22 +179,35 @@ async function showAllMatchingImagesQuickPick(
         // does not take regex for pattern matching, only wildcard), update the list using event
         // emitter instead of waiting for all calls to finish.
         const onFetchedImageVersionsEmitter = new vscode.EventEmitter<
-          string[]
+          string[] | Error
         >();
+        // If multiple calls to list gs image are failing, they are likely to have the same root
+        // cause, show error to user only once to avoid spamming.
+        let haveShownError = false;
         const onFetchedImageVersions = onFetchedImageVersionsEmitter.event;
         subscriptions.push(
           onFetchedImageVersionsEmitter,
           onFetchedImageVersions(imageVersions => {
-            versionItems = versionItems
-              // Add newly returned version strings to list, each call has a different CrOS major
-              // version so the sets are all distinct and no need to remove duplicates.
-              .concat(
-                imageVersions.map(label => new ChromeOsVersionItem(label))
-              )
-              // Sort in reverse order so that the more recent version comes first.
-              .sort((a, b) => b.label.localeCompare(a.label));
-            picker.items = versionItems;
             finishedCount += 1;
+
+            if (imageVersions instanceof Error) {
+              if (!haveShownError) {
+                void vscode.window.showWarningMessage(
+                  `Suggest image: failed to fetch image on gs://chromeos-image-archive: ${imageVersions.message}`
+                );
+                haveShownError = true;
+              }
+            } else {
+              versionItems = versionItems
+                // Add newly returned version strings to list, each call has a different CrOS major
+                // version so the sets are all distinct and no need to remove duplicates.
+                .concat(
+                  imageVersions.map(label => new ChromeOsVersionItem(label))
+                )
+                // Sort in reverse order so that the more recent version comes first.
+                .sort((a, b) => b.label.localeCompare(a.label));
+              picker.items = versionItems;
+            }
 
             // Completed fetching available image paths for each queried CrOS major version.
             if (finishedCount === versions.length) {
@@ -229,7 +252,7 @@ async function fetchAllPrebuiltVersionsInParallel(
   chrootService: ChrootService,
   logger: vscode.OutputChannel,
   chromeosMajorVersion: number,
-  onFetchedImageVersionsEmitter: vscode.EventEmitter<string[]>
+  onFetchedImageVersionsEmitter: vscode.EventEmitter<Error | string[]>
 ): Promise<void> {
   const versions = await listPrebuiltVersions(
     board,

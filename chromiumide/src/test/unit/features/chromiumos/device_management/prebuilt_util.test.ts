@@ -81,7 +81,7 @@ gs://chromeos-image-archive/xyz-postsubmit/R102-10010.0.0-10100-1000000000000100
     ]);
   });
 
-  it('does not throw error on no result found', async () => {
+  it('does not return error on no result found', async () => {
     await testing.buildFakeChroot(tempDir.path);
 
     fakes.installChrootCommandHandler(
