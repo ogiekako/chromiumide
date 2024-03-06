@@ -52,61 +52,67 @@ export class Watcher {
       vscode.workspace.onDidCloseTextDocument(e => this.remove([e]))
     );
 
-    setImmediate(() =>
-      this.add(vscode.window.visibleTextEditors.map(e => e.document))
+    setImmediate(
+      () => void this.add(vscode.window.visibleTextEditors.map(e => e.document))
     );
   }
 
-  private add(documents: vscode.TextDocument[]) {
+  private async add(documents: vscode.TextDocument[]) {
     const added: string[] = [];
-    documents.forEach(document => {
-      const gitDir = this.gitDirFor(document);
-      if (!gitDir) {
-        return;
-      }
-      let docs = this.gitDirToDocUris.get(gitDir);
-      if (!docs) {
-        docs = new Set();
-        this.gitDirToDocUris.set(gitDir, docs);
-        added.push(gitDir);
-      }
-      docs.add(document.uri.toString());
-    });
+    await Promise.all(
+      documents.map(async document => {
+        const gitDir = await this.gitDirFor(document);
+        if (!gitDir) {
+          return;
+        }
+        let docs = this.gitDirToDocUris.get(gitDir);
+        if (!docs) {
+          docs = new Set();
+          this.gitDirToDocUris.set(gitDir, docs);
+          added.push(gitDir);
+        }
+        docs.add(document.uri.toString());
+      })
+    );
     if (added.length > 0) {
       this.onDidChangeEmitter.fire({added, removed: []});
     }
   }
 
-  private remove(documents: vscode.TextDocument[]) {
+  private async remove(documents: vscode.TextDocument[]) {
     const removed: string[] = [];
-    documents.forEach(document => {
-      const gitDir = this.gitDirFor(document);
-      if (!gitDir) {
-        return;
-      }
-      const docs = this.gitDirToDocUris.get(gitDir);
-      if (!docs) {
-        // For robustness; this shouldn't actually happen.
-        return;
-      }
-      docs.delete(document.uri.toString());
-      if (docs.size === 0) {
-        this.gitDirToDocUris.delete(gitDir);
-        removed.push(gitDir);
-      }
-    });
+    await Promise.all(
+      documents.map(async document => {
+        const gitDir = await this.gitDirFor(document);
+        if (!gitDir) {
+          return;
+        }
+        const docs = this.gitDirToDocUris.get(gitDir);
+        if (!docs) {
+          // For robustness; this shouldn't actually happen.
+          return;
+        }
+        docs.delete(document.uri.toString());
+        if (docs.size === 0) {
+          this.gitDirToDocUris.delete(gitDir);
+          removed.push(gitDir);
+        }
+      })
+    );
     if (removed.length > 0) {
       this.onDidChangeEmitter.fire({added: [], removed});
     }
   }
 
-  private gitDirFor(document: vscode.TextDocument): string | undefined {
+  private async gitDirFor(
+    document: vscode.TextDocument
+  ): Promise<string | undefined> {
     const isUnderRoot = !path
       .relative(this.root, document.fileName)
       .startsWith('..');
     if (!isUnderRoot) {
       return undefined;
     }
-    return commonUtil.findGitDir(document.fileName);
+    return await commonUtil.findGitDir(document.fileName);
   }
 }

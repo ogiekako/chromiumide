@@ -283,17 +283,23 @@ describe('getGitDir', () => {
     });
     await commonUtil.exec('git', ['init'], {cwd: fullPath('a')});
 
-    expect(commonUtil.findGitDir(fullPath('a/b/c/d.txt'))).toEqual(
+    expect(await commonUtil.findGitDir(fullPath('a/b/c/d.txt'))).toEqual(
       fullPath('a/b')
     );
-    expect(commonUtil.findGitDir(fullPath('a/b/c/no_such_file.txt'))).toEqual(
+    expect(
+      await commonUtil.findGitDir(fullPath('a/b/c/no_such_file.txt'))
+    ).toEqual(fullPath('a/b'));
+    expect(await commonUtil.findGitDir(fullPath('a/b/c'))).toEqual(
       fullPath('a/b')
     );
-    expect(commonUtil.findGitDir(fullPath('a/b/c'))).toEqual(fullPath('a/b'));
-    expect(commonUtil.findGitDir(fullPath('a/b'))).toEqual(fullPath('a/b'));
-    expect(commonUtil.findGitDir(fullPath('a/e.txt'))).toEqual(fullPath('a'));
-    expect(commonUtil.findGitDir(fullPath('a'))).toEqual(fullPath('a'));
-    expect(commonUtil.findGitDir(fullPath('x/y/z.txt'))).toBeUndefined();
+    expect(await commonUtil.findGitDir(fullPath('a/b'))).toEqual(
+      fullPath('a/b')
+    );
+    expect(await commonUtil.findGitDir(fullPath('a/e.txt'))).toEqual(
+      fullPath('a')
+    );
+    expect(await commonUtil.findGitDir(fullPath('a'))).toEqual(fullPath('a'));
+    expect(await commonUtil.findGitDir(fullPath('x/y/z.txt'))).toBeUndefined();
   });
 });
 

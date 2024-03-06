@@ -36,8 +36,8 @@ export async function isGoogler(): Promise<boolean> {
 }
 
 // Return path to CrOS checkout.
-function getCrOSPath(path: string): string | undefined {
-  const chroot = commonUtil.findChroot(path);
+async function getCrOSPath(path: string): Promise<string | undefined> {
+  const chroot = await commonUtil.findChroot(path);
   if (!chroot) {
     return undefined;
   }
@@ -51,8 +51,9 @@ function getCrOSPath(path: string): string | undefined {
  */
 export async function getGitRepoName(
   filePath: string,
-  crosPath: string | undefined = getCrOSPath(filePath)
+  crosPathInput?: string
 ): Promise<string | undefined> {
+  const crosPath = crosPathInput ?? (await getCrOSPath(filePath));
   if (!crosPath) {
     if (await chromiumRoot(filePath)) {
       return 'chromium';
@@ -60,7 +61,7 @@ export async function getGitRepoName(
     return undefined;
   }
 
-  const gitDir = commonUtil.findGitDir(filePath);
+  const gitDir = await commonUtil.findGitDir(filePath);
   if (!gitDir) {
     return undefined;
   }

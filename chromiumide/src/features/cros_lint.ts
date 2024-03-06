@@ -88,7 +88,7 @@ const CHECK_LIBCHROME_SRC_DIRS = [
 ];
 
 async function crosExeFor(realpath: string): Promise<string | undefined> {
-  const chroot = commonUtil.findChroot(realpath);
+  const chroot = await commonUtil.findChroot(realpath);
   if (chroot === undefined) {
     return undefined;
   }
@@ -108,7 +108,7 @@ const languageToLintConfigs = new Map<string, LintConfig[]>([
       },
       {
         executable: async realpath => {
-          const chroot = commonUtil.findChroot(realpath);
+          const chroot = await commonUtil.findChroot(realpath);
           if (chroot === undefined) {
             return undefined;
           }
@@ -199,7 +199,7 @@ async function tastLintExe(realPath: string): Promise<string | undefined> {
     return undefined;
   }
   const linterPath = `src/platform/${match[1]}/tools/run_lint.sh`;
-  const chroot = commonUtil.findChroot(realPath);
+  const chroot = await commonUtil.findChroot(realPath);
   if (chroot === undefined) {
     return undefined;
   }
@@ -249,7 +249,7 @@ export async function goLintEnv(
   }
   // Find golint executable in the chroot because cros lint
   // checks /usr/bin, where the chroot golint is located.
-  const chroot = commonUtil.findChroot(exe);
+  const chroot = await commonUtil.findChroot(exe);
   if (chroot === undefined) {
     return undefined;
   }

@@ -43,7 +43,7 @@ async function format(
   log: logs.LoggingBundle
 ) {
   const realpath = await fs.promises.realpath(fsPath);
-  const chroot = commonUtil.findChroot(realpath);
+  const chroot = await commonUtil.findChroot(realpath);
   if (chroot === undefined) {
     log.channel.appendLine(
       'ERROR: chroot not found when attempting `gn format`'

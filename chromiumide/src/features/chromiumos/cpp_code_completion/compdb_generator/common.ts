@@ -7,7 +7,7 @@ import * as commonUtil from '../../../../common/common_util';
 import {Metrics} from '../../../metrics/metrics';
 import {ErrorDetails} from '.';
 
-export function throwForNoChroot(fileName: string): never {
+export async function throwForNoChroot(fileName: string): Promise<never> {
   // Send metrics before showing the message, because they don't seem
   // to be sent if the user does not act on the message.
   Metrics.send({
@@ -18,7 +18,7 @@ export function throwForNoChroot(fileName: string): never {
   });
 
   // platform2 user may prefer subdirectories
-  const gitFolder = commonUtil.findGitDir(fileName);
+  const gitFolder = await commonUtil.findGitDir(fileName);
 
   const openOtherFolder = gitFolder ? 'Open Other' : 'Open Folder';
 

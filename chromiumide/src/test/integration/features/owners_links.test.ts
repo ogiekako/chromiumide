@@ -22,10 +22,10 @@ async function getLinks(text: string) {
 }
 
 // Uses `OwnersLinkProvider` to resolve an `OwnersLink`.
-function resolveLink(link: ownersLinkProvider.OwnersLink) {
+async function resolveLink(link: ownersLinkProvider.OwnersLink) {
   const provider = new ownersLinkProvider.OwnersLinkProvider();
   expect(link.target).toBeUndefined();
-  provider.resolveDocumentLink(link, new FakeCancellationToken());
+  await provider.resolveDocumentLink(link, new FakeCancellationToken());
 }
 
 describe('OWNERS links', () => {
@@ -144,7 +144,7 @@ per-file foo.txt =   file:/path2
       new vscode.Range(0, 0, 0, 10)
     );
 
-    resolveLink(link);
+    await resolveLink(link);
     expect(link.target).toEqual(vscode.Uri.file('/some/foo/bar'));
   });
 
@@ -169,7 +169,7 @@ per-file foo.txt =   file:/path2
       new vscode.Range(0, 0, 0, 10)
     );
 
-    resolveLink(link);
+    await resolveLink(link);
     expect(link.target).toEqual(
       vscode.Uri.file(path.join(tempDir.path, 'foo/bar'))
     );

@@ -4,6 +4,8 @@
 
 import * as path from 'path';
 import glob = require('glob');
+import {registerDriver} from '../../../shared/app/common/driver_repository';
+import {DriverImpl} from '../../driver';
 const Jasmine = require('jasmine');
 
 export function run(): Promise<void> {
@@ -15,6 +17,7 @@ export function run(): Promise<void> {
         return e(err);
       }
 
+      registerDriver(new DriverImpl());
       const jasmine = new Jasmine();
 
       files.forEach(f => jasmine.addSpecFile(path.resolve(testsRoot, f)));

@@ -175,7 +175,7 @@ export class ProductWatcher implements vscode.Disposable {
     }
     this.noWorkspaceHandled = true;
 
-    const gitFolder = commonUtil.findGitDir(fileName);
+    const gitFolder = await commonUtil.findGitDir(fileName);
 
     const openGitFolder = gitFolder
       ? `Open ${path.relative(productRoot, gitFolder)}`

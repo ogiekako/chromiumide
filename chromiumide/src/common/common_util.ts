@@ -8,12 +8,13 @@
  */
 
 import * as childProcess from 'child_process';
-import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import treeKill from 'tree-kill';
+import {getDriver} from '../../shared/app/common/driver_repository';
 import * as shutil from '../../shared/app/common/shutil';
+
+const driver = getDriver();
 
 // Type Chroot represents the path to chroot.
 // We use nominal typing technique here. https://basarat.gitbook.io/typescript/main-1/nominaltyping
@@ -24,21 +25,21 @@ export type CrosOut = string & {_brand: 'out'};
 // Type Source represents the path to ChromiumOS source.
 export type Source = string & {_brand: 'source'};
 
-export function isInsideChroot(): boolean {
-  return isChroot('/');
+export async function isInsideChroot(): Promise<boolean> {
+  return await isChroot('/');
 }
 
-export function isChroot(dir: string): boolean {
-  return fs.existsSync(path.join(dir, '/etc/cros_chroot_version'));
+export async function isChroot(dir: string): Promise<boolean> {
+  return await driver.fs.exists(path.join(dir, '/etc/cros_chroot_version'));
 }
 
 /**
  * Returns the chroot in dir or its ancestor, or undefined on not found.
  */
-export function findChroot(dir: string): Chroot | undefined {
+export async function findChroot(dir: string): Promise<Chroot | undefined> {
   for (;;) {
     const chroot = path.join(dir, 'chroot');
-    if (isChroot(chroot)) {
+    if (await isChroot(chroot)) {
       return chroot as Chroot;
     }
 
@@ -376,20 +377,6 @@ function realExec(
   });
 }
 
-export async function withTempDir(
-  f: (tempDir: string) => Promise<void>
-): Promise<void> {
-  let td: string | undefined;
-  try {
-    td = await fs.promises.mkdtemp(os.tmpdir() + '/');
-    await f(td);
-  } finally {
-    if (td) {
-      await fs.promises.rm(td, {recursive: true});
-    }
-  }
-}
-
 /**
  * Takes possibly blocking Thenable f and timeout millis, and returns a Thenable that is fulfilled
  * with f's value or undefined in case f doesn't return before the timeout.
@@ -411,18 +398,20 @@ export function withTimeout<T>(
  * which can be a regular file or a directory.
  * Returns undefined if the file is not under a Git repository.
  */
-export function findGitDir(filePath: string): string | undefined {
+export async function findGitDir(
+  filePath: string
+): Promise<string | undefined> {
   let dir: string;
-  if (!fs.existsSync(filePath)) {
+  if (!(await driver.fs.exists(filePath))) {
     // tests use files that do not exist
     dir = path.dirname(filePath);
-  } else if (fs.statSync(filePath).isFile()) {
-    dir = path.dirname(filePath);
-  } else {
+  } else if (await driver.fs.isDirectory(filePath)) {
     dir = filePath;
+  } else {
+    dir = path.dirname(filePath);
   }
 
-  while (!fs.existsSync(path.join(dir, '.git'))) {
+  while (!(await driver.fs.exists(path.join(dir, '.git')))) {
     const parent = path.dirname(dir);
     if (parent === dir) {
       return undefined;

@@ -427,7 +427,7 @@ export async function findGitDir(
   filePath: string,
   sink: Sink
 ): Promise<string | undefined> {
-  const gitDir = commonUtil.findGitDir(filePath);
+  const gitDir = await commonUtil.findGitDir(filePath);
   if (!gitDir) {
     sink.appendLine('Git directory not found for ' + filePath);
     return;

@@ -44,7 +44,7 @@ export class PlatformEc implements CompdbGenerator {
   async shouldGenerate(
     document: vscode.TextDocument
   ): Promise<ShouldGenerateResult> {
-    const gitDir = commonUtil.findGitDir(document.fileName);
+    const gitDir = await commonUtil.findGitDir(document.fileName);
     if (!gitDir?.endsWith('platform/ec')) {
       return ShouldGenerateResult.NoUnsupported;
     }

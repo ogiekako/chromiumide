@@ -46,10 +46,10 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 }
 
-function getCodeSearchToolConfig(
+async function getCodeSearchToolConfig(
   fullpath: string
-): {executable: string; cwd: string} | undefined {
-  const chroot = commonUtil.findChroot(fullpath);
+): Promise<{executable: string; cwd: string} | undefined> {
+  const chroot = await commonUtil.findChroot(fullpath);
   if (!chroot) {
     return undefined;
   }
@@ -138,7 +138,7 @@ async function getCodeSearchUrl(
 
   const csHash = config.codeSearch.openWithRevision.get();
 
-  const csConfig = getCodeSearchToolConfig(fullpath);
+  const csConfig = await getCodeSearchToolConfig(fullpath);
   if (!csConfig) {
     void vscode.window.showErrorMessage(
       "Could not find 'generate_cs_path' script"

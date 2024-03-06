@@ -85,7 +85,7 @@ export class Packages {
       }
     }
 
-    const chroot = findChroot(realpath);
+    const chroot = await findChroot(realpath);
     if (chroot === undefined) {
       return null;
     }

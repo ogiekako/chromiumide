@@ -25,7 +25,7 @@ export class OwnersLink extends vscode.DocumentLink {
     super(range);
   }
 
-  resolve(): void {
+  async resolve(): Promise<void> {
     Metrics.send({
       category: 'interactive',
       group: 'owners',
@@ -36,7 +36,7 @@ export class OwnersLink extends vscode.DocumentLink {
     if (this.relativeOrAbsolutePath.startsWith('/')) {
       // Resolve an "absolute" path: This assumes that all "absolute" paths are relative to the
       // nearest .git directory.
-      const gitDir = commonUtil.findGitDir(this.documentUri.fsPath);
+      const gitDir = await commonUtil.findGitDir(this.documentUri.fsPath);
       if (!gitDir) {
         void vscode.window.showErrorMessage(
           'Unable to resolve link: No nearest .git directory found.'
@@ -129,11 +129,11 @@ export class OwnersLinkProvider
     return links;
   }
 
-  resolveDocumentLink(
+  async resolveDocumentLink(
     link: OwnersLink,
     _token: vscode.CancellationToken
-  ): OwnersLink {
-    link.resolve();
+  ): Promise<OwnersLink> {
+    await link.resolve();
     return link;
   }
 }

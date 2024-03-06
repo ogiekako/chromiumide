@@ -9,6 +9,7 @@
  */
 import * as vscode from 'vscode';
 import * as sourceMapSupport from 'source-map-support';
+import {registerDriver} from '../shared/app/common/driver_repository';
 import {activate as activateSharedFeatures} from '../shared/app/extension';
 import * as cipd from './common/cipd';
 import * as commonUtil from './common/common_util';
@@ -58,6 +59,9 @@ export async function activate(
   // Migrate user configs if needed before anything else.
   await migrate.migrate();
 
+  registerDriver(new DriverImpl());
+  activateSharedFeatures(context, new DriverImpl());
+
   // Activate metrics so that other components can emit metrics on activation.
   await metrics.activate(context);
 
@@ -77,7 +81,7 @@ export async function activate(
 async function postMetricsActivate(
   context: vscode.ExtensionContext
 ): Promise<ExtensionApi> {
-  assertOutsideChroot();
+  await assertOutsideChroot();
 
   const statusManager = bgTaskStatus.activate(context);
   const cipdRepository = new cipd.CipdRepository();
@@ -154,8 +158,6 @@ async function postMetricsActivate(
       gitDirsWatcher
     );
   }
-
-  activateSharedFeatures(context, new DriverImpl());
 
   // We want to know if some users flip enablement bit.
   // If the feature is disabled it could mean that it's annoying.
@@ -269,8 +271,8 @@ class ChromiumActivation implements vscode.Disposable {
   }
 }
 
-function assertOutsideChroot() {
-  if (!commonUtil.isInsideChroot()) {
+async function assertOutsideChroot() {
+  if (!(await commonUtil.isInsideChroot())) {
     return;
   }
   void (async () => {
