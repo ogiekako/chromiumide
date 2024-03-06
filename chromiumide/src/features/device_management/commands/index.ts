@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import {vscodeRegisterCommand} from '../../../common/vscode/commands';
 import * as services from '../../../services';
 import {underDevelopment} from '../../../services/config';
+import {Breadcrumbs} from '../../chromiumos/boards_and_packages/item';
 import {Metrics} from '../../metrics/metrics';
 import * as abandonedDevices from '../abandoned_devices';
 import * as crosfleet from '../crosfleet';
@@ -169,6 +170,17 @@ function registerChromiumosCommands(
         'chromiumide.deviceManagement.deployToDevice',
         (item?: provider.DeviceItem) =>
           deployToDevice(context, chrootService, item?.hostname)
+      ),
+      vscodeRegisterCommand(
+        'chromiumide.deviceManagement.deployPackage',
+        ({breadcrumbs: [board, category, name]}: Breadcrumbs) =>
+          deployToDevice(
+            context,
+            chrootService,
+            undefined,
+            `${category}/${name}`,
+            board
+          )
       )
     );
 

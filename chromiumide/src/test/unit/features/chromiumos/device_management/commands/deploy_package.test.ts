@@ -222,7 +222,8 @@ describe('deploy package command', () => {
       context,
       ChrootService.maybeCreate(chromiumos, /* setContext = */ false)!,
       undefined, // prepareCommonFakes will return the faked local host
-      'chromeos-base/bar'
+      'chromeos-base/bar',
+      'foo'
     );
     expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalledTimes(0);
     expect(vscodeSpy.window.showWarningMessage).toHaveBeenCalledTimes(0);

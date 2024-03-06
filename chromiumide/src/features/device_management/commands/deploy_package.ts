@@ -43,12 +43,12 @@ const GLOBAL_BOARD_TO_PACKAGE_CACHE = new LruCache<string, Package[]>(
   CACHE_CAPACITY
 );
 
-// TODO(b/308059094): add command entry point from boards and packages panel.
 export async function deployToDevice(
   context: CommandContext,
   chrootService?: services.chromiumos.ChrootService,
   selectedHostname?: string,
-  selectedPackage?: string
+  selectedPackage?: string,
+  selectedPackageBoard?: string
 ): Promise<void> {
   if (!chrootService) {
     void showMissingInternalRepoErrorMessage('Deploying package to device');
@@ -74,6 +74,19 @@ export async function deployToDevice(
       : attributes.board;
   if (!board) {
     return;
+  }
+
+  // Warn user if the command entry point is a package item belonging to a board different from the
+  // selected device board.
+  // Do not ban the action completely since most packages are common among boards.
+  if (selectedPackageBoard && selectedPackageBoard !== board) {
+    const option = await vscode.window.showQuickPick(
+      ['Yes.', 'No, cancel deploy.'],
+      {
+        title: `Device board (${board}) is different from board of selected package (${selectedPackageBoard}). Are you sure to proceed?`,
+      }
+    );
+    if (!option || option === 'No, cancel deploy.') return;
   }
 
   const targetPackage =

@@ -65,6 +65,11 @@
         "title": "Set as Default Board"
       },
       {
+        "command": "chromiumide.deviceManagement.deployPackage",
+        "category": "CrOS",
+        "title": "Deploy Package to Device"
+      },
+      {
         "command": "chromiumide.chrome.build",
         "category": "CrOS",
         "title": "Build + Deploy Ash + Lacros to DUT",
@@ -140,6 +145,12 @@
         "command": "chromiumide.deviceManagement.checkDeviceImageCompatibilityOrSuggest",
         "category": "CrOS",
         "title": "Check Compatibility for deploying package"
+      },
+      {
+        "command": "chromiumide.deviceManagement.deployPackage",
+        "category": "CrOS",
+        "title": "Deploy Package to Device",
+        "icon": "$(package)"
       },
       {
         "command": "chromiumide.deviceManagement.deployToDevice",
@@ -614,6 +625,11 @@
           "group": "1_set"
         },
         {
+          "command": "chromiumide.deviceManagement.deployPackage",
+          "when": "view == boards-and-packages && viewItem =~ /<package>/",
+          "group": "2_deploy"
+        },
+        {
           "command": "chromiumide.deviceManagement.addDevice",
           "when": "view == devices && viewItem == category-owned",
           "group": "inline"
@@ -792,6 +808,10 @@
         },
         {
           "command": "chromiumide.boardsAndPackages.setDefaultBoard",
+          "when": "false"
+        },
+        {
+          "command": "chromiumide.deviceManagement.deployPackage",
           "when": "false"
         },
         {
