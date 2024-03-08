@@ -7,8 +7,10 @@ set -e
 
 cd "$(dirname "$0")"
 
-[ -f "${OVSX_PAT_FILE:=}" ] && read -r OVSX_PAT < "${OVSX_PAT_FILE}"
-[ -f "${VSCE_PAT_FILE:=}" ] && read -r VSCE_PAT < "${VSCE_PAT_FILE}"
+if [ -n "${FETCH_IDE_RELEASE_CREDENTIALS_FROM_GCLOUD}" ]; then
+  OVSX_PAT="$(gcloud secrets versions access 1 --secret ChromiumIDE_OVSX_PAT --project chromeos-bot)"
+  VSCE_PAT="$(gcloud secrets versions access 1 --secret ChromiumIDE_VSCE_PAT --project chromeos-bot)"
+fi
 
 OVSX_PAT="${OVSX_PAT:=}" VSCE_PAT="${VSCE_PAT:=}" npx ts-node \
   ./tools/release.ts "$@"
