@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as fs from 'fs';
-import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../shared/app/common/common_util';
 import {getDriver} from '../../shared/app/common/driver_repository';
@@ -95,7 +93,7 @@ async function crosExeFor(realpath: string): Promise<string | undefined> {
     return undefined;
   }
   const source = commonUtil.sourceDir(chroot);
-  return path.join(source, CROS_PATH);
+  return driver.path.join(source, CROS_PATH);
 }
 
 // Don't forget to update package.json when adding more languages.
@@ -118,7 +116,7 @@ const languageToLintConfigs = new Map<string, LintConfig[]>([
           const filepath = realpath.slice(source.length + 1); // To trim / of source dir
           for (const dir of CHECK_LIBCHROME_SRC_DIRS) {
             if (filepath.startsWith(dir)) {
-              return path.join(source, CHECK_LIBCHROME_PATH);
+              return driver.path.join(source, CHECK_LIBCHROME_PATH);
             }
           }
           return undefined;
@@ -137,7 +135,7 @@ const languageToLintConfigs = new Map<string, LintConfig[]>([
         parse: parseCrosLintGn,
         // gnlint.py needs to be run inside ChromiumOS source tree,
         // otherwise it complains about formatting.
-        cwd: (exePath: string) => path.dirname(exePath),
+        cwd: (exePath: string) => driver.path.dirname(exePath),
         // gnlint.py exits with non-zero code when syntax error exists,
         // but not handled here because those overlap with other exetnsions.
         ignoreEmptyDiagnostics: true,
@@ -179,7 +177,7 @@ const languageToLintConfigs = new Map<string, LintConfig[]>([
         parse: parseCrosLintGo,
         cwd: (exePath: string) =>
           TAST_RE.test(exePath)
-            ? path.dirname(path.dirname(exePath))
+            ? driver.path.dirname(driver.path.dirname(exePath))
             : undefined,
         env: (execPath: string) => goLintEnv(execPath),
         // run_lint.sh exits with non-zero status when the file cannot be parsed,
@@ -206,7 +204,7 @@ async function tastLintExe(realPath: string): Promise<string | undefined> {
     return undefined;
   }
   const source = commonUtil.sourceDir(chroot);
-  return path.join(source, linterPath);
+  return driver.path.join(source, linterPath);
 }
 
 let goWarningShown = false;
@@ -255,7 +253,7 @@ export async function goLintEnv(
   if (chroot === undefined) {
     return undefined;
   }
-  const goBin = path.join(chroot, '/usr/bin');
+  const goBin = driver.path.join(chroot, '/usr/bin');
   // Add goBin to the PATH so that cros lint can lint go files
   // outside the chroot.
   let newPathVar = `${env.PATH}:${goBin}`;
@@ -314,7 +312,10 @@ async function updateDiagnostics(
       });
       return;
     }
-    const realpath = await fs.promises.realpath(document.uri.fsPath);
+    // TODO(b/319548749): this is used to determine if the file is a generated file inside chroot.
+    // To be verified behavior when edited in cider. Cider's realpath implementation returns the
+    // input path directly and might need additional processing.
+    const realpath = await driver.fs.realpath(document.uri.fsPath);
 
     // Do not lint generated files, because it generates lots of useless warnings.
     if (
@@ -391,7 +392,9 @@ async function updateDiagnostics(
 }
 
 function sameFile(documentFsPath: string, crosLintPath: string): boolean {
-  return path.basename(documentFsPath) === path.basename(crosLintPath);
+  return (
+    driver.path.basename(documentFsPath) === driver.path.basename(crosLintPath)
+  );
 }
 
 export function parseCrosLintCpp(

@@ -5,4 +5,5 @@
 export type Path = Readonly<{
   join: (...paths: string[]) => string;
   dirname: (path: string) => string;
+  basename: (path: string, suffix?: string | undefined) => string;
 }>;

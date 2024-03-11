@@ -2,8 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as path from 'path';
 import * as vscode from 'vscode';
+import {getDriver} from '../../../../shared/app/common/driver_repository';
+
+const driver = getDriver();
 
 export type ParsedTestCase = {
   name: string;
@@ -17,7 +19,9 @@ export type ParsedTestCase = {
 export function parseTestCase(
   document: vscode.TextDocument
 ): ParsedTestCase | undefined {
-  const category = path.basename(path.dirname(document.uri.fsPath));
+  const category = driver.path.basename(
+    driver.path.dirname(document.uri.fsPath)
+  );
 
   const content = document.getText();
 

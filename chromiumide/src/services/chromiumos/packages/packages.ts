@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as fs from 'fs';
 import * as path from 'path';
 import * as services from '../..';
 import {findChroot, sourceDir} from '../../../../shared/app/common/common_util';
+import {getDriver} from '../../../../shared/app/common/driver_repository';
 import {Mapping} from './mapping';
 import {SourceDir, PackageInfo} from './types';
+
+const driver = getDriver();
 
 export class Packages {
   private mapping = new Map<SourceDir, PackageInfo>();
@@ -74,7 +76,7 @@ export class Packages {
 
     let realpath = '';
     try {
-      realpath = await fs.promises.realpath(filepath);
+      realpath = await driver.fs.realpath(filepath);
     } catch (_e) {
       // If filepath is an absolute path, assume it's a realpath. This is
       // convenient for testing, where the file may not exist.

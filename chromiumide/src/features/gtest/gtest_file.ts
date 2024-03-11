@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as path from 'path';
 import * as vscode from 'vscode';
+import {getDriver} from '../../../shared/app/common/driver_repository';
 import {GtestCase} from './gtest_case';
 import {GtestRunnable} from './gtest_runnable';
 import {GtestSuite} from './gtest_suite';
 import * as parser from './parser';
+
+const driver = getDriver();
 
 /**
  * Represents a test file containing at least one test suite with a test case.
@@ -31,7 +33,7 @@ export class GtestFile extends GtestRunnable {
 
     const item = controller.createTestItem(
       /*id=*/ uri.toString(),
-      /*label=*/ path.basename(uri.fsPath),
+      /*label=*/ driver.path.basename(uri.fsPath),
       uri
     );
     controller.items.add(item);

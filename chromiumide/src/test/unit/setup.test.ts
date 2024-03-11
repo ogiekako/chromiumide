@@ -3,8 +3,10 @@
 // found in the LICENSE file.
 
 import 'jasmine';
-import * as fs from 'fs';
 import * as commonUtil from '../../../shared/app/common/common_util';
+import {getDriver} from '../../../shared/app/common/driver_repository';
+
+const driver = getDriver();
 
 const WANT_NODE_VERSION = /v18\..*/;
 
@@ -17,7 +19,7 @@ describe('Dev environment', () => {
   it('should not use a symlinked directory: http://b/290870272', async () => {
     const cwd = process.env.PWD as string;
 
-    const realpath = await fs.promises.realpath(cwd);
+    const realpath = await driver.fs.realpath(cwd);
 
     expect(cwd).toEqual(realpath);
   });

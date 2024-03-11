@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as path from 'path';
 import * as vscode from 'vscode';
 import {getDriver} from '../../../../shared/app/common/driver_repository';
 import * as config from '../../../../shared/app/services/config';
@@ -57,11 +56,11 @@ export class TastTests implements vscode.Disposable {
     })();
   }
 
-  private tastTestsDir = path.join(
+  private tastTestsDir = driver.path.join(
     this.chrootService.source.root,
     'src/platform/tast-tests'
   );
-  private tastDir = path.join(
+  private tastDir = driver.path.join(
     this.chrootService.source.root,
     'src/platform/tast'
   );
@@ -146,7 +145,9 @@ export class TastTests implements vscode.Disposable {
       return true;
     }
 
-    const ADD = `Add ${foldersToAdd.map(x => path.basename(x)).join(', ')}`;
+    const ADD = `Add ${foldersToAdd
+      .map(x => driver.path.basename(x))
+      .join(', ')}`;
     const choice = await vscode.window.showErrorMessage(
       'chromiumide: tast-tests support expects tast and tast-tests to be opend as workspace folders',
       ADD
@@ -248,7 +249,7 @@ export class TastTests implements vscode.Disposable {
     return [
       this.tastTestsDir,
       this.tastDir,
-      path.join(this.chrootService.chroot.root, 'usr/lib/gopath'),
+      driver.path.join(this.chrootService.chroot.root, 'usr/lib/gopath'),
     ];
   }
 

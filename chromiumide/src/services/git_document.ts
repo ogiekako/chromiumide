@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../shared/app/common/common_util';
 import {getDriver} from '../../shared/app/common/driver_repository';
@@ -26,7 +25,7 @@ export function commitMessageUri(
 ): vscode.Uri {
   return vscode.Uri.from({
     scheme: GIT_MSG_SCHEME,
-    path: path.join(dir, COMMIT_MESSAGE),
+    path: driver.path.join(dir, COMMIT_MESSAGE),
     query: ref,
     fragment: feature,
   });
@@ -52,7 +51,7 @@ export class GitDocumentProvider implements vscode.TextDocumentContentProvider {
       return message;
     }
 
-    const dir = path.dirname(fsPath);
+    const dir = driver.path.dirname(fsPath);
     const result = await getCommitMessage(dir, sha);
 
     message =
@@ -63,7 +62,7 @@ export class GitDocumentProvider implements vscode.TextDocumentContentProvider {
   }
 
   async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-    const file = path.basename(uri.path);
+    const file = driver.path.basename(uri.path);
 
     driver.sendMetrics({
       category: 'interactive',

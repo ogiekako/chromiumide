@@ -12,4 +12,7 @@ export class PathImpl implements Path {
   dirname(pathInput: string): string {
     return path.dirname(pathInput);
   }
+  basename(pathInput: string, suffix?: string | undefined): string {
+    return path.basename(pathInput, suffix);
+  }
 }

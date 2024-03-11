@@ -16,4 +16,7 @@ export class FsImpl implements Fs {
       return e as Error;
     }
   }
+  async realpath(path: string, options?: {encoding: 'utf8'}): Promise<string> {
+    return fs.promises.realpath(path, options);
+  }
 }

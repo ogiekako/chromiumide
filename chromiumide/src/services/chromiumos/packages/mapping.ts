@@ -3,12 +3,14 @@
 // found in the LICENSE file.
 
 import * as fs from 'fs';
-import * as path from 'path';
 import * as util from 'util';
 import glob = require('glob');
 import {Source} from '../../../../shared/app/common/common_util';
+import {getDriver} from '../../../../shared/app/common/driver_repository';
 import {ParsedPackageName} from '../../../common/chromiumos/portage/ebuild';
 import {PackageInfo} from './types';
+
+const driver = getDriver();
 
 /**
  * The class to generate the mapping between source code locations and package
@@ -18,7 +20,9 @@ export class Mapping {
   static async generate(source: Source): Promise<PackageInfo[]> {
     let packages: PackageInfo[] = [];
     for (const overlay of OVERLAYS) {
-      packages = packages.concat(await generateSub(path.join(source, overlay)));
+      packages = packages.concat(
+        await generateSub(driver.path.join(source, overlay))
+      );
     }
     return packages;
   }
@@ -64,7 +68,7 @@ async function generateSub(dir: string) {
 
       for (const subdir of subdirs) {
         packages.push({
-          sourceDir: path.join('src/platform2', subdir),
+          sourceDir: driver.path.join('src/platform2', subdir),
           pkg,
         });
       }
@@ -74,9 +78,9 @@ async function generateSub(dir: string) {
 }
 
 function toPackageName(ebuildPath: string): ParsedPackageName {
-  const dir = path.dirname(ebuildPath);
-  const name = path.basename(dir);
-  const category = path.basename(path.dirname(dir));
+  const dir = driver.path.dirname(ebuildPath);
+  const name = driver.path.basename(dir);
+  const category = driver.path.basename(driver.path.dirname(dir));
   return {category, name};
 }
 

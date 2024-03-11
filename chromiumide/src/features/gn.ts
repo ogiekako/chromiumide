@@ -2,13 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../shared/app/common/common_util';
+import {getDriver} from '../../shared/app/common/driver_repository';
 import * as logs from '../../shared/app/common/logs';
 import * as bgTaskStatus from '../../shared/app/ui/bg_task_status';
 import {TaskStatus} from '../../shared/app/ui/bg_task_status';
+
+const driver = getDriver();
 
 // The gn executable file path in chroot.
 const GN_PATH = '/usr/bin/gn';
@@ -42,7 +44,7 @@ async function format(
   statusManager: bgTaskStatus.StatusManager,
   log: logs.LoggingBundle
 ) {
-  const realpath = await fs.promises.realpath(fsPath);
+  const realpath = await driver.fs.realpath(fsPath);
   const chroot = await commonUtil.findChroot(realpath);
   if (chroot === undefined) {
     log.channel.appendLine(
