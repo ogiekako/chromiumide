@@ -6,8 +6,8 @@ import * as fs from 'fs';
 import * as https from 'https';
 import * as os from 'os';
 import * as commonUtil from '../../../shared/app/common/common_util';
+import * as metricsEvent from '../../../shared/app/common/metrics/metrics_event';
 import {chromiumRoot} from '../../common/chromium/fs';
-import * as metricsEvent from './metrics_event';
 
 export async function isGoogler(): Promise<boolean> {
   let lsbRelease: string;

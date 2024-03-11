@@ -5,11 +5,11 @@
 import * as https from 'https';
 import * as vscode from 'vscode';
 import * as semver from 'semver';
+import * as metricsEvent from '../../../shared/app/common/metrics/metrics_event';
 import {Https} from '../../common/https';
 import {vscodeRegisterCommand} from '../../common/vscode/commands';
 import * as config from '../../services/config';
 import * as metricsConfig from './metrics_config';
-import * as metricsEvent from './metrics_event';
 import * as metricsUtils from './metrics_util';
 
 const informationMessageTitle =
