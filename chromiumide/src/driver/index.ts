@@ -4,7 +4,9 @@
 
 import * as os from 'os';
 import {ExecOptions, ExecResult} from '../../shared/app/common/exec/types';
+import {Event} from '../../shared/app/common/metrics/metrics_event';
 import {Driver} from '../../shared/driver';
+import {Metrics} from '../features/metrics/metrics';
 import {realExec} from './exec';
 import {FsImpl} from './fs';
 import {PathImpl} from './path';
@@ -21,4 +23,7 @@ export class DriverImpl implements Driver {
     args: string[],
     options: ExecOptions = {}
   ): Promise<ExecResult | Error> => realExec(name, args, options);
+  sendMetrics(event: Event): void {
+    Metrics.send(event);
+  }
 }

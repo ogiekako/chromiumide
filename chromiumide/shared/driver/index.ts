@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {ExecOptions, ExecResult} from '../app/common/exec/types';
+import {Event} from '../app/common/metrics/metrics_event';
 import {Fs} from './fs';
 import {Path} from './path';
 
@@ -18,4 +19,5 @@ export type Driver = Readonly<{
     args: string[],
     options?: ExecOptions
   ) => Promise<ExecResult | Error>;
+  sendMetrics(event: Event): void;
 }>;
