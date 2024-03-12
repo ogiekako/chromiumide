@@ -4,9 +4,9 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as commonUtil from '../../../../../shared/app/common/common_util';
 import {BoardOrHost} from '../../../../common/chromiumos/board_or_host';
 import {buildGet9999EbuildCommand} from '../../../../common/chromiumos/portage/equery';
+import {Mutex} from '../../../../common/mutex';
 import * as services from '../../../../services';
 import {CompdbError, CompdbErrorKind} from './error';
 
@@ -31,8 +31,7 @@ export class Ebuild {
     private readonly cancellation?: vscode.CancellationToken
   ) {}
 
-  static globalMutexMap: Map<string, commonUtil.Mutex<Artifact | undefined>> =
-    new Map();
+  static globalMutexMap: Map<string, Mutex<Artifact | undefined>> = new Map();
 
   private mutex() {
     const key = `${this.board.toString()}:${this.qualifiedPackageName}:${
@@ -42,7 +41,7 @@ export class Ebuild {
     if (existing) {
       return existing;
     }
-    const mutex = new commonUtil.Mutex<Artifact | undefined>();
+    const mutex = new Mutex<Artifact | undefined>();
     Ebuild.globalMutexMap.set(key, mutex);
     return mutex;
   }

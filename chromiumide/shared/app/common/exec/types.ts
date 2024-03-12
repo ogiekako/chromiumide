@@ -11,6 +11,14 @@ export interface ExecResult {
   stderr: string;
 }
 
+/*
+ * The nodejs child_process module takes NodeJS.ProcessEnv for the env parameter whose value could
+ * be string | undefined.
+ * The equivalent parameter taken by the cider connector module is a Record<string, string>. The
+ * entries with undefined value will be discarded when on the driver implementation level.
+ */
+export type ProcessEnv = Record<string, string | undefined>;
+
 export interface ExecOptions {
   /**
    * When set, outputs are logged with this function.
@@ -52,13 +60,8 @@ export interface ExecOptions {
 
   /**
    * Environment variables passed to the subprocess.
-   *
-   * The nodejs child_process module takes NodeJS.ProcessEnv for the env parameter whose value could
-   * be string | undefined.
-   * The equivalent parameter taken by the cider connector module is a Record<string, string>. The
-   * entries with undefined value will be discarded when on the driver implementation level.
    */
-  env?: Record<string, string | undefined>;
+  env?: ProcessEnv;
 }
 
 /**

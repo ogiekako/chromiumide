@@ -10,6 +10,7 @@ import * as commonUtil from '../../shared/app/common/common_util';
 import {getDriver} from '../../shared/app/common/driver_repository';
 import {AbnormalExitError} from '../../shared/app/common/exec/types';
 import * as depotTools from './depot_tools';
+import {Mutex} from './mutex';
 
 const driver = getDriver();
 
@@ -23,7 +24,7 @@ const defaultInstallDir = path.join(os.homedir(), '.cache/cros-ide/cipd');
  * get its file path.
  */
 export class CipdRepository {
-  private readonly cipdMutex = new commonUtil.Mutex();
+  private readonly cipdMutex = new Mutex();
 
   constructor(readonly installDir = defaultInstallDir) {}
 

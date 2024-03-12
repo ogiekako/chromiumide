@@ -12,6 +12,7 @@ import {
   AbnormalExitError,
   CancelledError,
 } from '../../../../shared/app/common/exec/types';
+import {Mutex} from '../../../common/mutex';
 import * as testing from '../../testing';
 
 class SimpleLogger {
@@ -314,7 +315,7 @@ async function incrementCount(filepath: string): Promise<void> {
 
 describe('Mutex', () => {
   it('runs jobs sequentically', async () => {
-    const m = new commonUtil.Mutex();
+    const m = new Mutex();
 
     const b1 = await testing.BlockingPromise.new('1');
     const b2 = await testing.BlockingPromise.new(2);
@@ -347,7 +348,7 @@ describe('Mutex', () => {
   });
 
   it('rejects if the job rejects', async () => {
-    const m = new commonUtil.Mutex();
+    const m = new Mutex();
 
     await expectAsync(
       m.runExclusive(async () => {
@@ -375,7 +376,7 @@ describe('Mutex', () => {
 
     // Updating a file works as expected if guarded by a mutex.
     await fs.promises.writeFile(file, '0', 'utf8');
-    const m = new commonUtil.Mutex<void>();
+    const m = new Mutex<void>();
     const guardedPromises: Promise<void>[] = [];
     for (let i = 0; i < n; i++) {
       guardedPromises.push(m.runExclusive(() => incrementCount(file)));

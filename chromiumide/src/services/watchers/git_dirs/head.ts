@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../shared/app/common/driver_repository';
+import {Mutex} from '../../../common/mutex';
 
 const driver = getDriver();
 
@@ -62,7 +63,7 @@ export class Watcher implements vscode.Disposable {
   }
 
   // Ensures events are fired in order.
-  private readonly mutex = new commonUtil.Mutex();
+  private readonly mutex = new Mutex();
   private async handle() {
     await this.mutex.runExclusive(async () => {
       const head = await commonUtil.exec('git', ['rev-parse', 'HEAD'], {

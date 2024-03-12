@@ -3,7 +3,11 @@
 // found in the LICENSE file.
 
 import * as os from 'os';
-import {ExecOptions, ExecResult} from '../../shared/app/common/exec/types';
+import {
+  ExecOptions,
+  ExecResult,
+  ProcessEnv,
+} from '../../shared/app/common/exec/types';
 import {Event} from '../../shared/app/common/metrics/metrics_event';
 import {Driver} from '../../shared/driver';
 import {Metrics} from '../features/metrics/metrics';
@@ -23,6 +27,9 @@ export class DriverImpl implements Driver {
     args: string[],
     options: ExecOptions = {}
   ): Promise<ExecResult | Error> => realExec(name, args, options);
+  async getUserEnv(): Promise<ProcessEnv> {
+    return process.env;
+  }
   sendMetrics(event: Event): void {
     Metrics.send(event);
   }

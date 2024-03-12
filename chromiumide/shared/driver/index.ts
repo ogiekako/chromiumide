@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {ExecOptions, ExecResult} from '../app/common/exec/types';
+import {ExecOptions, ExecResult, ProcessEnv} from '../app/common/exec/types';
 import {Event} from '../app/common/metrics/metrics_event';
 import {Fs} from './fs';
 import {Path} from './path';
@@ -19,5 +19,6 @@ export type Driver = Readonly<{
     args: string[],
     options?: ExecOptions
   ) => Promise<ExecResult | Error>;
+  getUserEnv(): Promise<ProcessEnv>;
   sendMetrics(event: Event): void;
 }>;

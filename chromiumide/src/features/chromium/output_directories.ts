@@ -6,10 +6,10 @@ import assert from 'assert';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {Mutex} from '../../../shared/app/common/common_util';
 import {getDriver} from '../../../shared/app/common/driver_repository';
 import {vscodeRegisterCommand} from '../../../shared/app/common/vscode/commands';
 import * as bgTaskStatus from '../../../shared/app/ui/bg_task_status';
+import {Mutex} from '../../common/mutex';
 import * as gnArgs from './gn_args';
 import type {Stats} from 'fs';
 

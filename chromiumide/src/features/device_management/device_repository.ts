@@ -4,8 +4,8 @@
 
 import * as vscode from 'vscode';
 import * as dateFns from 'date-fns';
-import * as commonUtil from '../../../shared/app/common/common_util';
 import * as config from '../../../shared/app/services/config';
+import {Mutex} from '../../common/mutex';
 import * as abandonedDevices from './abandoned_devices';
 import * as crosfleet from './crosfleet';
 
@@ -42,7 +42,7 @@ export interface LeasedDevice extends Device {
  */
 export class OwnedDeviceRepository implements vscode.Disposable {
   private readonly onDidChangeEmitter = new vscode.EventEmitter<void>();
-  private readonly configMutex = new commonUtil.Mutex<void>();
+  private readonly configMutex = new Mutex<void>();
 
   readonly onDidChange = this.onDidChangeEmitter.event;
 

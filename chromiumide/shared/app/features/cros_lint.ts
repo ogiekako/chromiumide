@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import * as commonUtil from '../common/common_util';
 import {getDriver} from '../common/driver_repository';
+import {ProcessEnv} from '../common/exec/types';
 import * as logs from '../common/logs';
 import * as config from '../services/config';
 import {TextEditorsWatcher} from '../services/watchers/text_editors_watcher';
@@ -62,7 +63,7 @@ interface LintConfig {
    * Returns the cwd to run the executable.
    */
   cwd?(exePath: string): string | undefined;
-  env?(exePath: string, path: string): Promise<NodeJS.ProcessEnv | undefined>;
+  env?(exePath: string, path: string): Promise<ProcessEnv | undefined>;
 
   // If true, allow empty diagnostics even when linter returned non-zero exit code.
   // Otherwise, such case is raised to an IDE error status.
@@ -235,14 +236,12 @@ async function checkForGo(): Promise<boolean> {
 /**
  * Configures environment variables to be passed to a subprocess for linting.
  *
- * Returns a NodeJS.ProcessEnv with the environment variables required for the exe to run.
+ * Returns a ProcessEnv with the environment variables required for the exe to run.
  * Returns undefined if the environment is unable to be configured or if the environment does
  * not need to be modified.
  */
-export async function goLintEnv(
-  exe: string
-): Promise<NodeJS.ProcessEnv | undefined> {
-  const env = Object.assign({}, process.env);
+export async function goLintEnv(exe: string): Promise<ProcessEnv | undefined> {
+  const env = Object.assign({}, await driver.getUserEnv());
   const goCrosLint = exe.endsWith('cros');
   if (!goCrosLint) {
     return undefined;
@@ -256,7 +255,7 @@ export async function goLintEnv(
   const goBin = driver.path.join(chroot, '/usr/bin');
   // Add goBin to the PATH so that cros lint can lint go files
   // outside the chroot.
-  let newPathVar = `${env.PATH}:${goBin}`;
+  let newPathVar = `${env['PATH']}:${goBin}`;
   // Prepend go.toolsGopath if available
   if (vscode.extensions.getExtension('golang.Go')) {
     const toolsGopathConfig = config.goExtension.toolsGopath.get();
