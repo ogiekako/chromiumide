@@ -430,7 +430,7 @@ export function parseLibchromeCheck(
     /^In File (.+) line ([0-9]+) col ([0-9]+), found .+ \(pattern: .+\), (.+)/gm;
   const diagnostics: vscode.Diagnostic[] = [];
   let match: RegExpExecArray | null;
-  while ((match = lineRE.exec(stderr)) !== null) {
+  while ((match = lineRE.exec(stdout + '\n' + stderr)) !== null) {
     const file = match[1];
     const line = Number(match[2]);
     const startCol = Number(match[3]);
