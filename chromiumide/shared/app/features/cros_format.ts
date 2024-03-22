@@ -32,40 +32,9 @@ export function activate(
     outputChannel,
   });
 
-  // File name patterns were copied from
-  // https://source.chromium.org/chromium/chromium/src/+/main:third_party/chromite/cli/cros/cros_format.py
-  // TODO(b:232466489): figure out a better way of sharing what's supported by `cros lint`
-  // TODO(b:232466489): revisit intentionally omitted file types
-  const globs = [
-    // JSON omitted intentionally: there is ongoing discussion about it.
-    '*.md',
-    '*.cfg',
-    '*.conf',
-    '*.txt',
-    '.clang-format',
-    '.gitignore',
-    '.gitmodules',
-    // GN omitted intentionally: it has its own formatter.
-    'COPYING*',
-    'LICENSE*',
-    'make.defaults',
-    'package.accept_keywords',
-    'package.force',
-    'package.keywords',
-    'package.mask',
-    'package.provided',
-    'package.unmask',
-    'package.use',
-    'package.use.mask',
-    'DIR_METADATA',
-    'OWNERS*',
-  ];
-  const documentSelector = globs.map(g => {
-    return {schema: 'file', pattern: '**/' + g};
-  });
   context.subscriptions.push(
     vscode.languages.registerDocumentFormattingEditProvider(
-      documentSelector,
+      [{scheme: 'file'}],
       new CrosFormat(statusManager, outputChannel)
     )
   );
