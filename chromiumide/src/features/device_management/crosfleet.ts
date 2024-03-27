@@ -2,12 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as dateFns from 'date-fns';
 import * as commonUtil from '../../../shared/app/common/common_util';
+import {getDriver} from '../../../shared/app/common/driver_repository';
 import {AbnormalExitError} from '../../../shared/app/common/exec/types';
 import * as shutil from '../../../shared/app/common/shutil';
 import * as cipd from '../../common/cipd';
+
+const driver = getDriver();
 
 /**
  * Represents a leased device.
@@ -44,6 +50,25 @@ export type CrosfleetDutLeaseOutput = {
   readonly servoPort: number;
   readonly servoSerial: string;
 };
+
+/**
+ * Ensures a fake cipd binary in a directory and returns the directory path.
+ * The path can be set as the PATH on running crosfleet to ensure it does not self-update.
+ */
+async function ensureFakeCipd(): Promise<string> {
+  const fakeCipdInstallDir = path.join(
+    os.homedir(),
+    '.cache/chromiumide/fake_cipd'
+  );
+
+  await fs.promises.mkdir(fakeCipdInstallDir, {recursive: true});
+  await fs.promises.writeFile(
+    path.join(fakeCipdInstallDir, 'cipd'),
+    '#!/bin/false'
+  );
+  await fs.promises.chmod(path.join(fakeCipdInstallDir, 'cipd'), 0o755);
+  return fakeCipdInstallDir;
+}
 
 /**
  * Wraps the crosfleet CLI.
@@ -85,9 +110,14 @@ export class CrosfleetRunner {
     token?: vscode.CancellationToken
   ): ReturnType<typeof commonUtil.exec> {
     const executablePath = await this.executablePath.getOrThrow();
+    const fakeCipdDirectory = await ensureFakeCipd();
+    const envPath = `${fakeCipdDirectory}:${driver.getUserEnvPath()}`;
     return await commonUtil.exec(executablePath, args, {
       logger: this.output,
       cancellationToken: token,
+      env: {
+        PATH: envPath,
+      },
     });
   }
 

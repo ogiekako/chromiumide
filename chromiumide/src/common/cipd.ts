@@ -16,6 +16,9 @@ const driver = getDriver();
 
 const defaultInstallDir = path.join(os.homedir(), '.cache/cros-ide/cipd');
 
+export const PINNED_CROSFLEET_VERSION =
+  'oPqW0LBfLgtbrMgoELmwMiUGJcTzykwnPupTLDJBDD0C';
+
 /**
  * Interacts with CIPD CLI client (http://go/luci-cipd).
  *
@@ -92,7 +95,7 @@ export class CipdRepository {
   async ensureCrosfleet(output: vscode.OutputChannel): Promise<string> {
     await this.ensurePackage(
       'chromiumos/infra/crosfleet/${platform}',
-      'prod',
+      PINNED_CROSFLEET_VERSION,
       output
     );
     return path.join(this.installDir, 'crosfleet');
