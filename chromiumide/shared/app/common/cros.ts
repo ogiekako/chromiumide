@@ -7,6 +7,10 @@ import {getDriver} from '../common/driver_repository';
 export const driver = getDriver();
 export const CROS_PATH = 'chromite/bin/cros';
 
+export function crosExeFromCrosRoot(crosRoot: string): string {
+  return driver.path.join(crosRoot, CROS_PATH);
+}
+
 export async function crosExeFor(path: string): Promise<string | undefined> {
   const source = await driver.cros.findSourceDir(path);
   if (source === undefined) return undefined;

@@ -6,4 +6,5 @@ export type Fs = Readonly<{
   exists(path: string): Promise<boolean>;
   isDirectory(path: string): Promise<boolean | Error>;
   realpath(path: string, options?: {encoding: 'utf8'}): Promise<string>;
+  readFile(path: string): Promise<string>;
 }>;

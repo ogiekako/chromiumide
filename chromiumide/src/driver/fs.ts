@@ -19,4 +19,7 @@ export class FsImpl implements Fs {
   async realpath(path: string, options?: {encoding: 'utf8'}): Promise<string> {
     return fs.promises.realpath(path, options);
   }
+  async readFile(path: string): Promise<string> {
+    return fs.promises.readFile(path, 'utf-8');
+  }
 }
