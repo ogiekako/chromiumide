@@ -39,6 +39,9 @@ RUN git config --global user.name "ChromeOS Internal CQ Automation"
 # Make a deep copy of the source we need resolving all the symlinks.
 COPY .dockercopy/ide /home/chrome-bot-docker/ro/infra/ide
 
+RUN sudo chown -R chrome-bot-docker:chrome-bot-docker \
+    /home/chrome-bot-docker/ro/infra/ide
+
 # It wants a cros ide config value from chromite?
 RUN mkdir -p /home/chrome-bot-docker/.config/chromite
 RUN echo "{\"userid\":\"23ef71f3-294e-43bc-b06b-711970be5ec4\"" \
