@@ -65,11 +65,6 @@
         "title": "Set as Default Board"
       },
       {
-        "command": "chromiumide.deviceManagement.deployPackage",
-        "category": "CrOS",
-        "title": "Deploy Package to Device"
-      },
-      {
         "command": "chromiumide.chrome.build",
         "category": "CrOS",
         "title": "Build + Deploy Ash + Lacros to DUT",
