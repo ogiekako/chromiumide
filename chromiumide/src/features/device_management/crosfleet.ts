@@ -111,7 +111,7 @@ export class CrosfleetRunner {
   ): ReturnType<typeof commonUtil.exec> {
     const executablePath = await this.executablePath.getOrThrow();
     const fakeCipdDirectory = await ensureFakeCipd();
-    const envPath = `${fakeCipdDirectory}:${driver.getUserEnvPath()}`;
+    const envPath = `${fakeCipdDirectory}:${await driver.getUserEnvPath()}`;
     return await commonUtil.exec(executablePath, args, {
       logger: this.output,
       cancellationToken: token,
