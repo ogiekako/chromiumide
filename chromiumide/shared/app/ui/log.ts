@@ -4,9 +4,7 @@
 
 import * as vscode from 'vscode';
 
-const loggerInstance = vscode.window.createOutputChannel(
-  'ChromiumIDE: UI Actions'
-);
+let loggerInstance: vscode.OutputChannel | undefined = undefined;
 
 /**
  * Return the logger that should be used by actions done in UI. For example,
@@ -16,6 +14,14 @@ const loggerInstance = vscode.window.createOutputChannel(
  * See cros lint and C++ code completion for examples.
  */
 export function getUiLogger(): vscode.OutputChannel {
+  // The vscode spy for Cider extension tests are available only in each it().
+  // Create the instance lazily to avoid running the line out of the scope which
+  // cause test suite failure if the instance is created after the tests ended.
+  if (!loggerInstance) {
+    loggerInstance = vscode.window.createOutputChannel(
+      'ChromiumIDE: UI Actions'
+    );
+  }
   return loggerInstance;
 }
 
