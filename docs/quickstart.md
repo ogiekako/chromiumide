@@ -21,30 +21,9 @@ In this document, we assume ChromiumOS source code is in `~/chromiumos`.
 ## 1. Install Visual Studio Code
 
 First, you need to install Visual Studio Code (VSCode) on your client machine.
+Follow the instructions at [go/vscode/install].
 
-### gLinux
-
-Check if it's already installed by running `code` in terminal or look for it in
-the application menu, otherwise:
-
-```shell
-(outside) $ (cd &&
-    sudo glinux-add-repo typescript stable &&
-    sudo apt update &&
-    sudo apt install code)
-```
-
-Learn more at [go/vscode/install#glinux]
-
-[go/vscode/install#glinux]: http://go/vscode/install#glinux
-
-### gMac
-
-Install [VSCode from the Software Center] or
-[go/mule](`sudo mule install visual-studio-code`).
-
-[vscode from the software center]: http://go/softwarecenter/list//appid%3AMAC_OS-visual-studio-code/MAC_OS
-[go/mule]: http://go/mule
+[go/vscode/install]: http://go/vscode/install
 
 ### ChromeOS
 
