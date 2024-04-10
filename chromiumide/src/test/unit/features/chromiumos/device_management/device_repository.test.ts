@@ -86,7 +86,6 @@ describe('Leased device repository', () => {
   const {fakeExec} = testing.installFakeExec();
   const cipdRepository = fakes.installFakeCipd(fakeExec);
   const fakeCrosfleet = fakes.installFakeCrosfleet(fakeExec, cipdRepository);
-  fakes.installFakeDepotTools(fakeExec);
 
   const state = testing.cleanState(() => {
     const abandonedDuts = new abandonedDevices.AbandonedDevices(
@@ -287,7 +286,6 @@ describe('Device repository', () => {
   const {fakeExec} = testing.installFakeExec();
   const cipdRepository = fakes.installFakeCipd(fakeExec);
   const fakeCrosfleet = fakes.installFakeCrosfleet(fakeExec, cipdRepository);
-  fakes.installFakeDepotTools(fakeExec);
 
   const state = testing.cleanState(() => {
     const deviceRepository = new repository.DeviceRepository(

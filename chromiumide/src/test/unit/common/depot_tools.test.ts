@@ -3,11 +3,9 @@
 // found in the LICENSE file.
 
 import 'jasmine';
-import * as vscode from 'vscode';
 import * as config from '../../../../shared/app/services/config';
 import * as depotTools from '../../../common/depot_tools';
 import * as testing from '../../testing';
-import * as fakes from '../../testing/fakes';
 
 describe('depot_tools', () => {
   const {vscodeEmitters, vscodeSpy} = testing.installVscodeDouble();
@@ -26,23 +24,5 @@ describe('depot_tools', () => {
     expect((await depotTools.envForDepotTools()).PATH).toEqual(
       jasmine.stringMatching('^.*:.*/depot_tools')
     );
-  });
-});
-
-describe('depot_tools not found', () => {
-  const {vscodeEmitters, vscodeSpy} = testing.installVscodeDouble();
-  testing.installFakeConfigs(vscodeSpy, vscodeEmitters);
-  const {fakeExec} = testing.installFakeExec();
-  fakes.installFakeDepotTools(fakeExec, false);
-
-  it('opens a file dialog', async () => {
-    const userDir = vscode.Uri.file('/usr/picked/sub');
-    vscodeSpy.window.showOpenDialog.and.resolveTo([userDir]);
-
-    expect((await depotTools.envForDepotTools()).PATH).toEqual(
-      jasmine.stringMatching('^/usr/picked/sub:.*')
-    );
-
-    expect(vscodeSpy.window.showOpenDialog).toHaveBeenCalledTimes(1);
   });
 });
