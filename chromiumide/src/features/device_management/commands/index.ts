@@ -183,38 +183,38 @@ function registerChromiumosCommands(
             `${category}/${name}`,
             board
           )
+      ),
+      vscodeRegisterCommand(
+        'chromiumide.deviceManagement.checkDeviceImageCompatibilityOrSuggest',
+        async (item: provider.DeviceItem) => {
+          const outcome = await checkDeviceImageCompatibilityOrSuggest(
+            context,
+            chrootService,
+            item?.hostname
+          );
+          if (outcome instanceof Error) {
+            driver.sendMetrics({
+              category: 'error',
+              group: 'device',
+              name: 'device_management_check_or_suggest_image_error',
+              description: 'check image compatibility command failed',
+              outcome: 'error flashing image',
+            });
+          } else {
+            driver.sendMetrics({
+              category: 'interactive',
+              group: 'device',
+              name: 'device_management_check_or_suggest_image',
+              description: 'check image compatibility command completed',
+              outcome: outcome,
+            });
+          }
+        }
       )
     );
 
     if (chrootService) {
       subscriptions.push(
-        vscodeRegisterCommand(
-          'chromiumide.deviceManagement.checkDeviceImageCompatibilityOrSuggest',
-          async (item: provider.DeviceItem) => {
-            const outcome = await checkDeviceImageCompatibilityOrSuggest(
-              context,
-              chrootService,
-              item?.hostname
-            );
-            if (outcome instanceof Error) {
-              driver.sendMetrics({
-                category: 'error',
-                group: 'device',
-                name: 'device_management_check_or_suggest_image_error',
-                description: 'check image compatibility command failed',
-                outcome: 'error flashing image',
-              });
-            } else {
-              driver.sendMetrics({
-                category: 'interactive',
-                group: 'device',
-                name: 'device_management_check_or_suggest_image',
-                description: 'check image compatibility command completed',
-                outcome: outcome,
-              });
-            }
-          }
-        ),
         vscodeRegisterCommand('chromiumide.deviceManagement.runTastTests', () =>
           runTastTests(context, chrootService)
         )

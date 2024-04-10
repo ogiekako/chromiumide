@@ -12,7 +12,11 @@ import {
 import {getUseFlagsInstalled} from '../../../../common/chromiumos/portage/equery';
 import {getCrosPrebuiltVersionsFromBinHost} from '../../../../common/chromiumos/repo_status';
 import {chromiumos} from '../../../../services';
-import {CommandContext, promptKnownHostnameIfNeeded} from '../common';
+import {
+  CommandContext,
+  promptKnownHostnameIfNeeded,
+  showMissingInternalRepoErrorMessage,
+} from '../common';
 import {flashImageToDevice, flashPrebuiltImage} from '../flash_prebuilt_image';
 import {CompatibilityChecker} from './compatibility';
 import {showSuggestedImagesInputBox} from './suggest_image';
@@ -26,6 +30,7 @@ enum PostFailedImageCheckOptions {
 }
 
 export enum CheckOutcome {
+  NOT_AVAILABLE = 'not available',
   CANCELLED = 'cancelled',
   PASSED = 'passed',
   FLASHED_FROM_SUGGESTION = 'flashed from suggested images',
@@ -66,7 +71,7 @@ export enum ResultDisplayMode {
  */
 export async function checkDeviceImageCompatibilityOrSuggest(
   context: CommandContext,
-  chrootService: chromiumos.ChrootService,
+  chrootService?: chromiumos.ChrootService,
   deviceHostname?: string,
   mode = ResultDisplayMode.MODAL_MESSAGE,
   ignoreWarningOption: string = PostFailedImageCheckOptions.DEFAULT_IGNORE_WARNING_OPTION,
@@ -75,6 +80,13 @@ export async function checkDeviceImageCompatibilityOrSuggest(
     name: 'libchrome',
   }
 ): Promise<CheckOutcome | Error> {
+  if (!chrootService) {
+    void showMissingInternalRepoErrorMessage(
+      'Checking device image compatibility'
+    );
+    return CheckOutcome.NOT_AVAILABLE;
+  }
+
   const hostname = await promptKnownHostnameIfNeeded(
     'Target Device',
     deviceHostname,
