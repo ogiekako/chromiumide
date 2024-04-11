@@ -68,9 +68,9 @@ describe('Cros format', () => {
     });
   });
 
-  it('shows error when the command fails (exit status 127)', async () => {
+  it('shows error when the command fails due to file syntax error', async () => {
     const execResult: ExecResult = {
-      exitStatus: 127,
+      exitStatus: 65,
       stderr: 'stderr',
       stdout: 'stdout',
     };
@@ -88,7 +88,7 @@ describe('Cros format', () => {
       category: 'error',
       group: 'format',
       name: 'cros_format_return_error',
-      description: 'cros format returned error',
+      description: 'cros format returned syntax error',
     });
   });
 

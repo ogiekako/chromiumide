@@ -104,41 +104,61 @@ class CrosFormat implements vscode.DocumentFormattingEditProvider {
       return undefined;
     }
 
-    if (formatterOutput.exitStatus === 0) {
+    switch (formatterOutput.exitStatus) {
       // 0 means input does not require formatting
-      this.outputChannel.appendLine('no changes needed');
-      this.statusManager.setStatus(FORMATTER, TaskStatus.OK);
-      return undefined;
-    } else if (formatterOutput.exitStatus === 1) {
-      // 1 means the file required formatting
-      this.outputChannel.appendLine('file required formatting');
-      this.statusManager.setStatus(FORMATTER, TaskStatus.OK);
-      // Depending on how formatting is called it can be interactive
-      // (selected from the command palette) or background (format on save).
-      driver.sendMetrics({
-        category: 'background',
-        group: 'format',
-        name: 'cros_format',
-        description: 'cros format',
-      });
-      const wholeFileRange = new vscode.Range(
-        document.positionAt(0),
-        document.positionAt(document.getText().length)
-      );
-      return [vscode.TextEdit.replace(wholeFileRange, formatterOutput.stdout)];
-    } else {
-      // Error status other than 1 means that an error occurred.
-      // We also handle the case when the command exits due to a signal and there is
-      // no exit status.
-      this.outputChannel.appendLine(formatterOutput.stderr);
-      this.statusManager.setStatus(FORMATTER, TaskStatus.ERROR);
-      driver.sendMetrics({
-        category: 'error',
-        group: 'format',
-        name: 'cros_format_return_error',
-        description: 'cros format returned error',
-      });
-      return undefined;
+      case 0: {
+        this.outputChannel.appendLine('no changes needed');
+        this.statusManager.setStatus(FORMATTER, TaskStatus.OK);
+        return undefined;
+      }
+      // 1 means input requires formatting
+      case 1: {
+        this.outputChannel.appendLine('file required formatting');
+        this.statusManager.setStatus(FORMATTER, TaskStatus.OK);
+        // Depending on how formatting is called it can be interactive
+        // (selected from the command palette) or background (format on save).
+        driver.sendMetrics({
+          category: 'background',
+          group: 'format',
+          name: 'cros_format',
+          description: 'cros format',
+        });
+        const wholeFileRange = new vscode.Range(
+          document.positionAt(0),
+          document.positionAt(document.getText().length)
+        );
+        return [
+          vscode.TextEdit.replace(wholeFileRange, formatterOutput.stdout),
+        ];
+      }
+      // 65 means EX_DATA: Syntax errors prevented parsing & formatting.
+      case 65: {
+        this.outputChannel.appendLine(
+          `not formatting file with syntax error: ${formatterOutput.stderr}`
+        );
+        this.statusManager.setStatus(FORMATTER, TaskStatus.ERROR);
+        driver.sendMetrics({
+          category: 'error',
+          group: 'format',
+          name: 'cros_format_return_error',
+          description: 'cros format returned syntax error',
+        });
+        return undefined;
+      }
+      // All other errors, e.g. when the command exits due to a signal and there is no exit status.
+      // cros format tool may exit with status code 66 for file not found but it should never occur
+      // for our feature since we are passing an opened document.
+      default: {
+        this.outputChannel.appendLine(formatterOutput.stderr);
+        this.statusManager.setStatus(FORMATTER, TaskStatus.ERROR);
+        driver.sendMetrics({
+          category: 'error',
+          group: 'format',
+          name: 'cros_format_return_error',
+          description: 'cros format returned error',
+        });
+        return undefined;
+      }
     }
   }
 }
