@@ -116,6 +116,7 @@ export class CrosfleetRunner {
       logger: this.output,
       cancellationToken: token,
       env: {
+        ...process.env, // for crosfleet to locate credentials via HOME
         PATH: envPath,
       },
     });
