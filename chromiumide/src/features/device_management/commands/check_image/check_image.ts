@@ -23,10 +23,10 @@ import {showSuggestedImagesInputBox} from './suggest_image';
 import {CheckerInput, CheckerConfig, CheckerOutput} from './types';
 
 enum PostFailedImageCheckOptions {
-  FLASH_SUGGESTED_IMAGE_OPTION = 'Yes, show list of suggested images.',
-  FLASH_ANY_IMAGE_OPTION = 'Yes, show flash image menu.',
-  OPEN_VERSION_THRESHOLD_OPTION = 'No, open extension config to change version skew threshold.',
-  DEFAULT_IGNORE_WARNING_OPTION = 'No, ignore warning.',
+  FLASH_SUGGESTED_IMAGE_OPTION = 'Flash image (from suggested list)',
+  FLASH_ANY_IMAGE_OPTION = 'Flash image (manual)',
+  OPEN_VERSION_THRESHOLD_OPTION = 'Edit version max skew',
+  DEFAULT_IGNORE_WARNING_OPTION = 'Ignore',
 }
 
 export enum CheckOutcome {
@@ -297,13 +297,6 @@ async function reportResultAndPromptActionOnFailedCheck(
       isCloseAffordance: false,
     });
   }
-  // Add option to open extension setting to update threshold only if the version check fails.
-  if (output.results.version.status === 'FAILED') {
-    options.push({
-      title: PostFailedImageCheckOptions.OPEN_VERSION_THRESHOLD_OPTION,
-      isCloseAffordance: false,
-    });
-  }
   // Add ignore error/failure option to the end.
   options.push({
     title: ignoreWarningOption,
@@ -352,7 +345,18 @@ async function reportResultAndPromptActionOnFailedCheck(
     );
   }
   if (option === ignoreWarningOption) {
-    return PostFailedImageCheckOptions.DEFAULT_IGNORE_WARNING_OPTION;
+    // If the user ignores the warning, maybe the version skew threshold is too strict for their
+    // development workflow.
+    // This prompt is shown as a non-modal message box regardless of the mode of the main prompt.
+    if (output.results.version.status === 'FAILED') {
+      option = await vscode.window.showInformationMessage(
+        'Edit version skew threshold to reduce false image incompatibility warning?',
+        PostFailedImageCheckOptions.OPEN_VERSION_THRESHOLD_OPTION,
+        PostFailedImageCheckOptions.DEFAULT_IGNORE_WARNING_OPTION
+      );
+    } else {
+      return PostFailedImageCheckOptions.DEFAULT_IGNORE_WARNING_OPTION;
+    }
   }
   return option as PostFailedImageCheckOptions;
 }
