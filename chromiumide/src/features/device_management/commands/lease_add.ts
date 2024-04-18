@@ -85,6 +85,7 @@ export async function addLease(
 
   // Show the output window to make the progress visible.
   context.output.show();
+  let hostname: string | undefined;
 
   try {
     // Show a progress notification as this is a long operation.
@@ -96,28 +97,11 @@ export async function addLease(
       },
       async (_progress, token) => {
         try {
-          const hostname = await context.crosfleetRunner.requestLeaseOrThrow({
+          hostname = await context.crosfleetRunner.requestLeaseOrThrow({
             token: token,
             durationInMinutes: Number(durationStr),
             [filter.key]: filterValue,
           });
-
-          if (chrootService && hostname) {
-            const checkOutcome = await checkDeviceImageCompatibilityOrSuggest(
-              context,
-              chrootService,
-              hostname,
-              ResultDisplayMode.MESSAGE
-            );
-            // Report on outcome to understand usefulness of the feature.
-            driver.sendMetrics({
-              category: 'interactive',
-              group: 'device',
-              name: 'device_management_lease_device_image_check',
-              description: 'image check on leasing device',
-              outcome: checkOutcome instanceof Error ? 'error' : checkOutcome,
-            });
-          }
         } catch (err) {
           if (token.isCancellationRequested) {
             return true;
@@ -135,6 +119,23 @@ export async function addLease(
     }
   } catch (e: unknown) {
     void vscode.window.showErrorMessage(`Failed to lease a device: ${e}`);
+  }
+
+  if (chrootService && hostname) {
+    const checkOutcome = await checkDeviceImageCompatibilityOrSuggest(
+      context,
+      chrootService,
+      hostname,
+      ResultDisplayMode.MESSAGE
+    );
+    // Report on outcome to understand usefulness of the feature.
+    driver.sendMetrics({
+      category: 'interactive',
+      group: 'device',
+      name: 'device_management_lease_device_image_check',
+      description: 'image check on leasing device',
+      outcome: checkOutcome instanceof Error ? 'error' : checkOutcome,
+    });
   }
 
   // Show an informational message if the user has not set up lab access.
