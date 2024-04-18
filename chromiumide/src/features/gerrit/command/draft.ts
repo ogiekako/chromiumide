@@ -18,6 +18,7 @@ export async function reply(
   const {
     repoId,
     changeId,
+    firstComment,
     lastComment: {commentId},
     changeNumber,
     revisionNumber,
@@ -55,6 +56,8 @@ export async function reply(
       {
         in_reply_to: commentId,
         path: filePath,
+        line: firstComment.commentInfo.line,
+        range: firstComment.commentInfo.range,
         message,
         unresolved,
       },

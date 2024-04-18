@@ -116,6 +116,8 @@ export type CommentInput = {
   id?: string;
   in_reply_to?: string;
   path: string;
+  line?: number;
+  range?: CommentRange;
   message: string;
   unresolved?: boolean;
 };
