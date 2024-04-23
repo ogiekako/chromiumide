@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 import {getDriver} from '../../../../shared/app/common/driver_repository';
 import {vscodeRegisterCommand} from '../../../../shared/app/common/vscode/commands';
-import {underDevelopment} from '../../../../shared/app/services/config';
+import * as config from '../../../../shared/app/services/config';
 import * as services from '../../../services';
 import {Breadcrumbs} from '../../chromiumos/boards_and_packages/item';
 import * as abandonedDevices from '../abandoned_devices';
@@ -223,7 +223,7 @@ function registerChromiumosCommands(
           runTastTests(context, chrootService)
         )
       );
-      if (underDevelopment.tastDebugging.get()) {
+      if (config.underDevelopment.tastDebugging.get()) {
         subscriptions.push(
           vscodeRegisterCommand(
             'chromiumide.deviceManagement.debugTastTests',
@@ -240,7 +240,7 @@ function registerChromiumosCommands(
     chromiumosServices.onDidUpdate(event => {
       updateChromiumosCommands(event?.chrootService);
 
-      if (event?.chrootService) {
+      if (event?.chrootService && config.seamlessDeployment.autoCheck.get()) {
         void checkImageOfDefaultDevice(context, event.chrootService);
       }
     }),

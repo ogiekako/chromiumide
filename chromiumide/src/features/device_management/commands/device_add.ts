@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {getDriver} from '../../../../shared/app/common/driver_repository';
+import * as config from '../../../../shared/app/services/config';
 import {chromiumos} from '../../../services';
 import {checkDeviceImageCompatibilityOrSuggest} from './check_image';
 import {ResultDisplayMode} from './check_image/check_image';
@@ -30,7 +31,7 @@ export async function addDevice(
   }
   await context.deviceRepository.owned.addDevice(hostname);
 
-  if (chrootService) {
+  if (chrootService && config.seamlessDeployment.autoCheck.get()) {
     const checkOutcome = await checkDeviceImageCompatibilityOrSuggest(
       context,
       chrootService,

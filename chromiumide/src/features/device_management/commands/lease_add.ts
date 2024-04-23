@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import {getDriver} from '../../../../shared/app/common/driver_repository';
+import * as config from '../../../../shared/app/services/config';
 import {chromiumos} from '../../../services';
 import * as crosfleet from '../crosfleet';
 import * as sshConfig from '../ssh_config';
@@ -121,7 +122,7 @@ export async function addLease(
     void vscode.window.showErrorMessage(`Failed to lease a device: ${e}`);
   }
 
-  if (chrootService && hostname) {
+  if (chrootService && hostname && config.seamlessDeployment.autoCheck.get()) {
     const checkOutcome = await checkDeviceImageCompatibilityOrSuggest(
       context,
       chrootService,

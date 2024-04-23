@@ -183,6 +183,9 @@ export const seamlessDeployment = {
   imageVersionMaxSkew: new ConfigValue<number>(
     'seamlessDeployment.imageVersionMaxSkew'
   ),
+  // Enable seamless deployment feature to run automatic image checks on new owned/leased device
+  // added and on the default device when extension is activated.
+  autoCheck: new ConfigValue<boolean>('seamlessDeployment.autoCheck'),
 };
 
 export const deviceManagement = {

@@ -1024,6 +1024,11 @@
           "description": "The maximum difference in CrOS major version for device and local image above which warning would be shown.",
           "default": 7
         },
+        "chromiumide.seamlessDeployment.autoCheck": {
+          "type": "boolean",
+          "description": "Enable seamless deployment feature to run automatic image checks on new owned/leased device added and on the default device when extension is activated.",
+          "default": false
+        },
         "chromiumide.dirMetadata.links": {
           "type": "boolean",
           "description": "Make references to components in DIR_METADATA files clickable.",
