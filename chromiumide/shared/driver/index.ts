@@ -8,7 +8,13 @@ import {Fs} from './fs';
 import {Metrics} from './metrics';
 import {Path} from './path';
 
+export enum Platform {
+  VSCODE,
+  CIDER,
+}
+
 export type Driver = Readonly<{
+  platform(): Platform;
   /**
    * Returns the username of the current user.
    */
