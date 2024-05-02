@@ -47,6 +47,15 @@ const GLOBAL_BOARD_TO_PACKAGE_CACHE = new LruCache<string, Package[]>(
   CACHE_CAPACITY
 );
 
+/**
+ * Deployes a package to a device.
+ *
+ * @param chrootService If not given, shows an error message to open a chromiumos workspace.
+ * @param selectedHostname If not given, shows a prompt to select a device.
+ * @param selectedPackage If not given, shows a prompt to select a package.
+ * @param selectedPackageBoard If given, compares the board with the selected device's board and
+ * warns if those are different.
+ */
 export async function deployToDevice(
   context: CommandContext,
   chrootService?: services.chromiumos.ChrootService,
@@ -66,6 +75,7 @@ export async function deployToDevice(
   );
   if (!hostname) return;
 
+  // Reads the board name of the device and returns in case of a failure.
   const attributes = await context.deviceClient.getDeviceAttributes(hostname);
   const board =
     attributes instanceof Error
@@ -213,6 +223,13 @@ export async function deployToDevice(
   }
 }
 
+/**
+ * Prompts the packages available on the given board. This is exported only for testing purposes.
+ *
+ * @param boardToPackages Cache to skip expensive computation from the second time.
+ * @param loadPackagesOrThrow A callback for actually listing the packages on the board.
+ * @param onDidChangePickerItemsForTesting An event emitter that fires when quick pick items change.
+ */
 export async function promptTargetPackageWithCache(
   board: string,
   boardToPackages: LruCache<string, Package[]>,
