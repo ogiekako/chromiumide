@@ -14,6 +14,7 @@ import {
 } from '../shared/app/common/board_or_host';
 import * as commonUtil from '../shared/app/common/common_util';
 import {Chroot} from '../shared/app/common/common_util';
+import {WrapFs} from '../shared/app/common/wrap_fs';
 import * as config from '../shared/app/services/config';
 import * as cros from './common/cros';
 
@@ -24,7 +25,7 @@ import * as cros from './common/cros';
  *   available board.
  */
 export async function getOrSelectTargetBoard(
-  chroot: cros.WrapFs<Chroot>
+  chroot: WrapFs<Chroot>
 ): Promise<BoardOrHost | null | NoBoardError> {
   const board = config.board.get();
   if (board) {
@@ -50,14 +51,14 @@ export class NoBoardError extends Error {
  * used is proposed to the user, before showing the board picker.
  */
 export async function selectAndUpdateTargetBoard(
-  chroot: cros.WrapFs<Chroot>,
+  chroot: WrapFs<Chroot>,
   options: {
     suggestMostRecent: boolean;
   }
 ): Promise<BoardOrHost | null | NoBoardError> {
   const boards = await cros.getSetupBoardsRecentFirst(
     chroot,
-    new cros.WrapFs(commonUtil.crosOutDir(commonUtil.sourceDir(chroot.root)))
+    new WrapFs(commonUtil.crosOutDir(commonUtil.sourceDir(chroot.root)))
   );
   const board = await selectBoard(boards, options.suggestMostRecent);
 

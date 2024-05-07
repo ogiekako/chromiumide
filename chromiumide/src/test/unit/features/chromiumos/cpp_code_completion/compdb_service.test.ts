@@ -7,7 +7,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import {Board} from '../../../../../../shared/app/common/board_or_host/board';
 import * as commonUtil from '../../../../../../shared/app/common/common_util';
-import * as cros from '../../../../../common/cros';
+import {WrapFs} from '../../../../../../shared/app/common/wrap_fs';
 import {CompdbServiceImpl} from '../../../../../features/chromiumos/cpp_code_completion/compdb_service';
 import * as testing from '../../../../testing';
 import * as fakes from '../../../../testing/fakes';
@@ -69,9 +69,9 @@ describe('Compdb service', () => {
     });
 
     const compdbService = new CompdbServiceImpl(state.output, {
-      chroot: new cros.WrapFs(state.chroot),
-      source: new cros.WrapFs(state.source),
-      out: new cros.WrapFs(state.out),
+      chroot: new WrapFs(state.chroot),
+      source: new WrapFs(state.source),
+      out: new WrapFs(state.out),
     });
     await compdbService.generate(Board.newBoard('amd64-generic'), {
       sourceDir: 'src/platform2/codelab',
@@ -135,9 +135,9 @@ describe('Compdb service', () => {
     });
 
     const compdbService = new CompdbServiceImpl(state.output, {
-      chroot: new cros.WrapFs(state.chroot),
-      source: new cros.WrapFs(state.source),
-      out: new cros.WrapFs(state.out),
+      chroot: new WrapFs(state.chroot),
+      source: new WrapFs(state.source),
+      out: new WrapFs(state.out),
     });
     await compdbService.generate(Board.newBoard('amd64-generic'), {
       sourceDir: 'src/platform2/codelab',

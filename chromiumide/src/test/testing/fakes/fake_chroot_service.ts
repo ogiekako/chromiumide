@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as commonUtil from '../../../../shared/app/common/common_util';
-import {WrapFs} from '../../../common/cros';
+import {WrapFs} from '../../../../shared/app/common/wrap_fs';
 import {ChrootExecOptions, CrosFs} from '../../../services/chromiumos/chroot';
 
 /**

@@ -4,40 +4,9 @@
 
 import {Chroot, CrosOut} from '../../shared/app/common/common_util';
 import {getDriver} from '../../shared/app/common/driver_repository';
+import {WrapFs} from '../../shared/app/common/wrap_fs';
 
-const driver = getDriver();
-
-// Wraps functions in fs or fs.promises, adding prefix to given paths.
-export class WrapFs<T extends string> {
-  constructor(readonly root: T) {}
-
-  realpath(p: string): string {
-    if (p.startsWith(this.root)) {
-      return p;
-    }
-    return driver.path.join(this.root, p);
-  }
-
-  aTime(p: string): Promise<number> {
-    return driver.fs.aTime(this.realpath(p));
-  }
-
-  mTime(p: string): Promise<number> {
-    return driver.fs.mTime(this.realpath(p));
-  }
-
-  exists(p: string): Promise<boolean> {
-    return driver.fs.exists(this.realpath(p));
-  }
-
-  async readdir(p: string): Promise<string[]> {
-    return driver.fs.readdir(this.realpath(p));
-  }
-
-  async rm(p: string, opts?: {force?: boolean}): Promise<void> {
-    return driver.fs.rm(this.realpath(p), opts);
-  }
-}
+export const driver = getDriver();
 
 /**
  * @returns Boards that have been set up, ordered by access time (newest to
