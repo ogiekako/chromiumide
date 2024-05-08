@@ -18,19 +18,19 @@ import {WrapFs} from '../shared/app/common/wrap_fs';
 import * as config from '../shared/app/services/config';
 
 /**
- * Get the target board, or ask the user to select one.
+ * Get the default board, or ask the user to select one.
  *
- * @returns The targe board name. null if the user ignores popup. NoBoardError if there is no
+ * @returns The default board name. null if the user ignores popup. NoBoardError if there is no
  *   available board.
  */
-export async function getOrSelectTargetBoard(
+export async function getOrSelectDefaultBoard(
   chroot: WrapFs
 ): Promise<BoardOrHost | null | NoBoardError> {
   const board = config.board.get();
   if (board) {
     return parseBoardOrHost(board);
   }
-  return await selectAndUpdateTargetBoard(chroot, {suggestMostRecent: true});
+  return await selectAndUpdateDefaultBoard(chroot, {suggestMostRecent: true});
 }
 
 export class NoBoardError extends Error {
@@ -49,7 +49,7 @@ export class NoBoardError extends Error {
  * @params options If options.suggestMostRecent is true, the board most recently
  * used is proposed to the user, before showing the board picker.
  */
-export async function selectAndUpdateTargetBoard(
+export async function selectAndUpdateDefaultBoard(
   chroot: WrapFs,
   options: {
     suggestMostRecent: boolean;
@@ -82,7 +82,7 @@ async function selectBoard(
     const mostRecent = boards[0];
     const selection = await commonUtil.withTimeout(
       vscode.window.showWarningMessage(
-        `Target board is not set. Do you want to use ${mostRecent}?`,
+        `Default board is not set. Do you want to use ${mostRecent}?`,
         {
           title: 'Yes',
         },
@@ -106,7 +106,7 @@ async function selectBoard(
   }
 
   const choice = await vscode.window.showQuickPick(boards, {
-    title: 'Target board',
+    title: 'Default board',
   });
 
   return typeof choice === 'string' ? parseBoardOrHost(choice) : null;

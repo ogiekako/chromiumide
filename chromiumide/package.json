@@ -241,7 +241,7 @@
       {
         "command": "chromiumide.selectBoard",
         "category": "CrOS",
-        "title": "Select target board"
+        "title": "Select default board"
       },
       {
         "command": "chromiumide.fileIdeBug",

@@ -52,7 +52,7 @@ export class RunProfile implements vscode.Disposable {
     request: vscode.TestRunRequest,
     cancellation: vscode.CancellationToken
   ) {
-    const board = await ideUtil.getOrSelectTargetBoard(
+    const board = await ideUtil.getOrSelectDefaultBoard(
       this.cfg.chrootService.chroot
     );
     if (board === null || board instanceof ideUtil.NoBoardError) {

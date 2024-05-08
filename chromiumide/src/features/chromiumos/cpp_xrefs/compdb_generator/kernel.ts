@@ -13,7 +13,7 @@ import {
   ErrorDetails,
   ShouldGenerateResult,
 } from '../../../../common/cpp_xrefs/types';
-import {NoBoardError, getOrSelectTargetBoard} from '../../../../ide_util';
+import {NoBoardError, getOrSelectDefaultBoard} from '../../../../ide_util';
 import {ChrootService} from '../../../../services/chromiumos';
 
 const driver = getDriver();
@@ -108,7 +108,7 @@ export class Kernel implements CompdbGenerator {
     token: vscode.CancellationToken
   ): Promise<undefined | ErrorDetails> {
     const chroot = this.chrootService.chroot;
-    const board = await getOrSelectTargetBoard(chroot);
+    const board = await getOrSelectDefaultBoard(chroot);
 
     if (board instanceof NoBoardError) {
       return new ErrorDetails('no board', board.message);

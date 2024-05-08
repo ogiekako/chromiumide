@@ -13,7 +13,7 @@ import {
   ErrorDetails,
   ShouldGenerateResult,
 } from '../../../../common/cpp_xrefs/types';
-import {getOrSelectTargetBoard, NoBoardError} from '../../../../ide_util';
+import {getOrSelectDefaultBoard, NoBoardError} from '../../../../ide_util';
 import * as services from '../../../../services';
 import {Packages} from '../../../../services/chromiumos';
 import {
@@ -111,7 +111,7 @@ export class Platform2 implements CompdbGenerator {
     _token: vscode.CancellationToken
   ): Promise<void> {
     const chroot = this.chrootService.chroot;
-    const board = await getOrSelectTargetBoard(chroot);
+    const board = await getOrSelectDefaultBoard(chroot);
     if (board instanceof NoBoardError) {
       throw new ErrorDetails('no board', board.message);
     }

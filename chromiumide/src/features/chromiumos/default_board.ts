@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 /**
- * Manages the target board config.
+ * Manages the default board config.
  */
 
 import * as vscode from 'vscode';
@@ -34,7 +34,7 @@ export function activate(
 
   context.subscriptions.push(
     vscodeRegisterCommand('chromiumide.selectBoard', async () => {
-      const board = await ideUtil.selectAndUpdateTargetBoard(
+      const board = await ideUtil.selectAndUpdateDefaultBoard(
         chrootService.chroot,
         {
           suggestMostRecent: false,
@@ -53,7 +53,7 @@ export function activate(
           category: 'interactive',
           group: 'misc',
           name: 'select_target_board',
-          description: 'select target board',
+          description: 'select default board',
           board: board.toString(),
         });
       }

@@ -13,11 +13,11 @@ import * as boilerplate from '../boilerplate';
 import {BoardsAndPackages} from './boards_and_packages';
 import {Coverage} from './coverage';
 import {ChromiumosCppXrefs} from './cpp_xrefs';
+import * as defaultBoard from './default_board';
 import * as ebuild from './ebuild';
 import {Platform2Gtest} from './platform2_gtest';
 import * as platformEc from './platform_ec';
 import * as suggestAutosetgov from './suggest_autosetgov';
-import * as targetBoard from './target_board';
 import {Tast} from './tast';
 import * as tricium from './tricium';
 
@@ -131,8 +131,8 @@ export class Chromiumos implements vscode.Disposable {
         );
       }
 
-      this.featureName = 'targetBoard';
-      targetBoard.activate(ephemeralContext, chrootService);
+      this.featureName = 'defaultBoard';
+      defaultBoard.activate(ephemeralContext, chrootService);
 
       if (config.underDevelopment.platform2GtestDebugging.get()) {
         this.subscriptions.push(new Platform2Gtest(this.root, chrootService));

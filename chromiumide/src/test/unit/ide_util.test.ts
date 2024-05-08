@@ -85,7 +85,7 @@ describe('IDE utilities', () => {
   });
 });
 
-describe('getOrSelectTargetBoard', () => {
+describe('getOrSelectDefaultBoard', () => {
   const tempDir = testing.tempDir();
 
   const {vscodeSpy, vscodeEmitters} = installVscodeDouble();
@@ -95,7 +95,7 @@ describe('getOrSelectTargetBoard', () => {
     await config.board.update('amd64-generic');
     const chroot = await testing.buildFakeChroot(tempDir.path);
 
-    expect(await ideUtil.getOrSelectTargetBoard(new WrapFs(chroot))).toEqual(
+    expect(await ideUtil.getOrSelectDefaultBoard(new WrapFs(chroot))).toEqual(
       Board.newBoard('amd64-generic')
     );
   });
@@ -103,7 +103,7 @@ describe('getOrSelectTargetBoard', () => {
   it('returns error if no board has been setup', async () => {
     const chroot = await testing.buildFakeChroot(tempDir.path);
 
-    expect(await ideUtil.getOrSelectTargetBoard(new WrapFs(chroot))).toEqual(
+    expect(await ideUtil.getOrSelectDefaultBoard(new WrapFs(chroot))).toEqual(
       new ideUtil.NoBoardError()
     );
     expect(config.board.get()).toBe('');
@@ -118,13 +118,13 @@ describe('getOrSelectTargetBoard', () => {
 
     vscodeSpy.window.showWarningMessage
       .withArgs(
-        'Target board is not set. Do you want to use amd64-generic?',
+        'Default board is not set. Do you want to use amd64-generic?',
         {title: 'Yes'},
         {title: 'Customize'}
       )
       .and.returnValue({title: 'Yes'});
 
-    expect(await ideUtil.getOrSelectTargetBoard(new WrapFs(chroot))).toEqual(
+    expect(await ideUtil.getOrSelectDefaultBoard(new WrapFs(chroot))).toEqual(
       Board.newBoard('amd64-generic')
     );
     expect(config.board.get()).toBe('amd64-generic');
@@ -142,7 +142,7 @@ describe('getOrSelectTargetBoard', () => {
     vscodeSpy.window.showWarningMessage
       .withArgs(
         jasmine.stringContaining(
-          'Target board is not set. Do you want to use '
+          'Default board is not set. Do you want to use '
         ),
         {title: 'Yes'},
         {title: 'Customize'}
@@ -150,11 +150,11 @@ describe('getOrSelectTargetBoard', () => {
       .and.returnValue({title: 'Customize'});
     vscodeSpy.window.showQuickPick
       .withArgs(jasmine.arrayContaining(['amd64-generic', 'coral', 'eve']), {
-        title: 'Target board',
+        title: 'Default board',
       })
       .and.returnValue('coral');
 
-    expect(await ideUtil.getOrSelectTargetBoard(new WrapFs(chroot))).toEqual(
+    expect(await ideUtil.getOrSelectDefaultBoard(new WrapFs(chroot))).toEqual(
       Board.newBoard('coral')
     );
     expect(config.board.get()).toBe('coral');
@@ -169,13 +169,15 @@ describe('getOrSelectTargetBoard', () => {
 
     vscodeSpy.window.showWarningMessage
       .withArgs(
-        'Target board is not set. Do you want to use amd64-generic?',
+        'Default board is not set. Do you want to use amd64-generic?',
         {title: 'Yes'},
         {title: 'Customize'}
       )
       .and.returnValue(undefined);
 
-    expect(await ideUtil.getOrSelectTargetBoard(new WrapFs(chroot))).toBe(null);
+    expect(await ideUtil.getOrSelectDefaultBoard(new WrapFs(chroot))).toBe(
+      null
+    );
     expect(config.board.get()).toBe('');
   });
 });

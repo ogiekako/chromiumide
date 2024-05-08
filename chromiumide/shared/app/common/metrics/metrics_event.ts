@@ -50,7 +50,7 @@ interface EventBase {
   // Describes an operation the extension has just run.
   // You can optional add a prefix with a colon to group actions in the same feature set.
   // Examples:
-  //   "select target board"
+  //   "select default board"
   //   "device: connect to device via VNC"
   description: string;
   // Name of event to be sent to GA4.
@@ -466,7 +466,7 @@ type SpellcheckerEvent = EventBase &
       }
   );
 
-interface TargetBoardEvent extends EventBase {
+interface DefaultBoardEvent extends EventBase {
   category: 'interactive';
   group: 'misc';
   name: 'select_target_board';
@@ -519,7 +519,7 @@ export type Event =
   | OwnersEvent
   | PrebuiltUtilsEvent
   | SpellcheckerEvent
-  | TargetBoardEvent
+  | DefaultBoardEvent
   | TastEvent
   | VirtualdocumentOpenDocumentEvent;
 
