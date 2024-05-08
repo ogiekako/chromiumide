@@ -3,7 +3,10 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as ideUtil from '../../../ide_util';
+import {
+  getOrSelectDefaultBoard,
+  NoBoardError,
+} from '../../../../shared/app/features/default_board';
 import {GtestWorkspace} from '../../gtest/gtest_workspace';
 import {Config} from './config';
 import {Runner} from './runner';
@@ -52,10 +55,8 @@ export class RunProfile implements vscode.Disposable {
     request: vscode.TestRunRequest,
     cancellation: vscode.CancellationToken
   ) {
-    const board = await ideUtil.getOrSelectDefaultBoard(
-      this.cfg.chrootService.chroot
-    );
-    if (board === null || board instanceof ideUtil.NoBoardError) {
+    const board = await getOrSelectDefaultBoard(this.cfg.chrootService.chroot);
+    if (board === null || board instanceof NoBoardError) {
       // TODO(oka): Handle error.
       return;
     }

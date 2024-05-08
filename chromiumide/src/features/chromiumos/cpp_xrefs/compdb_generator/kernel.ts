@@ -9,11 +9,14 @@ import {TextDocument, CancellationToken} from 'vscode';
 import {findGitDir} from '../../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../../shared/app/common/driver_repository';
 import {
+  NoBoardError,
+  getOrSelectDefaultBoard,
+} from '../../../../../shared/app/features/default_board';
+import {
   CompdbGenerator,
   ErrorDetails,
   ShouldGenerateResult,
 } from '../../../../common/cpp_xrefs/types';
-import {NoBoardError, getOrSelectDefaultBoard} from '../../../../ide_util';
 import {ChrootService} from '../../../../services/chromiumos';
 
 const driver = getDriver();

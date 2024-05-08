@@ -10,8 +10,11 @@ import * as vscode from 'vscode';
 import {BoardOrHost} from '../../../shared/app/common/chromiumos/board_or_host';
 import {getDriver} from '../../../shared/app/common/driver_repository';
 import {vscodeRegisterCommand} from '../../../shared/app/common/vscode/commands';
+import {
+  selectAndUpdateDefaultBoard,
+  NoBoardError,
+} from '../../../shared/app/features/default_board';
 import * as config from '../../../shared/app/services/config';
-import * as ideUtil from '../../ide_util';
 import * as services from '../../services';
 
 const driver = getDriver();
@@ -34,13 +37,10 @@ export function activate(
 
   context.subscriptions.push(
     vscodeRegisterCommand('chromiumide.selectBoard', async () => {
-      const board = await ideUtil.selectAndUpdateDefaultBoard(
-        chrootService.chroot,
-        {
-          suggestMostRecent: false,
-        }
-      );
-      if (board instanceof ideUtil.NoBoardError) {
+      const board = await selectAndUpdateDefaultBoard(chrootService.chroot, {
+        suggestMostRecent: false,
+      });
+      if (board instanceof NoBoardError) {
         await vscode.window.showErrorMessage(
           `Selecting board: ${board.message}`
         );

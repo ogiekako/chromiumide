@@ -7,13 +7,16 @@ import * as vscode from 'vscode';
 import * as commonUtil from '../../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../../shared/app/common/driver_repository';
 import {assertNever} from '../../../../../shared/app/common/typecheck';
+import {
+  NoBoardError,
+  getOrSelectDefaultBoard,
+} from '../../../../../shared/app/features/default_board';
 import {getQualifiedPackageName} from '../../../../common/chromiumos/portage/ebuild';
 import {
   CompdbGenerator,
   ErrorDetails,
   ShouldGenerateResult,
 } from '../../../../common/cpp_xrefs/types';
-import {getOrSelectDefaultBoard, NoBoardError} from '../../../../ide_util';
 import * as services from '../../../../services';
 import {Packages} from '../../../../services/chromiumos';
 import {
