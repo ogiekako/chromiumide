@@ -8,27 +8,10 @@ import {getDriver} from '../../../../shared/app/common/driver_repository';
 import {vscodeRegisterCommand} from '../../../../shared/app/common/vscode/commands';
 import * as bgTaskStatus from '../../../../shared/app/ui/bg_task_status';
 import {TaskStatus} from '../../../../shared/app/ui/bg_task_status';
-import * as services from '../../../services';
 import * as compdbGenerator from './compdb_generator';
 import {CLANGD_EXTENSION, SHOW_LOG_COMMAND} from './constants';
 
 const driver = getDriver();
-
-export function activate(
-  subscriptions: vscode.Disposable[],
-  statusManager: bgTaskStatus.StatusManager,
-  chrootService: services.chromiumos.ChrootService
-): void {
-  subscriptions.push(
-    new CppCodeCompletion(
-      [
-        output => new compdbGenerator.Platform2(chrootService, output),
-        output => new compdbGenerator.PlatformEc(chrootService, output),
-      ],
-      statusManager
-    )
-  );
-}
 
 const STATUS_BAR_TASK_NAME = 'C++ xrefs generation';
 

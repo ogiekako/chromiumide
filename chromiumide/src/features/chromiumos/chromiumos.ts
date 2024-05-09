@@ -11,7 +11,7 @@ import * as services from '../../services';
 import * as boilerplate from '../boilerplate';
 import {BoardsAndPackages} from './boards_and_packages';
 import {Coverage} from './coverage';
-import * as cppCodeCompletion from './cpp_code_completion';
+import {ChromiumosCppCodeCompletion} from './cpp_code_completion';
 import * as ebuild from './ebuild';
 import {Platform2Gtest} from './platform2_gtest';
 import * as platformEc from './platform_ec';
@@ -106,10 +106,8 @@ export class Chromiumos implements vscode.Disposable {
 
     if (chrootService) {
       this.featureName = 'cppCodeCompletion';
-      cppCodeCompletion.activate(
-        this.subscriptions,
-        this.statusManager,
-        chrootService
+      ephemeralContext.subscriptions.push(
+        new ChromiumosCppCodeCompletion(this.statusManager, chrootService)
       );
 
       this.featureName = 'boardsAndPackages';
