@@ -15,10 +15,6 @@ export enum Platform {
 
 export type Driver = Readonly<{
   platform(): Platform;
-  /**
-   * Returns the username of the current user.
-   */
-  whoami(): Promise<string | Error>;
   cros: Cros;
   fs: Fs;
   path: Path;

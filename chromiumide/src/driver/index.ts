@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as os from 'os';
 import minimatch from 'minimatch';
 import {ExecOptions, ExecResult} from '../../shared/app/common/exec/types';
 import {Driver, Platform} from '../../shared/driver';
@@ -15,10 +14,6 @@ import {PathImpl} from './path';
 export class DriverImpl implements Driver {
   platform(): Platform {
     return Platform.VSCODE;
-  }
-
-  async whoami(): Promise<string | Error> {
-    return os.userInfo().username;
   }
 
   readonly cros = new CrosImpl();

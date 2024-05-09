@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import {Platform, type Driver} from '../../driver';
 import {getDriver, registerDriver} from './driver_repository';
-import type {Driver} from '../../driver';
 
 describe('registerDriver', () => {
   it('works for object', async () => {
     const driver = getDriver();
 
     const undo = registerDriver({
-      whoami: async () => 'fake',
+      platform: () => Platform.CIDER,
     } as Driver);
 
     try {
-      expect(await driver.whoami()).toEqual('fake');
+      expect(await driver.platform()).toEqual(Platform.CIDER);
     } finally {
       undo();
     }
@@ -24,14 +24,14 @@ describe('registerDriver', () => {
     const driver = getDriver();
 
     class DriverImpl {
-      async whoami() {
-        return 'fake';
+      platform() {
+        return Platform.CIDER;
       }
     }
     const undo = registerDriver(new DriverImpl() as Driver);
 
     try {
-      expect(await driver.whoami()).toEqual('fake');
+      expect(await driver.platform()).toEqual(Platform.CIDER);
     } finally {
       undo();
     }

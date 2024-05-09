@@ -409,12 +409,6 @@
         "title": "git cl format",
         "icon": "$(whitespace)",
         "category": "Chromium"
-      },
-      {
-        "command": "chromiumideShared.demo.whoami",
-        "title": "Shows the username of the current user",
-        "category": "Demo",
-        "enablement": "config.chromiumideShared.demo.enable"
       }
     ],
     "viewsContainers": {
