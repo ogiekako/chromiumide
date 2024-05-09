@@ -15,7 +15,7 @@ const driver = getDriver();
 
 const STATUS_BAR_TASK_NAME = 'C++ xrefs generation';
 
-type GeneratorFactory = (
+export type GeneratorFactory = (
   output: vscode.OutputChannel
 ) => compdbGenerator.CompdbGenerator;
 
