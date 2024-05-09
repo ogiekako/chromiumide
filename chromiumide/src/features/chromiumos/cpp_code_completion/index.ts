@@ -4,9 +4,12 @@
 
 import * as vscode from 'vscode';
 import {StatusManager} from '../../../../shared/app/ui/bg_task_status';
+import {
+  CppCodeCompletion,
+  GeneratorFactory,
+} from '../../../common/cpp_xrefs/cpp_code_completion';
 import {ChrootService} from '../../../services/chromiumos';
 import * as compdbGenerator from './compdb_generator';
-import {CppCodeCompletion, GeneratorFactory} from './cpp_code_completion';
 
 export class ChromiumosCppCodeCompletion implements vscode.Disposable {
   private readonly subscriptions: vscode.Disposable[] = [];

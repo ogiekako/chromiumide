@@ -4,12 +4,12 @@
 
 import 'jasmine';
 import * as vscode from 'vscode';
-import {ChromiumosCppCodeCompletion} from '../../../../../features/chromiumos/cpp_code_completion';
+import {CLANGD_EXTENSION} from '../../../../../common/cpp_xrefs/constants';
 import {
   ErrorDetails,
   ShouldGenerateResult,
-} from '../../../../../features/chromiumos/cpp_code_completion/compdb_generator';
-import {CLANGD_EXTENSION} from '../../../../../features/chromiumos/cpp_code_completion/constants';
+} from '../../../../../common/cpp_xrefs/types';
+import {ChromiumosCppCodeCompletion} from '../../../../../features/chromiumos/cpp_code_completion';
 import {ChrootService} from '../../../../../services/chromiumos';
 import * as testing from '../../../../testing';
 import {

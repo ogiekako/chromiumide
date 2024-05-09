@@ -1,15 +1,15 @@
-// Copyright 2022 The ChromiumOS Authors
+// Copyright 2024 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import * as commonUtil from '../../../../shared/app/common/common_util';
-import {getDriver} from '../../../../shared/app/common/driver_repository';
-import {vscodeRegisterCommand} from '../../../../shared/app/common/vscode/commands';
-import * as bgTaskStatus from '../../../../shared/app/ui/bg_task_status';
-import {TaskStatus} from '../../../../shared/app/ui/bg_task_status';
-import * as compdbGenerator from './compdb_generator';
+import * as commonUtil from '../../../shared/app/common/common_util';
+import {getDriver} from '../../../shared/app/common/driver_repository';
+import {vscodeRegisterCommand} from '../../../shared/app/common/vscode/commands';
+import * as bgTaskStatus from '../../../shared/app/ui/bg_task_status';
+import {TaskStatus} from '../../../shared/app/ui/bg_task_status';
 import {CLANGD_EXTENSION, SHOW_LOG_COMMAND} from './constants';
+import {CompdbGenerator, ErrorDetails, ShouldGenerateResult} from './types';
 
 const driver = getDriver();
 
@@ -17,7 +17,7 @@ const STATUS_BAR_TASK_NAME = 'C++ xrefs generation';
 
 export type GeneratorFactory = (
   output: vscode.OutputChannel
-) => compdbGenerator.CompdbGenerator;
+) => CompdbGenerator;
 
 export class CppCodeCompletion implements vscode.Disposable {
   readonly output = vscode.window.createOutputChannel(
@@ -62,7 +62,7 @@ export class CppCodeCompletion implements vscode.Disposable {
     }),
   ];
 
-  private readonly generators: compdbGenerator.CompdbGenerator[] = [];
+  private readonly generators: CompdbGenerator[] = [];
 
   private readonly jobManager = new commonUtil.JobManager<void>();
   // Store errors to avoid showing the same error many times.
@@ -76,7 +76,7 @@ export class CppCodeCompletion implements vscode.Disposable {
   constructor(private readonly statusManager: bgTaskStatus.StatusManager) {}
 
   /**
-   * Registers compdb generator factories. The ownership the created compdb generator is taken by
+   * Registers compdb generator factories. The ownership of the created compdb generator is taken by
    * this class and it's disposed of when the class is disposed.
    */
   register(...generatorFactories: GeneratorFactory[]): void {
@@ -99,13 +99,13 @@ export class CppCodeCompletion implements vscode.Disposable {
     for (const g of this.generators) {
       const r = await g.shouldGenerate(document);
       if (
-        r === compdbGenerator.ShouldGenerateResult.Yes ||
+        r === ShouldGenerateResult.Yes ||
         // If the operation is run by user, execute it even when an error was
         // observed before or no change is expected.
         (runByUser &&
           [
-            compdbGenerator.ShouldGenerateResult.NoHasFailed,
-            compdbGenerator.ShouldGenerateResult.NoNeedNoChange,
+            ShouldGenerateResult.NoHasFailed,
+            ShouldGenerateResult.NoNeedNoChange,
           ].includes(r))
       ) {
         generators.push(g);
@@ -155,7 +155,7 @@ export class CppCodeCompletion implements vscode.Disposable {
   }
 
   private async generate(
-    generator: compdbGenerator.CompdbGenerator,
+    generator: CompdbGenerator,
     document: vscode.TextDocument
   ) {
     // Below, we create a compilation database.
@@ -184,17 +184,16 @@ export class CppCodeCompletion implements vscode.Disposable {
       } catch (e) {
         canceller.dispose();
 
-        const rawError = e as compdbGenerator.ErrorDetails;
+        const rawError = e as ErrorDetails;
         const errorKind = `${generator.name}: ${rawError.kind}`;
         if (this.ignoredErrors.has(errorKind)) {
           return;
         }
-        const error: compdbGenerator.ErrorDetails =
-          new compdbGenerator.ErrorDetails(
-            errorKind,
-            rawError.message,
-            ...rawError.buttons
-          );
+        const error: ErrorDetails = new ErrorDetails(
+          errorKind,
+          rawError.message,
+          ...rawError.buttons
+        );
         driver.metrics.send({
           category: 'error',
           group: 'cppxrefs',
@@ -211,7 +210,7 @@ export class CppCodeCompletion implements vscode.Disposable {
     });
   }
 
-  showErrorMessage(error: compdbGenerator.ErrorDetails): void {
+  showErrorMessage(error: ErrorDetails): void {
     const SHOW_LOG = 'Show Log';
     const IGNORE = 'Ignore';
 

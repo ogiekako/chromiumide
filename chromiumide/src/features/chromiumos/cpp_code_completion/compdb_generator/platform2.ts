@@ -7,6 +7,11 @@ import * as vscode from 'vscode';
 import * as commonUtil from '../../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../../shared/app/common/driver_repository';
 import {getQualifiedPackageName} from '../../../../common/chromiumos/portage/ebuild';
+import {
+  CompdbGenerator,
+  ErrorDetails,
+  ShouldGenerateResult,
+} from '../../../../common/cpp_xrefs/types';
 import {getOrSelectTargetBoard, NoBoardError} from '../../../../ide_util';
 import * as services from '../../../../services';
 import {Packages} from '../../../../services/chromiumos';
@@ -17,7 +22,6 @@ import {
   CompdbServiceImpl,
   destination,
 } from '../compdb_service';
-import {CompdbGenerator, ErrorDetails, ShouldGenerateResult} from './types';
 
 const driver = getDriver();
 
