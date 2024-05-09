@@ -12,14 +12,12 @@ export class ChromiumosCppCodeCompletion implements vscode.Disposable {
   private readonly subscriptions: vscode.Disposable[] = [];
 
   constructor(statusManager: StatusManager, chrootService: ChrootService) {
-    this.subscriptions.push(
-      new CppCodeCompletion(
-        [
-          output => new compdbGenerator.Platform2(chrootService, output),
-          output => new compdbGenerator.PlatformEc(chrootService, output),
-        ],
-        statusManager
-      )
+    const cppCodeCompletion = new CppCodeCompletion(statusManager);
+    this.subscriptions.push(cppCodeCompletion);
+
+    cppCodeCompletion.register(
+      output => new compdbGenerator.Platform2(chrootService, output),
+      output => new compdbGenerator.PlatformEc(chrootService, output)
     );
   }
 

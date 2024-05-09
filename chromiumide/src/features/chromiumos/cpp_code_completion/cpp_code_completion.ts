@@ -73,10 +73,13 @@ export class CppCodeCompletion implements vscode.Disposable {
   // ideal, but not a problem either).
   private clangdActivated = false;
 
-  constructor(
-    generatorFactories: GeneratorFactory[],
-    private readonly statusManager: bgTaskStatus.StatusManager
-  ) {
+  constructor(private readonly statusManager: bgTaskStatus.StatusManager) {}
+
+  /**
+   * Registers compdb generator factories. The ownership the created compdb generator is taken by
+   * this class and it's disposed of when the class is disposed.
+   */
+  register(...generatorFactories: GeneratorFactory[]): void {
     for (const f of generatorFactories) {
       const generator = f(this.output);
       this.generators.push(generator);

@@ -29,10 +29,17 @@ describe('C++ code completion', () => {
     vscodeSpy.commands.registerCommand('clangd.restart', () => {});
   });
 
-  let cppCodeCompletion: undefined | CppCodeCompletion = undefined;
+  const state = testing.cleanState(async () => {
+    const statusManager = new FakeStatusManager();
+    const cppCodeCompletion = new CppCodeCompletion(statusManager);
+
+    return {
+      cppCodeCompletion,
+    };
+  });
+
   afterEach(() => {
-    cppCodeCompletion!.dispose();
-    cppCodeCompletion = undefined;
+    state.cppCodeCompletion.dispose();
   });
 
   type TestCase = {
@@ -81,21 +88,17 @@ describe('C++ code completion', () => {
     it(tc.name, async () => {
       // Set up
       let generateCalled = false;
-      cppCodeCompletion = new CppCodeCompletion(
-        [
-          () => {
-            return {
-              name: 'fake',
-              shouldGenerate: async () => tc.shouldGenerateResponse,
-              generate: async () => {
-                generateCalled = true;
-              },
-              dispose: () => {},
-            };
+
+      state.cppCodeCompletion.register(() => {
+        return {
+          name: 'fake',
+          shouldGenerate: async () => tc.shouldGenerateResponse,
+          generate: async () => {
+            generateCalled = true;
           },
-        ],
-        new FakeStatusManager()
-      );
+          dispose: () => {},
+        };
+      });
 
       const clangd = tc.hasClangd
         ? jasmine.createSpyObj<vscode.Extension<unknown>>('clangd', [
@@ -107,7 +110,7 @@ describe('C++ code completion', () => {
         .and.returnValue(clangd);
 
       const waiter = new Promise(resolve => {
-        cppCodeCompletion!.onDidMaybeGenerate(resolve);
+        state.cppCodeCompletion.onDidMaybeGenerate(resolve);
       });
 
       // Fire event
@@ -135,19 +138,8 @@ describe('C++ code completion', () => {
       }
     });
   }
-});
 
-describe('C++ code completion on failure', () => {
-  const {vscodeSpy, vscodeEmitters} = installVscodeDouble();
-  installFakeConfigs(vscodeSpy, vscodeEmitters);
-
-  let cppCodeCompletion: undefined | CppCodeCompletion = undefined;
-  afterEach(() => {
-    cppCodeCompletion!.dispose();
-    cppCodeCompletion = undefined;
-  });
-
-  it('shows error unless ignored', async () => {
+  it('shows error on failure unless ignored', async () => {
     const buttonLabel = 'the button';
     let pushButton: string | undefined = undefined; // clicked button
     let errorKind = 'foo'; // thrown error kind
@@ -159,24 +151,19 @@ describe('C++ code completion on failure', () => {
     );
     vscodeSpy.window.showErrorMessage.and.callFake(async () => pushButton);
 
-    cppCodeCompletion = new CppCodeCompletion(
-      [
-        () => {
-          return {
-            name: 'fake',
-            shouldGenerate: async () => ShouldGenerateResult.Yes,
-            generate: async () => {
-              throw new ErrorDetails(errorKind, 'error!', {
-                label: buttonLabel,
-                action: () => actionTriggeredCount++,
-              });
-            },
-            dispose: () => {},
-          };
+    state.cppCodeCompletion.register(() => {
+      return {
+        name: 'fake',
+        shouldGenerate: async () => ShouldGenerateResult.Yes,
+        generate: async () => {
+          throw new ErrorDetails(errorKind, 'error!', {
+            label: buttonLabel,
+            action: () => actionTriggeredCount++,
+          });
         },
-      ],
-      new FakeStatusManager()
-    );
+        dispose: () => {},
+      };
+    });
 
     const clangd = jasmine.createSpyObj<vscode.Extension<unknown>>('clangd', [
       'activate',
@@ -187,7 +174,7 @@ describe('C++ code completion on failure', () => {
 
     const fireEvent = async () => {
       const waiter = new Promise(resolve => {
-        cppCodeCompletion!.onDidMaybeGenerate(resolve);
+        state.cppCodeCompletion.onDidMaybeGenerate(resolve);
       });
 
       vscodeEmitters.workspace.onDidSaveTextDocument.fire(
