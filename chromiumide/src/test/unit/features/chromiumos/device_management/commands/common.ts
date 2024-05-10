@@ -183,13 +183,7 @@ export function installEmergeForUseFlagsCommandHandler(
   exitSatus?: number
 ): void {
   const cmd = board.suffixedExecutable('emerge');
-  const args = [
-    '--pretend',
-    '--verbose',
-    '--nodeps',
-    '--usepkgonly',
-    packageName,
-  ];
+  const args = ['--pretend', '--verbose', '--nodeps', '--usepkg', packageName];
   testing.fakes.installChrootCommandHandler(
     fakeExec,
     sourcePath as commonUtil.Source,

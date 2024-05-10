@@ -51,7 +51,7 @@ export async function getUseFlagsInstalled(
     '--pretend', // to not really rebuild the package
     '--verbose', // to show USE flags
     '--nodeps', // to avoid unnecessary dependency calculation
-    '--usepkgonly', // to print the USE flags from the binary package
+    '--usepkg', // to print the USE flags from the binary package with fallback, used also by `cros deploy` command
     targetPackage,
   ];
   const result = await chrootService.exec(args[0], args.slice(1), {
@@ -96,7 +96,7 @@ export async function getUseFlagsInstalled(
   // Legal characters for use flag names: https://projects.gentoo.org/pms/8/pms.html#x1-200003.1.4
   // A '-' prefix means the flag is unset:
   //   https://dev.gentoo.org/~zmedico/portage/doc/man/emerge.1.html.
-  const flagRe = /(-)?([A-Za-z0-9+_@-]+)/;
+  const flagRe = /(-)?([A-Za-z0-9+_@-]+)(\*)?/;
   for (const flag of match[1].split(' ')) {
     const fmatch = flagRe.exec(flag);
     if (!fmatch) {
@@ -104,7 +104,9 @@ export async function getUseFlagsInstalled(
         `Failed to parse USE flag "${flag}" for ${targetPackage} on ${board}: must match ${flagRe.source}`
       );
     }
-    flags.set(fmatch[2], fmatch[1] !== '-');
+    // Value of the installed flag is XOR of its new state and whether or not it is different from
+    // the installed state.
+    flags.set(fmatch[2], (fmatch[1] !== '-') !== (fmatch[3] === '*'));
   }
   return flags;
 }

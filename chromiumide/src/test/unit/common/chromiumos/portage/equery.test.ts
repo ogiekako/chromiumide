@@ -24,13 +24,7 @@ function installEmergeForUseFlagsCommandHandler(
   exitSatus?: number
 ): void {
   const cmd = board.suffixedExecutable('emerge');
-  const args = [
-    '--pretend',
-    '--verbose',
-    '--nodeps',
-    '--usepkgonly',
-    packageName,
-  ];
+  const args = ['--pretend', '--verbose', '--nodeps', '--usepkg', packageName];
   fakes.installChrootCommandHandler(
     fakeExec,
     sourcePath as commonUtil.Source,
@@ -56,7 +50,7 @@ describe('equery use flag', () => {
     const fakeStdout = `
 These are the packages that would be merged, in order:
 
-[binary   R   *] chromeos-base/libchrome-9999:0/9999::chromiumos to /build/trogdor/ USE="cros-debug msan -dbus -asan -cfi -cfi_diag" 0 KiB
+[binary   R   *] chromeos-base/libchrome-9999:0/9999::chromiumos to /build/trogdor/ USE="cros-debug msan* -dbus -asan -cfi -cfi_diag*" 0 KiB
 
 Total: 1 package (1 reinstall, 1 binary), Size of downloads: 0 KiB
 `;
@@ -78,11 +72,11 @@ Total: 1 package (1 reinstall, 1 binary), Size of downloads: 0 KiB
     expect(flags).toEqual(
       new Map<string, boolean>([
         ['cros-debug', true],
-        ['msan', true],
+        ['msan', false],
         ['dbus', false],
         ['asan', false],
         ['cfi', false],
-        ['cfi_diag', false],
+        ['cfi_diag', true],
       ])
     );
   });
@@ -95,7 +89,7 @@ Total: 1 package (1 reinstall, 1 binary), Size of downloads: 0 KiB
     const fakeStdout = `
 These are the packages that would be merged, in order:
 
-[binary   R    ] chromeos-base/libbrillo-0.0.1-r2397:0/0.0.1-r2397::chromiumos  USE="cros_host dbus udev -asan -compilation_database" 0 KiB
+[binary   R    ] chromeos-base/libbrillo-0.0.1-r2397:0/0.0.1-r2397::chromiumos  USE="cros_host dbus udev* -asan -compilation_database*" 0 KiB
 
 Total: 1 package (1 reinstall, 1 binary), Size of downloads: 0 KiB
 `;
@@ -117,9 +111,9 @@ Total: 1 package (1 reinstall, 1 binary), Size of downloads: 0 KiB
       new Map<string, boolean>([
         ['cros_host', true],
         ['dbus', true],
-        ['udev', true],
+        ['udev', false],
         ['asan', false],
-        ['compilation_database', false],
+        ['compilation_database', true],
       ])
     );
   });
