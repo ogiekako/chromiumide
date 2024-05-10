@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import {getDriver} from '../common/driver_repository';
+import {extensionName} from '../common/extension_name';
 import {vscodeRegisterCommand} from '../common/vscode/commands';
 
 const driver = getDriver();
@@ -216,13 +217,17 @@ class StatusBarHandler {
   refresh(statusManagerImpl: StatusManagerImpl): void {
     const errorTasks = statusManagerImpl.getErrorTasks();
     if (errorTasks.length) {
-      this.statusBarItem.text = `$(${getIcon(TaskStatus.ERROR)}) ChromiumIDE`;
+      this.statusBarItem.text = `$(${getIcon(
+        TaskStatus.ERROR
+      )}) ${extensionName()}`;
       this.statusBarItem.backgroundColor = new vscode.ThemeColor(
         'statusBarItem.errorBackground'
       );
       this.statusBarItem.tooltip = `Errors: ${errorTasks.sort().join(', ')}`;
     } else {
-      this.statusBarItem.text = `$(${getIcon(TaskStatus.OK)}) ChromiumIDE`;
+      this.statusBarItem.text = `$(${getIcon(
+        TaskStatus.OK
+      )}) ${extensionName()}`;
       this.statusBarItem.backgroundColor = undefined;
       this.statusBarItem.tooltip = 'No Problems';
     }

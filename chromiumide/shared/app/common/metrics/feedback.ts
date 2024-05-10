@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import {extensionName} from '../extension_name';
 import {vscodeRegisterCommand} from '../vscode/commands';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -20,6 +21,6 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   feedbackStatusBarItem.command = 'chromiumide.fileIdeBug';
   feedbackStatusBarItem.text = '$(feedback) Feedback';
-  feedbackStatusBarItem.tooltip = 'File a ChromiumIDE bug on Buganizer';
+  feedbackStatusBarItem.tooltip = `File a ${extensionName()} bug on Buganizer`;
   feedbackStatusBarItem.show();
 }

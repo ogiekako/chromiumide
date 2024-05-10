@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import {extensionName} from '../common/extension_name';
 
 let loggerInstance: vscode.OutputChannel | undefined = undefined;
 
@@ -19,7 +20,7 @@ export function getUiLogger(): vscode.OutputChannel {
   // cause test suite failure if the instance is created after the tests ended.
   if (!loggerInstance) {
     loggerInstance = vscode.window.createOutputChannel(
-      'ChromiumIDE: UI Actions'
+      `${extensionName()}: UI Actions`
     );
   }
   return loggerInstance;

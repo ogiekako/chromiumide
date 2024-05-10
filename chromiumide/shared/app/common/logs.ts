@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 import * as vscode from 'vscode';
 import {getDriver} from './driver_repository';
+import {extensionName} from './extension_name';
 import {vscodeRegisterCommand} from './vscode/commands';
 
 const driver = getDriver();
@@ -19,7 +20,7 @@ export function createLinterLoggingBundle(
 ): LoggingBundle {
   return createLoggingBundle(
     context,
-    'ChromiumIDE: Linter',
+    `${extensionName()}: Linter`,
     'chromiumide.showLintLog',
     'Show linter log',
     'Linter'

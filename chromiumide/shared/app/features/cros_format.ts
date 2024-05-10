@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import * as commonUtil from '../common/common_util';
 import {crosExeFromCrosRoot} from '../common/cros';
 import {getDriver} from '../common/driver_repository';
+import {extensionName} from '../common/extension_name';
 import {StatusManager, TaskStatus} from '../ui/bg_task_status';
 import {getUiLogger} from '../ui/log';
 
@@ -24,7 +25,7 @@ export function activate(
   statusManager: StatusManager
 ): void {
   const outputChannel = vscode.window.createOutputChannel(
-    'ChromiumIDE: Formatter'
+    `${extensionName()}: Formatter`
   );
   statusManager.setTask(FORMATTER, {
     status: TaskStatus.OK,

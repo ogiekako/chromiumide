@@ -7,6 +7,7 @@ import * as commonUtil from '../common/common_util';
 import {crosExeFor} from '../common/cros';
 import {getDriver} from '../common/driver_repository';
 import {ProcessEnv} from '../common/exec/types';
+import {extensionName} from '../common/extension_name';
 import * as logs from '../common/logs';
 import * as config from '../services/config';
 import {TextEditorsWatcher} from '../services/watchers/text_editors_watcher';
@@ -346,7 +347,9 @@ async function updateDiagnostics(
       const diagnostics = lintConfig.parse(stdout, stderr, document);
       if (res.exitStatus !== 0 && diagnostics.length === 0) {
         log.channel.append(
-          `lint command returned ${res.exitStatus}, but no diagnostics were parsed by ChromiumIDE\n`
+          `lint command returned ${
+            res.exitStatus
+          }, but no diagnostics were parsed by ${extensionName()}\n`
         );
         if (!lintConfig.ignoreEmptyDiagnostics) {
           statusManager.setTask(log.taskId, {
