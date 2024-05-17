@@ -59,6 +59,7 @@ xdescribe('Device tree data provider', () => {
     const deviceRepository = new repository.DeviceRepository(
       new crosfleet.CrosfleetRunner(
         cipdRepository,
+        new fakes.VoidOutputChannel(),
         new fakes.VoidOutputChannel()
       ),
       new abandonedDevices.AbandonedDevices(new fakes.Memento())
@@ -69,6 +70,7 @@ xdescribe('Device tree data provider', () => {
         vscode.Uri.parse('file:///path/to/extension'),
         new ChromiumosServiceModule()
       ),
+      new fakes.VoidOutputChannel(),
       new fakes.VoidOutputChannel()
     );
     const deviceTreeDataProvider = new provider.DeviceTreeDataProvider(

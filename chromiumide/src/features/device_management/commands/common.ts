@@ -19,6 +19,7 @@ import * as vnc from '../vnc_session';
 export interface CommandContext {
   readonly extensionContext: vscode.ExtensionContext;
   readonly output: vscode.OutputChannel;
+  readonly outputBackground: vscode.OutputChannel; // for background operations
   readonly deviceRepository: repository.DeviceRepository;
   readonly crosfleetRunner: crosfleet.CrosfleetRunner;
   readonly vncSessions: Map<string, vnc.VncSession>;

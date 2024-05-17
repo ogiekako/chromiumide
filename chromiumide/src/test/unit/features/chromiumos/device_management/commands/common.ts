@@ -93,6 +93,7 @@ export async function prepareCommonFakes(
     deviceRepository,
     new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
     vscode.window.createOutputChannel('void'),
+    vscode.window.createOutputChannel('void (background)'),
     new Map<string, DeviceAttributes>(
       deviceConfig ? [[hostname, deviceConfig]] : []
     )

@@ -71,6 +71,7 @@ describe('device tree view shows correct default device', () => {
     const repository = new DeviceRepository(
       new crosfleet.CrosfleetRunner(
         cipdRepository,
+        new fakes.VoidOutputChannel(),
         new fakes.VoidOutputChannel()
       ),
       new abandonedDevices.AbandonedDevices(new fakes.Memento())
@@ -79,6 +80,7 @@ describe('device tree view shows correct default device', () => {
       repository,
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
       vscode.window.createOutputChannel('void'),
+      vscode.window.createOutputChannel('void (background)'),
       new Map<string, DeviceAttributes>([
         [
           'hostname-owned',

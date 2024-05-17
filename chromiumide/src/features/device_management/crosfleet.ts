@@ -98,10 +98,11 @@ export class CrosfleetRunner {
 
   constructor(
     private readonly cipdRepository: cipd.CipdRepository,
-    private readonly output: vscode.OutputChannel
+    private readonly output: vscode.OutputChannel,
+    private readonly outputBackground: vscode.OutputChannel
   ) {
     this.executablePath = new commonUtil.CacheOnSuccess(() =>
-      this.cipdRepository.ensureCrosfleet(this.output)
+      this.cipdRepository.ensureCrosfleet(this.outputBackground)
     );
   }
 
@@ -111,16 +112,19 @@ export class CrosfleetRunner {
 
   /**
    * Executes the crosfleet CLI with given arguments.
+   *
+   * @param background True if the command is a background operation not triggered by the user.
    */
   private async exec(
     args: string[],
+    background: boolean,
     token?: vscode.CancellationToken
   ): ReturnType<typeof commonUtil.exec> {
     const executablePath = await this.executablePath.getOrThrow();
     const fakeCipdDirectory = await ensureFakeCipd();
     const envPath = `${fakeCipdDirectory}:${await driver.getUserEnvPath()}`;
     return await commonUtil.exec(executablePath, args, {
-      logger: this.output,
+      logger: background ? this.outputBackground : this.output,
       cancellationToken: token,
       env: {
         ...process.env, // for crosfleet to locate credentials via HOME
@@ -137,7 +141,7 @@ export class CrosfleetRunner {
       return false;
     }
 
-    const result = await this.exec(['whoami']);
+    const result = await this.exec(['whoami'], /* background = */ true);
     if (result instanceof AbnormalExitError) {
       return false;
     }
@@ -204,7 +208,7 @@ export class CrosfleetRunner {
     // The user may hit this path when they've just set up gcloud and clicked the login message
     // while they already logged into crosfleet. In this case we don't need to show the login
     // flow again, so just emit onDidChange to update UI.
-    if (!((await this.exec(['whoami'])) instanceof Error)) {
+    if (!((await this.exec(['whoami'], false)) instanceof Error)) {
       this.onDidChangeEmitter.fire();
       return;
     }
@@ -224,7 +228,10 @@ export class CrosfleetRunner {
    * Returns a list of leased devices.
    */
   async listLeases(): Promise<LeaseInfo[]> {
-    const result = await this.exec(['dut', 'leases', '-json']);
+    const result = await this.exec(
+      ['dut', 'leases', '-json'],
+      /* background = */ true
+    );
     if (result instanceof Error) {
       throw result;
     }
@@ -255,7 +262,11 @@ export class CrosfleetRunner {
       args.push('-host', options.hostname);
     }
 
-    const result = await this.exec(args, options.token);
+    const result = await this.exec(
+      args,
+      /* background = */ false,
+      options.token
+    );
     if (result instanceof Error) {
       throw result;
     }
@@ -277,7 +288,11 @@ export class CrosfleetRunner {
     hostname: string,
     token?: vscode.CancellationToken
   ): Promise<void> {
-    const result = await this.exec(['dut', 'abandon', hostname], token);
+    const result = await this.exec(
+      ['dut', 'abandon', hostname],
+      /* background = */ false,
+      token
+    );
     if (result instanceof Error) {
       throw result;
     }

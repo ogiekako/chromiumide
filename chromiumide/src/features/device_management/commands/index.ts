@@ -46,6 +46,7 @@ export function registerCommands(
   extensionContext: vscode.ExtensionContext,
   chromiumosServices: services.chromiumos.ChromiumosServiceModule,
   output: vscode.OutputChannel,
+  outputBackground: vscode.OutputChannel,
   deviceRepository: repository.DeviceRepository,
   crosfleetRunner: crosfleet.CrosfleetRunner,
   abandonedDevices: abandonedDevices.AbandonedDevices,
@@ -62,6 +63,7 @@ export function registerCommands(
   const context: CommandContext = {
     extensionContext,
     output,
+    outputBackground,
     deviceRepository,
     crosfleetRunner,
     vncSessions,

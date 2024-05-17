@@ -291,7 +291,8 @@ async function ensureDutHasDelve(
   const deviceClient = new DeviceClient(
     context.deviceRepository,
     context.sshIdentity,
-    context.output
+    context.output,
+    context.outputBackground
   );
   const attributes = await deviceClient.getDeviceAttributes(hostname);
   if (attributes instanceof Error) {

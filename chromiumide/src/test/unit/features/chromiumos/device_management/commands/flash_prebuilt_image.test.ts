@@ -86,6 +86,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
       ]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
       vscode.window.createOutputChannel('void'),
+      vscode.window.createOutputChannel('void (background)'),
       new Map<string, DeviceAttributes>([
         [
           hostname,
@@ -145,6 +146,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
       ]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
       vscode.window.createOutputChannel('void'),
+      vscode.window.createOutputChannel('void (background)'),
       new Map<string, DeviceAttributes>([
         [
           hostname,

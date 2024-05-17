@@ -96,6 +96,7 @@ describe('Leased device repository', () => {
     const leasedDeviceRepository = new repository.LeasedDeviceRepository(
       new crosfleet.CrosfleetRunner(
         cipdRepository,
+        new fakes.VoidOutputChannel(),
         new fakes.VoidOutputChannel()
       ),
       abandonedDuts
@@ -302,6 +303,7 @@ describe('Device repository', () => {
     const deviceRepository = new repository.DeviceRepository(
       new crosfleet.CrosfleetRunner(
         cipdRepository,
+        new fakes.VoidOutputChannel(),
         new fakes.VoidOutputChannel()
       ),
       new abandonedDevices.AbandonedDevices(new fakes.Memento())

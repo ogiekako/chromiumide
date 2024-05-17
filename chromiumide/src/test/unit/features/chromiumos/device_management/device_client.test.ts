@@ -149,6 +149,7 @@ describe('Device client', () => {
       ]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
       vscode.window.createOutputChannel('void'),
+      vscode.window.createOutputChannel('void (background)'),
       new Map<string, DeviceAttributes>([
         [
           hostname,
@@ -188,7 +189,8 @@ describe('Device client', () => {
         },
       ]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
-      vscode.window.createOutputChannel('void')
+      vscode.window.createOutputChannel('void'),
+      vscode.window.createOutputChannel('void (background)')
     );
 
     const onDidChangeDeviceClientReader = new testing.EventReader(
@@ -229,7 +231,8 @@ describe('Device client', () => {
     const client = new DeviceClient(
       FakeDeviceRepository.create([]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
-      vscode.window.createOutputChannel('void')
+      vscode.window.createOutputChannel('void'),
+      vscode.window.createOutputChannel('void (background)')
     );
 
     const onDidChangeDeviceClientReader = new testing.EventReader(
@@ -276,6 +279,7 @@ describe('Device client', () => {
       ]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
       vscode.window.createOutputChannel('void'),
+      vscode.window.createOutputChannel('void (background)'),
       new Map<string, DeviceAttributes>([
         [
           hostname,
@@ -351,7 +355,8 @@ describe('Device client', () => {
         },
       ]),
       new SshIdentity(testing.getExtensionUri(), new ChromiumosServiceModule()),
-      vscode.window.createOutputChannel('void')
+      vscode.window.createOutputChannel('void'),
+      vscode.window.createOutputChannel('void (background)')
     );
 
     const onDidChangeDeviceClientReader = new testing.EventReader(

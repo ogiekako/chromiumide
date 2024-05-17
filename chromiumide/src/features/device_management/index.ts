@@ -31,8 +31,16 @@ export function activate(
   const output = vscode.window.createOutputChannel(
     'ChromiumIDE: Device Management'
   );
+  const outputBackground = vscode.window.createOutputChannel(
+    'ChromiumIDE: Device Management (background)'
+  );
+
   const sshIdentity = new SshIdentity(context.extensionUri, chromiumosServices);
-  const crosfleetRunner = new crosfleet.CrosfleetRunner(cipdRepository, output);
+  const crosfleetRunner = new crosfleet.CrosfleetRunner(
+    cipdRepository,
+    output,
+    outputBackground
+  );
   const abandonedDuts = new abandonedDevices.AbandonedDevices(
     context.globalState
   );
@@ -43,12 +51,14 @@ export function activate(
   const deviceClient = new client.DeviceClient(
     deviceRepository,
     sshIdentity,
-    output
+    output,
+    outputBackground
   );
   const commandsDisposable = commands.registerCommands(
     context,
     chromiumosServices,
     output,
+    outputBackground,
     deviceRepository,
     crosfleetRunner,
     abandonedDuts,
@@ -75,6 +85,10 @@ export function activate(
       command: 'chromiumide.deviceManagement.openLogs',
       title: 'Open Device Management Logs',
     },
+  });
+  statusManager.setTask('Device Management (background)', {
+    status: TaskStatus.OK,
+    outputChannel: outputBackground,
   });
 }
 

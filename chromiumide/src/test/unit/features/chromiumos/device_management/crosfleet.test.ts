@@ -24,6 +24,7 @@ describe('CrosfleetRunner', () => {
   const state = testing.cleanState(() => {
     const runner = new crosfleet.CrosfleetRunner(
       cipdRepository,
+      new fakes.VoidOutputChannel(),
       new fakes.VoidOutputChannel()
     );
     return {runner};

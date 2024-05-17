@@ -51,6 +51,7 @@ export class DeviceClient implements vscode.Disposable {
     private readonly deviceRepository: repository.DeviceRepository,
     private readonly sshIdentity: SshIdentity,
     private readonly logger: vscode.OutputChannel,
+    private readonly loggerBackground: vscode.OutputChannel,
     private readonly cachedDevicesWithAttributes = new Map<
       string,
       DeviceAttributes
@@ -59,7 +60,7 @@ export class DeviceClient implements vscode.Disposable {
     // Refresh every minute to make sure device attributes are up-to-date, since users might be
     // flashing image on terminal (outside of the IDE).
     const timerId = setInterval(() => {
-      void this.refresh();
+      void this.refresh(/* hostnames = */ undefined, /* background = */ true);
     }, 60 * 1000);
     this.subscriptions.push(
       config.deviceManagement.devices.onDidChange(() => this.refresh()),
@@ -73,17 +74,23 @@ export class DeviceClient implements vscode.Disposable {
     vscode.Disposable.from(...this.subscriptions).dispose();
   }
 
-  async refresh(hostnames: string[] | undefined = undefined): Promise<void> {
+  async refresh(
+    hostnames: string[] | undefined = undefined,
+    background = false
+  ): Promise<void> {
     const hostnamesToRefresh =
       hostnames ?? (await this.deviceRepository.getHostnames());
-    void this.refreshDevicesAttributes(hostnamesToRefresh);
+    void this.refreshDevicesAttributes(hostnamesToRefresh, background);
   }
 
-  private async refreshDevicesAttributes(hostnames: string[]): Promise<void> {
+  private async refreshDevicesAttributes(
+    hostnames: string[],
+    background: boolean
+  ): Promise<void> {
     const updatedDevicesAttributes: DeviceAttributesWithHostname[] = [];
     await Promise.all(
       hostnames.map(hostname =>
-        this.readLsbReleaseFromDevice(hostname).then(attributes => {
+        this.readLsbReleaseFromDevice(hostname, background).then(attributes => {
           if (!(attributes instanceof Error)) {
             const cache = this.cachedDevicesWithAttributes.get(hostname);
             // Do nothing if there is no change to device attributes.
@@ -117,7 +124,10 @@ export class DeviceClient implements vscode.Disposable {
     }
     // Retry once if the device data has not been cached. Update cache and fire event if the retry
     // succeeded.
-    const lsbRelease = await this.readLsbReleaseFromDevice(hostname);
+    const lsbRelease = await this.readLsbReleaseFromDevice(
+      hostname,
+      /* background = */ false
+    );
     if (!(lsbRelease instanceof Error)) {
       this.cachedDevicesWithAttributes.set(hostname, lsbRelease);
       this.onDidChangeEmitter.fire([{hostname, ...lsbRelease}]);
@@ -126,7 +136,8 @@ export class DeviceClient implements vscode.Disposable {
   }
 
   private async readLsbReleaseFromDevice(
-    hostname: string
+    hostname: string,
+    background: boolean
   ): Promise<DeviceAttributes | Error> {
     const args = sshUtil.buildSshCommand(
       hostname,
@@ -135,7 +146,7 @@ export class DeviceClient implements vscode.Disposable {
       'cat /etc/lsb-release'
     );
     const result = await commonUtil.exec(args[0], args.slice(1), {
-      logger: this.logger,
+      logger: background ? this.loggerBackground : this.logger,
     });
     if (result instanceof Error) {
       return result;
