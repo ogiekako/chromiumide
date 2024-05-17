@@ -9,6 +9,7 @@ import * as crosfleet from '../../../../../features/device_management/crosfleet'
 import * as repository from '../../../../../features/device_management/device_repository';
 import * as testing from '../../../../testing';
 import * as fakes from '../../../../testing/fakes';
+import {GcloudState} from '../../../../testing/fakes/crosfleet';
 
 describe('Owned device repository', () => {
   beforeEach(async () => {
@@ -193,6 +194,14 @@ describe('Leased device repository', () => {
     fakeCrosfleet.setLoggedIn(false);
 
     // getDevices does not throw errors.
+    expect(await state.leasedDeviceRepository.getDevices()).toEqual([]);
+  });
+
+  it('returns empty list when gcloud has issues', async () => {
+    fakeCrosfleet.setGcloudState(GcloudState.NOT_INSTALLED);
+    expect(await state.leasedDeviceRepository.getDevices()).toEqual([]);
+
+    fakeCrosfleet.setGcloudState(GcloudState.NOT_LOGGED_IN);
     expect(await state.leasedDeviceRepository.getDevices()).toEqual([]);
   });
 

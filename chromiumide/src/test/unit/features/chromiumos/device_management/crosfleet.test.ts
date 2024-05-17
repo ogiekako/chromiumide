@@ -5,6 +5,7 @@
 import * as crosfleet from '../../../../../features/device_management/crosfleet';
 import * as testing from '../../../../testing';
 import * as fakes from '../../../../testing/fakes';
+import {GcloudState} from '../../../../testing/fakes/crosfleet';
 
 describe('CrosfleetRunner', () => {
   const clock = jasmine.clock();
@@ -101,6 +102,17 @@ describe('CrosfleetRunner', () => {
     fakeCrosfleet.setLoggedIn(false);
     expect(await state.runner.checkLogin()).toEqual(false);
     await expectAsync(state.runner.listLeases()).toBeRejected();
+  });
+
+  it('handles gcloud problems', async () => {
+    fakeCrosfleet.setGcloudState(GcloudState.NOT_INSTALLED);
+    expect(await state.runner.checkLogin()).toEqual(false);
+
+    fakeCrosfleet.setGcloudState(GcloudState.NOT_LOGGED_IN);
+    expect(await state.runner.checkLogin()).toEqual(false);
+
+    fakeCrosfleet.setGcloudState(GcloudState.OK);
+    expect(await state.runner.checkLogin()).toEqual(true);
   });
 
   it('requests a new lease', async () => {

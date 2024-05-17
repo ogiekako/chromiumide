@@ -13,9 +13,16 @@ import * as crosfleet from '../../../features/device_management/crosfleet';
 import {arrayWithPrefix} from '../../unit/testing/jasmine/asymmetric_matcher';
 import {FakeExec} from '../fake_exec';
 
+export enum GcloudState {
+  NOT_INSTALLED,
+  NOT_LOGGED_IN,
+  OK,
+}
+
 export class FakeCrosfleet {
   private loggedIn = true;
   private leases: crosfleet.LeaseInfo[] = [];
+  private gcloudState = GcloudState.OK;
 
   constructor() {}
 
@@ -25,6 +32,10 @@ export class FakeCrosfleet {
 
   setLeases(leases: crosfleet.LeaseInfo[]): void {
     this.leases = leases;
+  }
+
+  setGcloudState(state: GcloudState): void {
+    this.gcloudState = state;
   }
 
   install(fakeExec: FakeExec, cipdRepository: cipd.CipdRepository): void {
@@ -41,6 +52,20 @@ export class FakeCrosfleet {
       .and.callFake((_crosfleet, [_dut, _lease, ...restArgs]) =>
         this.handleLease(restArgs)
       );
+    fakeExec
+      .withArgs(
+        'gcloud',
+        [
+          'auth',
+          'list',
+          '--filter',
+          'status:Active',
+          '--format',
+          'value(account)',
+        ],
+        jasmine.anything()
+      )
+      .and.callFake(() => this.handleGcloudAuthList());
   }
 
   private async handleWhoami(): Promise<ExecResult | AbnormalExitError> {
@@ -162,6 +187,25 @@ export class FakeCrosfleet {
     Visit http://go/my-crosfleet to track all of your crosfleet-launched tasks
          `,
     };
+  }
+
+  private async handleGcloudAuthList(): Promise<ExecResult | Error> {
+    switch (this.gcloudState) {
+      case GcloudState.NOT_INSTALLED:
+        return new Error('Command not found');
+      case GcloudState.NOT_LOGGED_IN:
+        return {
+          exitStatus: 0,
+          stdout: '',
+          stderr: '',
+        };
+      case GcloudState.OK:
+        return {
+          exitStatus: 0,
+          stdout: 'someone@example.com\n',
+          stderr: '',
+        };
+    }
   }
 }
 

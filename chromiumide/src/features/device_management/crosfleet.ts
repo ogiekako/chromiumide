@@ -12,6 +12,7 @@ import {getDriver} from '../../../shared/app/common/driver_repository';
 import {AbnormalExitError} from '../../../shared/app/common/exec/types';
 import * as shutil from '../../../shared/app/common/shutil';
 import * as cipd from '../../common/cipd';
+import {isGoogler} from '../../driver/metrics/metrics_util';
 
 const driver = getDriver();
 
@@ -50,6 +51,12 @@ export type CrosfleetDutLeaseOutput = {
   readonly servoPort: number;
   readonly servoSerial: string;
 };
+
+enum GcloudCheckResult {
+  NEEDS_INSTALL,
+  NEEDS_LOGIN,
+  OK,
+}
 
 /**
  * Ensures a fake cipd binary in a directory and returns the directory path.
@@ -126,6 +133,10 @@ export class CrosfleetRunner {
    * Checks if the user is logged into the crosfleet CLI.
    */
   async checkLogin(): Promise<boolean> {
+    if ((await this.checkGcloud()) !== GcloudCheckResult.OK) {
+      return false;
+    }
+
     const result = await this.exec(['whoami']);
     if (result instanceof AbnormalExitError) {
       return false;
@@ -136,16 +147,75 @@ export class CrosfleetRunner {
     return true;
   }
 
+  private async checkGcloud(): Promise<GcloudCheckResult> {
+    const result = await commonUtil.exec(
+      'gcloud',
+      [
+        'auth',
+        'list',
+        '--filter',
+        'status:Active',
+        '--format',
+        'value(account)',
+      ],
+      {
+        logger: this.output,
+      }
+    );
+    if (result instanceof Error) {
+      return GcloudCheckResult.NEEDS_INSTALL;
+    }
+    if (result.stdout === '') {
+      return GcloudCheckResult.NEEDS_LOGIN;
+    }
+    return GcloudCheckResult.OK;
+  }
+
   /**
    * Performs the login to the crosfleet CLI by starting a terminal.
    */
-  async login(): Promise<void> {
+  async login(): Promise<undefined | Error> {
+    switch (await this.checkGcloud()) {
+      case GcloudCheckResult.NEEDS_INSTALL: {
+        // Show a popup to ask the user to install gcloud.
+        const url = (await isGoogler())
+          ? 'https://goto.google.com/gcloud-cli#installing-and-using-the-cloud-sdk'
+          : 'https://cloud.google.com/sdk/docs/install';
+        void vscode.window.showErrorMessage(
+          `You need to install gcloud following [this guide](${url}) to manage leases.`
+        );
+        return;
+      }
+      case GcloudCheckResult.NEEDS_LOGIN: {
+        // Run "gcloud auth login".
+        const exitStatus = await runInTerminal('gcloud', ['auth', 'login'], {
+          name: 'gcloud auth login',
+        });
+        if (exitStatus.code !== 0) {
+          return new Error('gcloud auth login failed');
+        }
+        // Continue to crosfleet login.
+        break;
+      }
+      case GcloudCheckResult.OK:
+        break;
+    }
+
+    // The user may hit this path when they've just set up gcloud and clicked the login message
+    // while they already logged into crosfleet. In this case we don't need to show the login
+    // flow again, so just emit onDidChange to update UI.
+    if (!((await this.exec(['whoami'])) instanceof Error)) {
+      this.onDidChangeEmitter.fire();
+      return;
+    }
+
+    // Run "crosfleet login".
     const executablePath = await this.executablePath.getOrThrow();
     const exitStatus = await runInTerminal(executablePath, ['login'], {
       name: 'crosfleet login',
     });
     if (exitStatus.code !== 0) {
-      throw new Error('crosfleet login failed');
+      return new Error('crosfleet login failed');
     }
     this.onDidChangeEmitter.fire();
   }
