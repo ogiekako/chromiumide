@@ -6,7 +6,7 @@ in such a glanularity, having coarser APIs is allowed. It's OK and preferred to 
 at first as long as the API is extensible to accept more options in the future.
 
 The client should access the driver APIs through the driver instance, rather than accessing
-the APIs directly. (TODO(oka): Add linter check)
+the APIs directly.
 
 Expected workflow on adding new driver functions and using them is as follows:
 
@@ -17,7 +17,7 @@ Expected workflow on adding new driver functions and using them is as follows:
 
   Changes in step 1 (in general, everything in `shared/`) will be synced to `google3/third_party/javascript/chromiumide`.
 
-- In `google3/devtools/cider/extensions/chromiumide`:
+- In `google3/devtools/cider/extensions/chromeos`:
 
   3. Implement the driver functions in `driver/index.ts` (or import from another file).
 
