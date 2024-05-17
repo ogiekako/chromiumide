@@ -23,6 +23,7 @@ import {TaskStatus} from '../shared/app/ui/bg_task_status';
 import {SHOW_UI_LOG, getUiLogger} from '../shared/app/ui/log';
 import {Driver} from '../shared/driver';
 import * as cipd from './common/cipd';
+import {CppCodeCompletion} from './common/cpp_xrefs/cpp_code_completion';
 import {DriverImpl} from './driver';
 import * as metricsConfig from './driver/metrics/metrics_config';
 import * as features from './features';
@@ -111,14 +112,18 @@ async function postMetricsActivate(
   const boilerplateInserter = new boilerplate.BoilerplateInserter();
   context.subscriptions.push(boilerplateInserter);
 
+  const cppCodeCompletion = new CppCodeCompletion(statusManager);
+
   context.subscriptions.push(
+    cppCodeCompletion,
     new ChromiumActivation(context, statusManager, boilerplateInserter),
     new ChromiumosActivation(
       context,
       statusManager,
       boilerplateInserter,
       cipdRepository,
-      chromiumosServices
+      chromiumosServices,
+      cppCodeCompletion
     ),
     new CodeServer()
   );
@@ -223,7 +228,8 @@ class ChromiumosActivation implements vscode.Disposable {
     statusManager: bgTaskStatus.StatusManager,
     boilerplateInserter: boilerplate.BoilerplateInserter,
     cipdRepository: cipd.CipdRepository,
-    chromiumosServices: services.chromiumos.ChromiumosServiceModule
+    chromiumosServices: services.chromiumos.ChromiumosServiceModule,
+    cppCodeCompletion: CppCodeCompletion
   ) {
     this.subscriptions.push(
       this.watcher.onDidChangeRoot(root => {
@@ -235,7 +241,8 @@ class ChromiumosActivation implements vscode.Disposable {
               statusManager,
               boilerplateInserter,
               cipdRepository,
-              chromiumosServices
+              chromiumosServices,
+              cppCodeCompletion
             )
           : undefined;
       })

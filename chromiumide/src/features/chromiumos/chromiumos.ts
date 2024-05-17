@@ -7,6 +7,7 @@ import {getDriver} from '../../../shared/app/common/driver_repository';
 import * as config from '../../../shared/app/services/config';
 import * as bgTaskStatus from '../../../shared/app/ui/bg_task_status';
 import * as cipd from '../../common/cipd';
+import {CppCodeCompletion} from '../../common/cpp_xrefs/cpp_code_completion';
 import * as services from '../../services';
 import * as boilerplate from '../boilerplate';
 import {BoardsAndPackages} from './boards_and_packages';
@@ -55,7 +56,8 @@ export class Chromiumos implements vscode.Disposable {
     private readonly statusManager: bgTaskStatus.StatusManager,
     private readonly boilerplateInserter: boilerplate.BoilerplateInserter,
     private readonly cipdRepository: cipd.CipdRepository,
-    private readonly chromiumosServices: services.chromiumos.ChromiumosServiceModule
+    private readonly chromiumosServices: services.chromiumos.ChromiumosServiceModule,
+    private readonly cppCodeCompletion: CppCodeCompletion
   ) {
     void (async () => {
       try {
@@ -106,9 +108,7 @@ export class Chromiumos implements vscode.Disposable {
 
     if (chrootService) {
       this.featureName = 'cppCodeCompletion';
-      ephemeralContext.subscriptions.push(
-        new ChromiumosCppCodeCompletion(this.statusManager, chrootService)
-      );
+      new ChromiumosCppCodeCompletion(chrootService, this.cppCodeCompletion); // not a disposable
 
       this.featureName = 'boardsAndPackages';
       ephemeralContext.subscriptions.push(

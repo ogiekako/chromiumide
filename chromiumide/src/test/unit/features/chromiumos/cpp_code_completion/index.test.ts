@@ -5,6 +5,7 @@
 import 'jasmine';
 import * as vscode from 'vscode';
 import {CLANGD_EXTENSION} from '../../../../../common/cpp_xrefs/constants';
+import {CppCodeCompletion} from '../../../../../common/cpp_xrefs/cpp_code_completion';
 import {
   ErrorDetails,
   ShouldGenerateResult,
@@ -35,13 +36,15 @@ describe('C++ code completion', () => {
     const statusManager = new FakeStatusManager();
     await testing.buildFakeChroot(tempDir.path);
     const chrootService = ChrootService.maybeCreate(tempDir.path, false)!;
-    const cppCodeCompletion = new ChromiumosCppCodeCompletion(
-      statusManager,
-      chrootService
+    const cppCodeCompletion = new CppCodeCompletion(statusManager);
+    const chromiumosCppCodeCompletion = new ChromiumosCppCodeCompletion(
+      chrootService,
+      cppCodeCompletion
     );
 
     return {
       cppCodeCompletion,
+      chromiumosCppCodeCompletion,
     };
   });
 
@@ -96,16 +99,18 @@ describe('C++ code completion', () => {
       // Set up
       let generateCalled = false;
 
-      state.cppCodeCompletion.registerExtraGeneratorFactoryForTesting(() => {
-        return {
-          name: 'fake',
-          shouldGenerate: async () => tc.shouldGenerateResponse,
-          generate: async () => {
-            generateCalled = true;
-          },
-          dispose: () => {},
-        };
-      });
+      state.chromiumosCppCodeCompletion.registerExtraGeneratorFactoryForTesting(
+        () => {
+          return {
+            name: 'fake',
+            shouldGenerate: async () => tc.shouldGenerateResponse,
+            generate: async () => {
+              generateCalled = true;
+            },
+            dispose: () => {},
+          };
+        }
+      );
 
       const clangd = tc.hasClangd
         ? jasmine.createSpyObj<vscode.Extension<unknown>>('clangd', [
@@ -117,7 +122,7 @@ describe('C++ code completion', () => {
         .and.returnValue(clangd);
 
       const waiter = new Promise(resolve => {
-        state.cppCodeCompletion.onDidMaybeGenerateForTesting(resolve);
+        state.chromiumosCppCodeCompletion.onDidMaybeGenerateForTesting(resolve);
       });
 
       // Fire event
@@ -160,19 +165,21 @@ describe('C++ code completion', () => {
     );
     vscodeSpy.window.showErrorMessage.and.callFake(async () => pushButton);
 
-    state.cppCodeCompletion.registerExtraGeneratorFactoryForTesting(() => {
-      return {
-        name: 'fake',
-        shouldGenerate: async () => ShouldGenerateResult.Yes,
-        generate: async () => {
-          throw new ErrorDetails(errorKind, 'error!', {
-            label: buttonLabel,
-            action: () => actionTriggeredCount++,
-          });
-        },
-        dispose: () => {},
-      };
-    });
+    state.chromiumosCppCodeCompletion.registerExtraGeneratorFactoryForTesting(
+      () => {
+        return {
+          name: 'fake',
+          shouldGenerate: async () => ShouldGenerateResult.Yes,
+          generate: async () => {
+            throw new ErrorDetails(errorKind, 'error!', {
+              label: buttonLabel,
+              action: () => actionTriggeredCount++,
+            });
+          },
+          dispose: () => {},
+        };
+      }
+    );
 
     const clangd = jasmine.createSpyObj<vscode.Extension<unknown>>('clangd', [
       'activate',
@@ -183,7 +190,7 @@ describe('C++ code completion', () => {
 
     const fireEvent = async () => {
       const waiter = new Promise(resolve => {
-        state.cppCodeCompletion.onDidMaybeGenerateForTesting(resolve);
+        state.chromiumosCppCodeCompletion.onDidMaybeGenerateForTesting(resolve);
       });
 
       vscodeEmitters.workspace.onDidSaveTextDocument.fire({

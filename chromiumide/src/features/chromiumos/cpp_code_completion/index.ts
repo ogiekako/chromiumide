@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {StatusManager} from '../../../../shared/app/ui/bg_task_status';
 import {
   CppCodeCompletion,
   GeneratorFactory,
@@ -11,15 +10,12 @@ import {
 import {ChrootService} from '../../../services/chromiumos';
 import * as compdbGenerator from './compdb_generator';
 
-export class ChromiumosCppCodeCompletion implements vscode.Disposable {
-  private readonly subscriptions: vscode.Disposable[] = [];
-  private cppCodeCompletion: CppCodeCompletion;
-
-  constructor(statusManager: StatusManager, chrootService: ChrootService) {
-    this.cppCodeCompletion = new CppCodeCompletion(statusManager);
-    this.subscriptions.push(this.cppCodeCompletion);
-
-    this.cppCodeCompletion.register(
+export class ChromiumosCppCodeCompletion {
+  constructor(
+    chrootService: ChrootService,
+    private readonly cppCodeCompletion: CppCodeCompletion
+  ) {
+    cppCodeCompletion.register(
       output => new compdbGenerator.Platform2(chrootService, output),
       output => new compdbGenerator.PlatformEc(chrootService, output)
     );
@@ -35,9 +31,5 @@ export class ChromiumosCppCodeCompletion implements vscode.Disposable {
    */
   get onDidMaybeGenerateForTesting(): vscode.Event<void> {
     return this.cppCodeCompletion.onDidMaybeGenerate;
-  }
-
-  dispose(): void {
-    vscode.Disposable.from(...this.subscriptions.splice(0)).dispose();
   }
 }
