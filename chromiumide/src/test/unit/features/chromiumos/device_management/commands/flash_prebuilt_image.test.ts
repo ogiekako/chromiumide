@@ -176,7 +176,7 @@ CHROMEOS_RELEASE_UNIBUILD=1
     );
 
     // Check event was not fired.
-    expect(await onDidChangeDeviceClientReader.times()).toEqual(0);
+    expect(onDidChangeDeviceClientReader.times()).toEqual(0);
     expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalledOnceWith(
       jasmine.anything(),
       'Open logs'
