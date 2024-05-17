@@ -19,48 +19,68 @@ export type GeneratorFactory = (
   output: vscode.OutputChannel
 ) => CompdbGenerator;
 
+/**
+ * Activates C++ xrefs support.
+ *
+ * It registers handlers for edtior events to provide xrefs only when at least one compdb generator
+ * is registered via the `register` command. Just instantiating this class will be no-op.
+ */
 export class CppCodeCompletion implements vscode.Disposable {
-  readonly output = vscode.window.createOutputChannel(
-    'ChromiumIDE: C++ Support'
-  );
+  private readonly subscriptions: vscode.Disposable[] = [];
+
+  private wrappedOutput?: vscode.OutputChannel;
+  private get output(): vscode.OutputChannel {
+    if (!this.wrappedOutput) {
+      this.wrappedOutput = vscode.window.createOutputChannel(
+        'ChromiumIDE: C++ Support'
+      );
+      this.subscriptions.push(this.wrappedOutput);
+    }
+    return this.wrappedOutput;
+  }
 
   private readonly onDidMaybeGenerateEmitter = new vscode.EventEmitter<void>();
   readonly onDidMaybeGenerate = this.onDidMaybeGenerateEmitter.event;
 
-  private readonly subscriptions: vscode.Disposable[] = [
-    this.output,
-    vscodeRegisterCommand(SHOW_LOG_COMMAND.command, () => {
-      this.output.show();
-      driver.metrics.send({
-        category: 'interactive',
-        group: 'idestatus',
-        name: 'cppxrefs_show_cpp_log',
-        description: 'show cpp log',
-      });
-    }),
-    vscodeRegisterCommand('chromiumide.cppxrefs.forceGenerate', async () => {
-      const document = vscode.window.activeTextEditor?.document;
+  private activated = false;
+  private activateOnce() {
+    if (this.activated) return;
+    this.activated = true;
 
-      if (!document) {
-        void vscode.window.showErrorMessage(
-          'No file is open; open the file to compile and return the command'
-        );
-        return;
-      }
-      await this.maybeGenerate(document, true);
-      this.onDidMaybeGenerateEmitter.fire();
-    }),
-    vscode.window.onDidChangeActiveTextEditor(async editor => {
-      if (editor?.document) {
-        await this.maybeGenerate(editor.document);
+    this.subscriptions.push(
+      vscodeRegisterCommand(SHOW_LOG_COMMAND.command, () => {
+        this.output.show();
+        driver.metrics.send({
+          category: 'interactive',
+          group: 'idestatus',
+          name: 'cppxrefs_show_cpp_log',
+          description: 'show cpp log',
+        });
+      }),
+      vscodeRegisterCommand('chromiumide.cppxrefs.forceGenerate', async () => {
+        const document = vscode.window.activeTextEditor?.document;
+
+        if (!document) {
+          void vscode.window.showErrorMessage(
+            'No file is open; open the file to compile and return the command'
+          );
+          return;
+        }
+        await this.maybeGenerate(document, true);
         this.onDidMaybeGenerateEmitter.fire();
-      }
-    }),
-    vscode.workspace.onDidSaveTextDocument(async document => {
-      await this.maybeGenerate(document);
-      this.onDidMaybeGenerateEmitter.fire();
-    }),
-  ];
+      }),
+      vscode.window.onDidChangeActiveTextEditor(async editor => {
+        if (editor?.document) {
+          await this.maybeGenerate(editor.document);
+          this.onDidMaybeGenerateEmitter.fire();
+        }
+      }),
+      vscode.workspace.onDidSaveTextDocument(async document => {
+        await this.maybeGenerate(document);
+        this.onDidMaybeGenerateEmitter.fire();
+      })
+    );
+  }
 
   private readonly generators: CompdbGenerator[] = [];
 
@@ -80,6 +100,8 @@ export class CppCodeCompletion implements vscode.Disposable {
    * this class and it's disposed of when the class is disposed.
    */
   register(...generatorFactories: GeneratorFactory[]): void {
+    this.activateOnce();
+
     for (const f of generatorFactories) {
       const generator = f(this.output);
       this.generators.push(generator);
@@ -210,7 +232,7 @@ export class CppCodeCompletion implements vscode.Disposable {
     });
   }
 
-  showErrorMessage(error: ErrorDetails): void {
+  private showErrorMessage(error: ErrorDetails): void {
     const SHOW_LOG = 'Show Log';
     const IGNORE = 'Ignore';
 
