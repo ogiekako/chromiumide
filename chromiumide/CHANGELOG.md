@@ -1,6 +1,15 @@
 # Change Log
 
-## 0.28.0 (April 2024)
+## 0.30.0 (May 2024)
+
+- DUT management
+  - Various bug fixes on seamless deployment
+  - Stop using pinned version of crosfleet by default
+- Logging
+  - Log the current directory and the modified or allowlisted environment variables on running
+    commands
+
+## 0.28.0 (April 2024) - skipped
 
 - DUT management
   - Seamless deployment: automatic image compatibility check on extension activation, adding new device, deploying package and prompt to flash device with images from a suggested list
@@ -14,14 +23,14 @@
   - Easier image flashing with Chrome milestones list
   - Device attributes (board, model, builder path) are now shown as sub-items
 - ChromiumOS build
-  - Suggests autoseting cpu governor for build\_packages command
+  - Suggests autoseting cpu governor for build_packages command
 
 ## 0.24.0 (November 2023)
 
 - Chromium
-  - DIR\_METADATA file support
+  - DIR_METADATA file support
 - Ebuild and eclass file support
-  - Links to src code from CROS\_WORKON\_LOCAL\_NAME and CROS\_WORKON\_SUBTREE
+  - Links to src code from CROS_WORKON_LOCAL_NAME and CROS_WORKON_SUBTREE
   - Links to inherited eclass
   - Tooltip for portage and eclass variables and functions
 - DUT management
