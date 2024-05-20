@@ -7,6 +7,7 @@
 
 import * as vscode from 'vscode';
 import {getDriver} from '../../../../../shared/app/common/driver_repository';
+import {assertNever} from '../../../../../shared/app/common/typecheck';
 import * as config from '../../../../../shared/app/services/config';
 import {ChrootService} from '../../../../services/chromiumos';
 import {CommandContext} from '../common';
@@ -175,9 +176,8 @@ function notifyTestResults(
 
       return;
     }
-    default: {
-      ((_: never) => {})(res); // typecheck
-    }
+    default:
+      assertNever(res);
   }
 }
 

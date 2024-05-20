@@ -4,6 +4,7 @@
 
 import * as fs from 'fs';
 import * as commonUtil from '../../../shared/app/common/common_util';
+import {assertNever} from '../../../shared/app/common/typecheck';
 import * as git from '../../features/gerrit/git';
 
 /**
@@ -45,9 +46,7 @@ export class Git {
         remoteUrl = 'https://chrome-internal.googlesource.com/foo';
         break;
       default:
-        ((_: never) => {
-          throw new Error(`Unknown repoId: ${repoId}`);
-        })(repoId);
+        assertNever(repoId);
     }
     await this.addRemote(remoteName, remoteUrl);
   }

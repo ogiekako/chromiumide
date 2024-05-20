@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import {assertNever} from '../../../../shared/app/common/typecheck';
 import * as config from '../../../../shared/app/services/config';
 import {
   StatusManager,
@@ -84,7 +85,7 @@ export class BoardsAndPackages implements vscode.Disposable {
             this.treeDataProvider.refresh();
             return;
           default:
-            ((_: never) => {})(command); // typecheck
+            assertNever(command);
         }
       })
     );

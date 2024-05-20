@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../../shared/app/common/driver_repository';
+import {assertNever} from '../../../../../shared/app/common/typecheck';
 import {getQualifiedPackageName} from '../../../../common/chromiumos/portage/ebuild';
 import {
   CompdbGenerator,
@@ -173,7 +174,7 @@ export class Platform2 implements CompdbGenerator {
             `Failed to generate cross reference; try removing ${error.details.destination} and reload the IDE`
           );
         default:
-          ((_: never) => {})(error.details);
+          assertNever(error.details);
       }
     }
   }
