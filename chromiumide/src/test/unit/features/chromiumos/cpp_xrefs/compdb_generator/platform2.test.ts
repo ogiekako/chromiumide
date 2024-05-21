@@ -51,7 +51,7 @@ inherit cros-workon platform user
   });
 
   afterEach(() => {
-    vscode.Disposable.from(state.compdbGenerator, state.cancellation).dispose();
+    state.cancellation.dispose();
   });
 
   it('runs for platform2 C++ file', async () => {

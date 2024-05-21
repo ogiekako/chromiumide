@@ -96,8 +96,7 @@ export class CppXrefs implements vscode.Disposable {
   constructor(private readonly statusManager: bgTaskStatus.StatusManager) {}
 
   /**
-   * Registers compdb generator factories. The ownership of the created compdb generator is taken by
-   * this class and it's disposed of when the class is disposed.
+   * Registers compdb generator factories.
    */
   register(...generatorFactories: GeneratorFactory[]): void {
     this.activateOnce();
@@ -105,7 +104,6 @@ export class CppXrefs implements vscode.Disposable {
     for (const f of generatorFactories) {
       const generator = f(this.output);
       this.generators.push(generator);
-      this.subscriptions.push(generator);
     }
   }
 

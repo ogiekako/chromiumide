@@ -31,7 +31,6 @@ type GenerationState = 'generating' | 'generated' | 'failed';
 export class Platform2 implements CompdbGenerator {
   readonly name = 'platform2';
 
-  private readonly subscriptions: vscode.Disposable[] = [];
   private readonly packages: Packages;
   // Packages for which compdb has been or being generated in this session.
   // Keyed by qualified package name.
@@ -177,9 +176,5 @@ export class Platform2 implements CompdbGenerator {
           assertNever(error.details);
       }
     }
-  }
-
-  dispose(): void {
-    vscode.Disposable.from(...this.subscriptions).dispose();
   }
 }

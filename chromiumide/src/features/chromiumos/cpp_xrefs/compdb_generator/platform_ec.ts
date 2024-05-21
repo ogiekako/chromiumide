@@ -31,7 +31,6 @@ const COMPILE_COMMANDS_JSON = 'compile_commands.json';
 export class PlatformEc implements CompdbGenerator {
   readonly name = 'platform/ec';
 
-  private readonly subscriptions: vscode.Disposable[] = [];
   private generatedBoard?: string;
   private generatedBuild?: string;
   private generatedMode?: string;
@@ -113,9 +112,5 @@ export class PlatformEc implements CompdbGenerator {
     this.generatedBoard = board;
     this.generatedBuild = build;
     this.generatedMode = mode;
-  }
-
-  dispose(): void {
-    vscode.Disposable.from(...this.subscriptions).dispose();
   }
 }

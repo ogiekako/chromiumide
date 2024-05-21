@@ -44,7 +44,7 @@ export enum ShouldGenerateResult {
   NoHasFailed,
 }
 
-export interface CompdbGenerator extends vscode.Disposable {
+export interface CompdbGenerator {
   /**
    * Globally unique and constant name of the generator, e.g. "platform2".
    */

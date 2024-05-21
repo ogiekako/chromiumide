@@ -44,7 +44,7 @@ describe('platform2 compdb generator', () => {
   });
 
   afterEach(() => {
-    vscode.Disposable.from(state.generator, state.cancellation).dispose();
+    state.cancellation.dispose();
   });
 
   it('runs for platform/ec C++ file', async () => {

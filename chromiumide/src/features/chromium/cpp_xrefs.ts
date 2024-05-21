@@ -163,6 +163,4 @@ class ChromiumCompdbGenerator implements CompdbGenerator {
       );
     }
   }
-
-  dispose() {}
 }
