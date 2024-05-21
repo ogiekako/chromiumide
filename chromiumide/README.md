@@ -1,16 +1,11 @@
 # Chromium(OS) Development in Visual Studio Code
 
-This VSCode IDE extension is designed to make Chromium/ChromiumOS development
-easier and faster by anchoring core tools in one place, and making them
-discoverable and easy to use.
+This VSCode extension is designed to make Chromium/ChromiumOS development easier and faster by
+anchoring core tools in one place, and making them discoverable and easy to use.
 
 ## User Scope
 
 This is intended for Googlers only.
-
-## Project Status
-
-Beta testing stage.
 
 ## Features
 
@@ -23,10 +18,11 @@ Initial release has been tested for `platform2` development and offers the follo
 - Code Search integration
 - Integrated short links support (Click to open)
 
-See [QuickStart Guide] for setup instructions.
+See [QuickStart Guide] for setup instructions and full features guide.
 
 [quickstart guide]: https://chromium.googlesource.com/chromiumos/infra/ide/+/HEAD/docs/quickstart.md
 
 ## Contacting Us
 
-[g/chromiumide-users](http://g/chromiumide-users)
+- [g/chromiumide-users](http://g/chromiumide-users)
+- [go/chromiumide-users-chat](http://go/chromiumide-users-chat)
