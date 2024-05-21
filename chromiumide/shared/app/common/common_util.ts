@@ -11,10 +11,6 @@ import {ExecOptions, ExecResult} from './exec/types';
 
 const driver = getDriver();
 
-// Type Chroot represents the path to chroot.
-// We use nominal typing technique here. https://basarat.gitbook.io/typescript/main-1/nominaltyping
-export type Chroot = string & {_brand: 'chroot'};
-
 export async function isInsideChroot(): Promise<boolean> {
   return await isChroot('/');
 }
@@ -28,11 +24,11 @@ export async function isChroot(dir: string): Promise<boolean> {
 /**
  * Returns the chroot in dir or its ancestor, or undefined on not found.
  */
-export async function findChroot(dir: string): Promise<Chroot | undefined> {
+export async function findChroot(dir: string): Promise<string | undefined> {
   for (;;) {
     const chroot = driver.path.join(dir, 'chroot');
     if (await isChroot(chroot)) {
-      return chroot as Chroot;
+      return chroot;
     }
 
     const d = driver.path.dirname(dir);

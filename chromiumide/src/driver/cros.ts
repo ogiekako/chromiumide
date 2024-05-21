@@ -9,11 +9,11 @@ import {Cros} from '../../shared/driver/cros';
 const driver = getDriver();
 
 export class CrosImpl implements Cros {
-  async findChroot(path: string): Promise<commonUtil.Chroot | undefined> {
+  async findChroot(path: string): Promise<string | undefined> {
     for (;;) {
       const chroot = driver.path.join(path, 'chroot');
       if (await commonUtil.isChroot(chroot)) {
-        return chroot as commonUtil.Chroot;
+        return chroot;
       }
 
       const d = driver.path.dirname(path);

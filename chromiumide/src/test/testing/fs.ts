@@ -8,7 +8,6 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../shared/app/common/common_util';
-import {Chroot} from '../../../shared/app/common/common_util';
 import {cleanState} from './clean_state';
 
 export async function putFiles(
@@ -62,10 +61,10 @@ async function repoInit(root: string) {
  * Builds fake chroot environment under tempDir, and returns the path to the
  * fake chroot (`${tempDir}/chroot`).
  */
-export async function buildFakeChroot(tempDir: string): Promise<Chroot> {
+export async function buildFakeChroot(tempDir: string): Promise<string> {
   await repoInit(tempDir);
   await putFiles(tempDir, {'chroot/etc/cros_chroot_version': '42'});
-  return path.join(tempDir, 'chroot') as Chroot;
+  return path.join(tempDir, 'chroot');
 }
 
 const DOT_GCLIENT = `solutions = [
