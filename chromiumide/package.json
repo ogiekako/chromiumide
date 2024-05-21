@@ -359,6 +359,11 @@
         "enablement": "config.chromiumide.underDevelopment.relatedFiles"
       },
       {
+        "command": "chromiumide.showHelpForBoardsAndPackages",
+        "title": "Show Help",
+        "icon": "$(question)"
+      },
+      {
         "command": "chromiumide.showHelpForDevices",
         "title": "Show Help",
         "icon": "$(question)"
@@ -554,6 +559,11 @@
         {
           "command": "chromiumide.gerrit.refreshComments",
           "when": "view == workbench.panel.comments",
+          "group": "navigation"
+        },
+        {
+          "command": "chromiumide.showHelpForBoardsAndPackages",
+          "when": "view == boards-and-packages",
           "group": "navigation"
         },
         {

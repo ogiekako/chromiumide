@@ -11,8 +11,8 @@ const driver = getDriver();
 export function activate(context: vscode.ExtensionContext): void {
   const commandLink: [string, vscode.Uri][] = [
     [
-      'chromiumide.showHelpForBoardsPackages',
-      vscode.Uri.parse('http://go/chromiumide-doc-boards-pkgs'),
+      'chromiumide.showHelpForBoardsAndPackages',
+      vscode.Uri.parse('http://go/chromiumide-doc-boards-and-packages'),
     ],
     [
       'chromiumide.showHelpForDevices',
