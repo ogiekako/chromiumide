@@ -3,15 +3,14 @@
 // found in the LICENSE file.
 
 import * as path from 'path';
-import * as commonUtil from '../../../../../shared/app/common/common_util';
 import {PackageInfo} from '../../../../services/chromiumos';
 
 /**
  * Returns the destination on which the compilation database should be generated.
  */
 export function destination(
-  source: commonUtil.Source,
+  chromiumosRoot: string,
   {sourceDir}: PackageInfo
 ): string {
-  return path.join(source, sourceDir, 'compile_commands.json');
+  return path.join(chromiumosRoot, sourceDir, 'compile_commands.json');
 }

@@ -25,7 +25,7 @@ import * as cros from './common/cros';
  *   available board.
  */
 export async function getOrSelectTargetBoard(
-  chroot: WrapFs<Chroot>
+  chroot: WrapFs
 ): Promise<BoardOrHost | null | NoBoardError> {
   const board = config.board.get();
   if (board) {
@@ -51,7 +51,7 @@ export class NoBoardError extends Error {
  * used is proposed to the user, before showing the board picker.
  */
 export async function selectAndUpdateTargetBoard(
-  chroot: WrapFs<Chroot>,
+  chroot: WrapFs,
   options: {
     suggestMostRecent: boolean;
   }

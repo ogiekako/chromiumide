@@ -5,7 +5,6 @@
 import * as fs from 'fs';
 import * as util from 'util';
 import glob = require('glob');
-import {Source} from '../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../shared/app/common/driver_repository';
 import {ParsedPackageName} from '../../../common/chromiumos/portage/ebuild';
 import {PackageInfo} from './types';
@@ -17,11 +16,11 @@ const driver = getDriver();
  * names.
  */
 export class Mapping {
-  static async generate(source: Source): Promise<PackageInfo[]> {
+  static async generate(chromiumosRoot: string): Promise<PackageInfo[]> {
     let packages: PackageInfo[] = [];
     for (const overlay of OVERLAYS) {
       packages = packages.concat(
-        await generateSub(driver.path.join(source, overlay))
+        await generateSub(driver.path.join(chromiumosRoot, overlay))
       );
     }
     return packages;

@@ -52,7 +52,7 @@ export async function findChroot(dir: string): Promise<Chroot | undefined> {
 /**
  * Returns the ChromiumOS source directory, given the path to chroot.
  */
-export function sourceDir(chroot: Chroot): Source {
+export function sourceDir(chroot: string): Source {
   return driver.path.dirname(chroot) as Source;
 }
 

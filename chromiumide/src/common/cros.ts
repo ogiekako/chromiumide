@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {Chroot, CrosOut} from '../../shared/app/common/common_util';
 import {getDriver} from '../../shared/app/common/driver_repository';
 import {WrapFs} from '../../shared/app/common/wrap_fs';
 
@@ -13,8 +12,8 @@ export const driver = getDriver();
  * oldest).
  */
 export async function getSetupBoardsRecentFirst(
-  chroot: WrapFs<Chroot>,
-  out: WrapFs<CrosOut>
+  chroot: WrapFs,
+  out: WrapFs
 ): Promise<string[]> {
   return getSetupBoardsOrdered(
     chroot,
@@ -28,8 +27,8 @@ export async function getSetupBoardsRecentFirst(
  * @returns Boards that have been set up in alphabetic order.
  */
 export async function getSetupBoardsAlphabetic(
-  chroot: WrapFs<Chroot>,
-  out: WrapFs<CrosOut>
+  chroot: WrapFs,
+  out: WrapFs
 ): Promise<string[]> {
   return getSetupBoardsOrdered(
     chroot,
@@ -40,9 +39,9 @@ export async function getSetupBoardsAlphabetic(
 }
 
 async function getSetupBoardsOrdered<T>(
-  chroot: WrapFs<Chroot>,
-  out: WrapFs<CrosOut>,
-  keyFn: (fs: WrapFs<Chroot | CrosOut>, dir: string) => Promise<T>,
+  chroot: WrapFs,
+  out: WrapFs,
+  keyFn: (fs: WrapFs, dir: string) => Promise<T>,
   compareFn: (a: T, b: T) => number
 ): Promise<string[]> {
   const res = [];
@@ -52,9 +51,9 @@ async function getSetupBoardsOrdered<T>(
   return res;
 }
 
-async function getSetupBoardsOrderedInner<T, F extends Chroot | CrosOut>(
-  fs: WrapFs<F>,
-  keyFn: (fs: WrapFs<F>, dir: string) => Promise<T>,
+async function getSetupBoardsOrderedInner<T>(
+  fs: WrapFs,
+  keyFn: (fs: WrapFs, dir: string) => Promise<T>,
   compareFn: (a: T, b: T) => number
 ): Promise<string[]> {
   const build = '/build';

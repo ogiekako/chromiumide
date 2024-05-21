@@ -67,24 +67,22 @@ export class ChrootService implements vscode.Disposable {
   /**
    * Returns an accessor to files under chroot.
    */
-  get chroot(): WrapFs<commonUtil.Chroot> {
-    return new WrapFs(this.chrootPath as commonUtil.Chroot);
+  get chroot(): WrapFs {
+    return new WrapFs(this.chrootPath);
   }
 
   /**
    * Returns an accessor to files under out.
    */
-  get out(): WrapFs<commonUtil.CrosOut> {
-    return new WrapFs(
-      path.join(this.chromiumosRoot, 'out') as commonUtil.CrosOut
-    );
+  get out(): WrapFs {
+    return new WrapFs(path.join(this.chromiumosRoot, 'out'));
   }
 
   /**
    * Returns an accessor to files under source.
    */
-  get source(): WrapFs<commonUtil.Source> {
-    return new WrapFs(this.chromiumosRoot as commonUtil.Source);
+  get source(): WrapFs {
+    return new WrapFs(this.chromiumosRoot);
   }
 
   get crosFs(): CrosFs {
@@ -133,9 +131,9 @@ async function showChrootNotFoundError(root: string) {
  * Holds accessors to files related to ChromiumOS.
  */
 export type CrosFs = {
-  readonly chroot: WrapFs<commonUtil.Chroot>;
-  readonly source: WrapFs<commonUtil.Source>;
-  readonly out: WrapFs<string>;
+  readonly chroot: WrapFs;
+  readonly source: WrapFs;
+  readonly out: WrapFs;
 };
 
 export interface ChrootExecOptions extends sudo.SudoExecOptions {
@@ -150,12 +148,12 @@ export interface ChrootExecOptions extends sudo.SudoExecOptions {
  * enters invalid password.
  */
 export async function execInChroot(
-  source: commonUtil.Source,
+  chromiumosRoot: string,
   name: string,
   args: string[],
   options: ChrootExecOptions
 ): ReturnType<typeof commonUtil.exec> {
-  const crosSdk = path.join(source, 'chromite/bin/cros_sdk');
+  const crosSdk = path.join(chromiumosRoot, 'chromite/bin/cros_sdk');
   const crosSdkArgs: string[] = [];
   if (options.crosSdkWorkingDir) {
     crosSdkArgs.push('--working-dir', options.crosSdkWorkingDir);

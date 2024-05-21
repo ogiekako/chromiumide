@@ -5,7 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {Source, exec} from '../../../../shared/app/common/common_util';
+import {exec} from '../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../shared/app/common/driver_repository';
 import {getCrosPath} from '../../../common/chromiumos/cros_client';
 import {ImageVersion, getChromeMilestones} from '../../../common/image_version';
@@ -246,7 +246,7 @@ export async function flashImageToDevice(
   hostname: string,
   imagePath: string,
   deviceClient: DeviceClient,
-  root: Source,
+  chromiumosRoot: string,
   output: vscode.OutputChannel
 ): Promise<boolean | Error> {
   const res = await vscode.window.withProgress(
@@ -259,15 +259,15 @@ export async function flashImageToDevice(
       const pathVar = await driver.getUserEnvPath();
       output.show(); // Open output channel to show logs of running `cros flash`.
       return await exec(
-        getCrosPath(root),
+        getCrosPath(chromiumosRoot),
         ['flash', `ssh://${hostname}`, imagePath],
         {
           logger: output,
           logStdout: true,
           cancellationToken: token,
-          cwd: root,
+          cwd: chromiumosRoot,
           env: {
-            BOTO_CONFIG: `${root}/${BOTO_PATH}`,
+            BOTO_CONFIG: `${chromiumosRoot}/${BOTO_PATH}`,
             // cros flash cannot find python path with sys.executable in gs.py without this provided
             // explicitly in environment variable.
             PYTHONEXECUTABLE: '/usr/bin/python3',

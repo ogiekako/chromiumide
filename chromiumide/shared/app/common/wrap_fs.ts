@@ -7,8 +7,8 @@ import {getDriver} from './driver_repository';
 const driver = getDriver();
 
 // Wraps functions in fs or fs.promises, adding prefix to given paths.
-export class WrapFs<T extends string> {
-  constructor(readonly root: T) {}
+export class WrapFs {
+  constructor(readonly root: string) {}
 
   realpath(p: string): string {
     if (p.startsWith(this.root)) {
