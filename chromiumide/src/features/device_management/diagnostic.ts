@@ -57,9 +57,14 @@ export class DiagnosedError extends Error {
  */
 export function diagnoseSshError(cause: Error, output: string): DiagnosedError {
   if (output.includes('try running gcert ')) {
-    // TODO(oka): Add a button to run gcert. For code-server simply running gcert
-    // in the integrated terminal results in failure.
-    return new DiagnosedError(cause, 'try running gcert and retry', []);
+    return new DiagnosedError(cause, 'retry after running gcert', [
+      {
+        name: 'Run gcert',
+        async action() {
+          await vscode.commands.executeCommand('chromiumide.gcert.run');
+        },
+      },
+    ]);
   }
   if (
     output.includes('Could not resolve the IP address for host ') ||
