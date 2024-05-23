@@ -6,6 +6,13 @@ import * as net from 'net';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../shared/app/common/common_util';
 import {CancelledError} from '../../../shared/app/common/exec/types';
+import {MemoryOutputChannel} from '../../common/memory_output_channel';
+import {TeeOutputChannel} from '../../common/tee_output_channel';
+import {
+  DiagnosedError,
+  diagnoseSshError,
+  showErrorMessageWithButtons,
+} from './diagnostic';
 import {SshIdentity} from './ssh_identity';
 import * as sshUtil from './ssh_util';
 
@@ -90,7 +97,16 @@ async function startSshConnection(
     await Promise.race([startTunnelAndWait, checkTunnelIsUp]);
   } catch (e) {
     const err = e as Error;
-    void vscode.window.showErrorMessage(`SSH server failed: ${err}`);
+
+    if (err instanceof DiagnosedError) {
+      showErrorMessageWithButtons(
+        `SSH server failed: ${err.message}`,
+        err.buttons
+      );
+    } else {
+      void vscode.window.showErrorMessage(`SSH server failed: ${err}`);
+    }
+
     output.appendLine(`SSH server failed: ${err}\n${err.stack}`);
     return false;
   }
@@ -99,6 +115,8 @@ async function startSshConnection(
 
 /**
  * This call will block indefinitely until tunnel is exited or an error occurs
+ *
+ * @throws Error, or DiagnosedError in case of SSH error.
  */
 async function createTunnelAndWait(
   hostname: string,
@@ -113,8 +131,9 @@ async function createTunnelAndWait(
     `${forwardPort}:localhost:${SSH_PORT}`,
   ]);
 
+  const memoryOutput = new MemoryOutputChannel();
   const result = await commonUtil.exec(args[0], args.slice(1), {
-    logger: output,
+    logger: new TeeOutputChannel(memoryOutput, output),
     logStdout: true,
     cancellationToken: token,
   });
@@ -122,11 +141,7 @@ async function createTunnelAndWait(
     return;
   }
   if (result instanceof Error) {
-    throw new Error(
-      'Problem creating SSH tunnel. Maybe try gcert first?. Full error:'.concat(
-        result.message
-      )
-    );
+    throw diagnoseSshError(result, memoryOutput.output);
   }
   throw new Error('SSH server stopped unexpectedly');
 }

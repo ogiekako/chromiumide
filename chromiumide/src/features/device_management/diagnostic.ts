@@ -40,7 +40,7 @@ export class DiagnosedError extends Error {
   constructor(
     cause: Error,
     suggestion: string,
-    readonly buttons: readonly DiagnosticButton[]
+    readonly buttons: DiagnosticButton[]
   ) {
     super(suggestion ? cause.message + '; ' + suggestion : cause.message);
   }
