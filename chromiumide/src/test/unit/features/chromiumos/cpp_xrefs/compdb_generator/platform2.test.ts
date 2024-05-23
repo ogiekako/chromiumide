@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../../../../../shared/app/common/common_util';
 import * as config from '../../../../../../../shared/app/services/config';
+import {GenericCompdbGenerator} from '../../../../../../common/cpp_xrefs/generic_compdb_generator';
 import {ShouldGenerateResult} from '../../../../../../common/cpp_xrefs/types';
 import {Platform2} from '../../../../../../features/chromiumos/cpp_xrefs/compdb_generator/platform2';
 import * as compdbService from '../../../../../../features/chromiumos/cpp_xrefs/compdb_service';
@@ -35,11 +36,12 @@ inherit cros-workon platform user
     });
 
     const spiedFakeCompdbService = new SpiedFakeCompdbService(chromiumosRoot);
-    // CompilationDatabase registers event handlers in the constructor.
-    const compdbGenerator = new Platform2(
-      services.chromiumos.ChrootService.maybeCreate(chromiumosRoot, false)!,
-      new fakes.ConsoleOutputChannel(),
-      spiedFakeCompdbService
+    const compdbGenerator = new GenericCompdbGenerator(
+      new Platform2(
+        services.chromiumos.ChrootService.maybeCreate(chromiumosRoot, false)!,
+        new fakes.ConsoleOutputChannel(),
+        spiedFakeCompdbService
+      )
     );
     const cancellation = new vscode.CancellationTokenSource();
     return {

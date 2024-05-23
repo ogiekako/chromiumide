@@ -15,7 +15,8 @@ export class ChromiumosCppXrefs {
   ) {
     cppXrefs.register(
       output => new GenericCompdbGenerator(new Kernel(chrootService, output)),
-      output => new Platform2(chrootService, output),
+      output =>
+        new GenericCompdbGenerator(new Platform2(chrootService, output)),
       output => new PlatformEc(chrootService, output)
     );
   }
