@@ -4,7 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import {Board} from '../../../shared/app/common/board_or_host';
+import {Board} from '../../../shared/app/common/chromiumos/board_or_host';
 import {chromiumos} from '../../services';
 import {
   CROS_IMAGE_VERSION_RE_SRC,

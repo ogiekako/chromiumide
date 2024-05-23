@@ -4,7 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import {BoardOrHost} from '../../../../../shared/app/common/board_or_host';
+import {BoardOrHost} from '../../../../../shared/app/common/chromiumos/board_or_host';
 import * as compdbService from '../../../../features/chromiumos/cpp_xrefs/compdb_service';
 import {PackageInfo} from '../../../../services/chromiumos';
 

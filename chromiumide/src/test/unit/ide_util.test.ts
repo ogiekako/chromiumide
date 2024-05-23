@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as path from 'path';
-import {Board} from '../../../shared/app/common/board_or_host/board';
+import {Board} from '../../../shared/app/common/chromiumos/board_or_host/board';
 import {WrapFs} from '../../../shared/app/common/wrap_fs';
 import * as config from '../../../shared/app/services/config';
 import * as ideUtil from '../../ide_util';

@@ -7,7 +7,7 @@ import {
   BoardOrHost,
   Board,
   HOST,
-} from '../../../../../shared/app/common/board_or_host';
+} from '../../../../../shared/app/common/chromiumos/board_or_host';
 import {getSetupBoardsAlphabetic} from '../../../../common/cros';
 import {Context} from '../context';
 import {BoardItem} from './board_item';

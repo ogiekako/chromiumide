@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import {
   BoardOrHost,
   Host,
-} from '../../../../../shared/app/common/board_or_host';
+} from '../../../../../shared/app/common/chromiumos/board_or_host';
 import * as config from '../../../../../shared/app/services/config';
 import {getQualifiedPackageName} from '../../../../common/chromiumos/portage/ebuild';
 import {ViewItemContext} from '../constant';

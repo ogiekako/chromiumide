@@ -4,8 +4,8 @@
 
 import * as vscode from 'vscode';
 import {Platform} from '../../driver';
+import {crosExeFor} from '../common/chromiumos/cros';
 import * as commonUtil from '../common/common_util';
-import {crosExeFor} from '../common/cros';
 import {getDriver} from '../common/driver_repository';
 import {ProcessEnv} from '../common/exec/types';
 import {extensionName} from '../common/extension_name';

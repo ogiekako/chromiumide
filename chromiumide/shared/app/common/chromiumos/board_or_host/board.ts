@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {getDriver} from '../driver_repository';
+import {getDriver} from '../../driver_repository';
 import {CommonInterface, HOST_AS_STRING} from './common_interface';
 
 const driver = getDriver();

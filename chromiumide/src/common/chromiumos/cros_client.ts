@@ -4,7 +4,7 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {BoardOrHost} from '../../../shared/app/common/board_or_host';
+import {BoardOrHost} from '../../../shared/app/common/chromiumos/board_or_host';
 import * as commonUtil from '../../../shared/app/common/common_util';
 import {execSudo} from '../../services/sudo';
 import {ParsedPackageName, parseQualifiedPackageName} from './portage/ebuild';

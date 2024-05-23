@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import {
   BoardOrHost,
   parseBoardOrHost,
-} from '../../../../../../../shared/app/common/board_or_host';
+} from '../../../../../../../shared/app/common/chromiumos/board_or_host';
 import {getDriver} from '../../../../../../../shared/app/common/driver_repository';
 import {AbnormalExitError} from '../../../../../../../shared/app/common/exec/types';
 import {

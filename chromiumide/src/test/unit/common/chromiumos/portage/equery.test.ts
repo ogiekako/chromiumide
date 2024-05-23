@@ -6,7 +6,7 @@ import {
   Board,
   BoardOrHost,
   HOST,
-} from '../../../../../../shared/app/common/board_or_host';
+} from '../../../../../../shared/app/common/chromiumos/board_or_host';
 import {AbnormalExitError} from '../../../../../../shared/app/common/exec/types';
 import {getUseFlagsInstalled} from '../../../../../common/chromiumos/portage/equery';
 import * as services from '../../../../../services';

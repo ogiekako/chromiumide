@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import {crosExeFromCrosRoot} from '../common/chromiumos/cros';
 import * as commonUtil from '../common/common_util';
-import {crosExeFromCrosRoot} from '../common/cros';
 import {getDriver} from '../common/driver_repository';
 import {extensionName} from '../common/extension_name';
 import {StatusManager, TaskStatus} from '../ui/bg_task_status';

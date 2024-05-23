@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {BoardOrHost} from '../../../../shared/app/common/board_or_host';
+import {BoardOrHost} from '../../../../shared/app/common/chromiumos/board_or_host';
 import {AbnormalExitError} from '../../../../shared/app/common/exec/types';
 import {chromiumos} from '../../../services';
 import {ParsedPackageName} from './ebuild';

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {getDriver} from '../common/driver_repository';
+import {getDriver} from '../driver_repository';
 
 export const driver = getDriver();
 export const CROS_PATH = 'chromite/bin/cros';

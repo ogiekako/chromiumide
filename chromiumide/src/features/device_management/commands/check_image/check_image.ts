@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {Board} from '../../../../../shared/app/common/board_or_host';
+import {Board} from '../../../../../shared/app/common/chromiumos/board_or_host';
 import {SudoError} from '../../../../../shared/app/common/exec/types';
 import {seamlessDeployment} from '../../../../../shared/app/services/config';
 import {
