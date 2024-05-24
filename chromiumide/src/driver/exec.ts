@@ -11,6 +11,7 @@ import {
   CancelledError,
   ProcessError,
   SudoError,
+  ProcessEnv,
 } from '../../shared/app/common/exec/types';
 import * as shutil from '../../shared/app/common/shutil';
 
@@ -19,6 +20,12 @@ export function realExec(
   args: string[],
   options: ExecOptions = {}
 ): Promise<ExecResult | Error> {
+  if (options.env && options.extraEnv) {
+    throw new Error(
+      'Internal error: exec() with both env and extraEnv options is not allowed'
+    );
+  }
+
   return new Promise((resolve, _reject) => {
     if (options.logger) {
       options.logger.append(stringifyExecRequest(name, args, options));
@@ -26,7 +33,7 @@ export function realExec(
 
     const spawnOpts: childProcess.SpawnOptionsWithoutStdio = {
       cwd: options.cwd,
-      env: options.env as NodeJS.ProcessEnv,
+      env: constructEnv(options),
     };
 
     const command = childProcess.spawn(name, args, spawnOpts);
@@ -110,6 +117,19 @@ export function realExec(
   });
 }
 
+function constructEnv(options: ExecOptions): ProcessEnv | undefined {
+  if (options.env) {
+    return options.env;
+  }
+  if (options.extraEnv) {
+    return {
+      ...process.env,
+      ...options.extraEnv,
+    };
+  }
+  return undefined;
+}
+
 /** Always-printed environment variables. */
 export const ALLOWED_ENV_NAMES = Object.freeze([
   'HOME',
@@ -125,16 +145,16 @@ export const ALLOWED_ENV_NAMES = Object.freeze([
 function stringifyExecRequest(
   name: string,
   args: string[],
-  {cwd, env}: ExecOptions
+  options: ExecOptions
 ): string {
   const tokens: string[] = [];
-  if (cwd) {
-    tokens.push(`cd ${cwd};`);
+  if (options.cwd) {
+    tokens.push(`cd ${options.cwd};`);
   }
 
   // Record modified and/or allowlisted environment variables.
   const loggedKeys = [];
-  const usedEnv = env ?? process.env;
+  const usedEnv = constructEnv(options) ?? process.env;
   for (const key of Object.keys(usedEnv)) {
     const value = usedEnv[key];
 

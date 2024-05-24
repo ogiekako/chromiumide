@@ -253,10 +253,10 @@ subprocess.run(['python3', '-c', 'import time; time.sleep(10) # ${MARKER}'])
       logger: new SimpleLogger(log => {
         logs += log;
       }),
-      env: {a: 'b', c: 'd'},
+      extraEnv: {a: 'b', c: 'd'},
       cwd: '/tmp',
     });
-    expect(logs).toMatch('cd /tmp; env.* a=b c=d true\n');
+    expect(logs).toMatch('cd /tmp; env.* HOME=.* a=b c=d true\n');
   });
 
   it('does not log unallowlisted default env', async () => {
