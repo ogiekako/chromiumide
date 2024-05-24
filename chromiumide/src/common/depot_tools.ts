@@ -114,6 +114,7 @@ async function depotToolsPath(): Promise<{PATH: string}> {
   expandedPath.push(homeDepotTools);
 
   return {
+    ...process.env,
     PATH: expandedPath.join(':'),
   };
 }
