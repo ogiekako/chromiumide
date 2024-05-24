@@ -256,7 +256,6 @@ export async function flashImageToDevice(
       title: `Flashing ${imagePath} to ${hostname}`,
     },
     async (_progress, token) => {
-      const pathVar = await driver.getUserEnvPath();
       output.show(); // Open output channel to show logs of running `cros flash`.
       return await exec(
         getCrosPath(chromiumosRoot),
@@ -266,12 +265,11 @@ export async function flashImageToDevice(
           logStdout: true,
           cancellationToken: token,
           cwd: chromiumosRoot,
-          env: {
+          extraEnv: {
             BOTO_CONFIG: `${chromiumosRoot}/${BOTO_PATH}`,
             // cros flash cannot find python path with sys.executable in gs.py without this provided
             // explicitly in environment variable.
             PYTHONEXECUTABLE: '/usr/bin/python3',
-            PATH: pathVar instanceof Error ? undefined : pathVar,
           },
         }
       );
