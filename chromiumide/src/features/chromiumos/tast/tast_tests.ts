@@ -7,6 +7,7 @@ import {getDriver} from '../../../../shared/app/common/driver_repository';
 import * as config from '../../../../shared/app/services/config';
 import * as services from '../../../services';
 import {LazyTestController} from './lazy_test_controller';
+import {SymlinkResolver} from './symlink_resolver';
 import {TestCase} from './test_case';
 
 const driver = getDriver();
@@ -39,6 +40,14 @@ export class TastTests implements vscode.Disposable {
     this.lazyTestController,
   ];
 
+  private symlinkResolver?: SymlinkResolver;
+  get onDidCheckSymlinkForTesting(): vscode.Event<void> {
+    if (!this.symlinkResolver) {
+      throw new Error('Internal error: symlink resolver not instantiated');
+    }
+    return this.symlinkResolver.onDidProcess;
+  }
+
   // Maps URI of documents to TestCases
   private readonly visibleTestCases = new Map<string, TestCase>();
   get testCases(): TestCase[] {
@@ -50,7 +59,8 @@ export class TastTests implements vscode.Disposable {
    * working.
    */
   constructor(
-    private readonly chrootService: services.chromiumos.ChrootService
+    private readonly chrootService: services.chromiumos.ChrootService,
+    private readonly output: vscode.OutputChannel
   ) {}
 
   private tastTestsDir = driver.path.join(
@@ -79,7 +89,9 @@ export class TastTests implements vscode.Disposable {
       return false;
     }
 
+    this.symlinkResolver = new SymlinkResolver(this.tastTestsDir, this.output);
     this.subscriptions.push(
+      this.symlinkResolver,
       vscode.window.onDidChangeVisibleTextEditors(editors => {
         this.updateVisibleTestCases(editors);
       })
@@ -264,6 +276,12 @@ export class TastTests implements vscode.Disposable {
 
   static resetGlobalStateForTesting(): void {
     TastTests.checkPrerequisiteFailed = false;
+  }
+
+  setVscodeWindowTabGroupsForTesting(
+    tabGroups: typeof vscode.window.tabGroups
+  ): void {
+    this.symlinkResolver?.setVscodeWindowTabGroupsForTesting(tabGroups);
   }
 }
 

@@ -2,11 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {TastTests} from '../../../../../features/chromiumos/tast/tast_tests';
 import * as services from '../../../../../services';
 import * as testing from '../../../../testing';
+import {
+  FakeWorkspaceConfiguration,
+  VoidOutputChannel,
+} from '../../../../testing/fakes';
 import {FakeTextDocument} from '../../../../testing/fakes/text_document';
 
 function workspaceFolder(fsPath: string): vscode.WorkspaceFolder {
@@ -29,16 +34,21 @@ describe('TastTests', () => {
     const chrootService =
       services.chromiumos.ChrootService.maybeCreate(chromiumosRoot)!;
 
-    const tastTests = new TastTests(chrootService);
+    const output = new VoidOutputChannel();
+
+    const tastTests = new TastTests(chrootService, output);
 
     const initializeEvents = new testing.EventReader(tastTests.onDidInitialize);
     const changeEvents = new testing.EventReader(tastTests.onDidChange);
+
+    const subscriptions = [output, tastTests, initializeEvents, changeEvents];
 
     return {
       chromiumosRoot,
       tastTests,
       initializeEvents,
       changeEvents,
+      subscriptions,
     };
   });
 
@@ -46,9 +56,7 @@ describe('TastTests', () => {
     TastTests.resetGlobalStateForTesting();
 
     vscode.Disposable.from(
-      state.changeEvents,
-      state.initializeEvents,
-      state.tastTests
+      ...state.subscriptions.splice(0).reverse()
     ).dispose();
   });
 
@@ -179,4 +187,88 @@ func LocalPass(ctx context.Context, s *testing.State) {
       expect(await state.initializeEvents.read()).toEqual(testCase.wantSuccess);
     });
   }
+
+  it('warns if Go files under cros symlink is opened', async () => {
+    setUpFakes(state.chromiumosRoot, GOOD_SETUP);
+
+    await testing.putFiles(state.chromiumosRoot, {
+      'src/platform/tast-tests/src/go.chromium.org/tast-tests/cros/local/bundles/cros/example/pass.go':
+        '<test>',
+    });
+    await fs.promises.symlink(
+      'src/go.chromium.org/tast-tests/cros',
+      path.join(state.chromiumosRoot, 'src/platform/tast-tests/cros')
+    );
+    const testUnderSymlink = new FakeTextDocument({
+      uri: vscode.Uri.file(
+        path.join(
+          state.chromiumosRoot,
+          'src/platform/tast-tests/cros/local/bundles/cros/example/pass.go'
+        )
+      ),
+      text: '<test>',
+      languageId: 'go',
+    }) as vscode.TextDocument;
+
+    await state.tastTests.initialize();
+    expect(await state.initializeEvents.read()).toBeTrue();
+
+    const checkSymlinkEvents = new testing.EventReader(
+      state.tastTests.onDidCheckSymlinkForTesting,
+      state.subscriptions
+    );
+
+    // TODO(oka): install default vscode settings in `installFakeConfigs`.
+    const filesConfig = FakeWorkspaceConfiguration.fromDefaults(
+      'files',
+      new Map([['exclude', {}]]),
+      state.subscriptions
+    );
+    vscodeSpy.workspace.getConfiguration
+      .withArgs('files')
+      .and.returnValue(filesConfig);
+
+    vscodeSpy.window.showWarningMessage.and.returnValue('Yes and hide symlink');
+
+    const tabToClose = {
+      input: new vscode.TabInputText(
+        vscode.Uri.file(testUnderSymlink.fileName)
+      ),
+    } as vscode.Tab;
+
+    // TODO(oka): support vscode.window.tabGroups in our test double.
+    const tabGroupsSpy = jasmine.createSpyObj<
+      jasmine.SpyObj<typeof vscode.window.tabGroups>
+    >('vscode.window.tabGroups', ['close'], {
+      all: [
+        {
+          tabs: Object.freeze([tabToClose]),
+        } as vscode.TabGroup,
+      ],
+    });
+
+    state.tastTests.setVscodeWindowTabGroupsForTesting(tabGroupsSpy);
+
+    const editors = [
+      {
+        document: testUnderSymlink,
+      } as vscode.TextEditor,
+    ];
+    vscodeEmitters.window.onDidChangeVisibleTextEditors.fire(editors);
+
+    await checkSymlinkEvents.read();
+
+    expect(vscodeSpy.window.showWarningMessage).toHaveBeenCalledTimes(1);
+    expect(tabGroupsSpy.close as jasmine.Spy).toHaveBeenCalledOnceWith([
+      tabToClose,
+    ]);
+    expect(filesConfig.get('exclude')).toEqual({
+      cros: true,
+    });
+
+    // Warning is not shown again for the same file.
+    vscodeEmitters.window.onDidChangeVisibleTextEditors.fire(editors);
+    await checkSymlinkEvents.read();
+    expect(vscodeSpy.window.showWarningMessage).toHaveBeenCalledTimes(1);
+  });
 });

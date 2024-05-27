@@ -33,6 +33,7 @@ export {ProgressLocation} from './progress_location';
 export {Range} from './range';
 export {StatusBarAlignment, StatusBarItem} from './status_bar';
 export {Selection} from './selection';
+export {TabInputText} from './tab_input_text';
 export {TestMessage} from './test_message';
 export {TestRunProfileKind} from './test_run_profile_kind';
 export {TextEdit} from './text_edit';

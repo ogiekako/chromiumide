@@ -265,6 +265,7 @@ export const tast = {
   showGoAlternateToolsChangedMessage: new ConfigValue<boolean>(
     'tast.showGoAlternateToolsChangedMessage'
   ),
+  showWarningForSymlink: new ConfigValue<boolean>('tast.showWarningForSymlink'),
 };
 
 export const testCoverage = {
@@ -284,3 +285,20 @@ export const chromiumideDevelopment = {
   // getPlatform())
   osPlatform: new ConfigValue<string>('chromiumideDevelopment.osPlatform'),
 };
+
+/**
+ * Subset of settings VSCode supports that ChromiumIDE uses.. The default values are configured by
+ * VSCode, and thus those are not listed in our package.json.
+ * https://code.visualstudio.com/docs/getstarted/settings#_default-settings
+ */
+const vscodeSettings = {
+  files: {
+    exclude: new ConfigValue<Record<string, boolean>>(
+      'exclude',
+      () => 'files',
+      vscode.ConfigurationTarget.Workspace
+    ),
+  },
+};
+
+export {vscodeSettings as vscode};
