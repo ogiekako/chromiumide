@@ -25,6 +25,7 @@ type FeatureGroup =
   | 'device'
   | 'ebuild'
   | 'format'
+  | 'gcert'
   | 'gerrit'
   | 'git_watcher'
   | 'hints'
@@ -347,6 +348,21 @@ type ExtensionSuggestionEvent = EventBase & {
       }
   );
 
+type GcertEvent = EventBase & {
+  group: 'gcert';
+} & (
+    | {
+        category: 'interactive';
+        name: 'gcert_run';
+      }
+    | {
+        category: 'error';
+        name: 'gcert_nonzero_exit_code';
+        gcertstatus: number;
+        exit_code: number;
+      }
+  );
+
 type GerritEvent = EventBase & {
   group: 'gerrit';
 } & (
@@ -515,6 +531,7 @@ export type Event =
   | DeviceManagementEvent
   | EbuildEvent
   | ExtensionSuggestionEvent
+  | GcertEvent
   | GerritEvent
   | GitWatcherEvent
   | HintsEvent

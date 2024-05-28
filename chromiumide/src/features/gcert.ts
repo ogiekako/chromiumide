@@ -9,9 +9,12 @@ import * as vscode from 'vscode';
 import * as dateFns from 'date-fns';
 import glob from 'glob';
 import * as commonUtil from '../../shared/app/common/common_util';
+import {getDriver} from '../../shared/app/common/driver_repository';
 import {escapeArray} from '../../shared/app/common/shutil';
 import {assertNever} from '../../shared/app/common/typecheck';
 import {vscodeRegisterCommand} from '../../shared/app/common/vscode/commands';
+
+const driver = getDriver();
 
 // http://go/gcertstatus#scripting-with-gcertstatus
 enum Gcertstatus {
@@ -44,9 +47,16 @@ export class Gcert implements vscode.Disposable {
   ) {}
 
   private async run() {
+    driver.metrics.send({
+      group: 'gcert',
+      category: 'interactive',
+      description: 'running gcert is requested',
+      name: 'gcert_run',
+    });
+
     let sshAuthSock: undefined | string;
-    const status = await this.runGcertstatus();
-    switch (status) {
+    const gcertStatus = await this.runGcertstatus();
+    switch (gcertStatus) {
       case Gcertstatus.Success:
       case Gcertstatus.ExpireSoon:
       case Gcertstatus.Expired:
@@ -64,10 +74,21 @@ export class Gcert implements vscode.Disposable {
         break;
       }
       default:
-        assertNever(status);
+        assertNever(gcertStatus);
     }
 
-    await this.runGcert(sshAuthSock);
+    const exitCode = await this.runGcert(sshAuthSock);
+
+    if (exitCode !== 0) {
+      driver.metrics.send({
+        group: 'gcert',
+        category: 'error',
+        description: 'gcert exit status (-1 if not available)',
+        name: 'gcert_nonzero_exit_code',
+        gcertstatus: gcertStatus,
+        exit_code: exitCode ?? -1,
+      });
+    }
   }
 
   /**
@@ -149,7 +170,10 @@ export class Gcert implements vscode.Disposable {
     return result.exitStatus as Gcertstatus;
   }
 
-  private async runGcert(sshAuthSock: undefined | string) {
+  /** @returns exit code of gcert */
+  private async runGcert(
+    sshAuthSock: undefined | string
+  ): Promise<number | undefined> {
     const terminal = vscode.window.createTerminal();
     const waitClose = new Promise<void>(resolve => {
       const subscription = vscode.window.onDidCloseTerminal(closedTerminal => {
@@ -166,11 +190,14 @@ export class Gcert implements vscode.Disposable {
     terminal.sendText('exec ' + escapeArray(command));
 
     await waitClose;
-    if (terminal.exitStatus?.code === 0) {
+
+    const exitCode = terminal.exitStatus?.code;
+    if (exitCode === 0) {
       void vscode.window.showInformationMessage('gcert succeeded');
-      return;
+    } else {
+      void vscode.window.showErrorMessage('gcert failed');
     }
-    void vscode.window.showErrorMessage('gcert failed');
+    return exitCode;
   }
 
   dispose(): void {
