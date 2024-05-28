@@ -71,6 +71,42 @@ interface ActivateChromiumosEvent extends EventBase {
   name: 'activate_chromiumos_error';
 }
 
+type BoardsAndPackagesEvent = EventBase & {
+  group: 'boards_and_packages';
+} & (
+    | {
+        category: 'interactive';
+        name: 'boards_and_packages_open_ebuild';
+      }
+    | {
+        category: 'interactive';
+        name:
+          | 'boards_and_packages_cros_workon_start'
+          | 'boards_and_packages_cros_workon_stop';
+        package: string;
+        board: string;
+      }
+    | {
+        category: 'background';
+        name: 'boards_and_packages_get_setup_boards';
+        build_dir: string;
+      }
+  );
+
+interface ChromiumGtestEvent extends EventBase {
+  group: 'chromium.gtest';
+  category: 'error';
+  name:
+    | 'chromium_gtest_no_test_cases_found'
+    | 'chromium_gtest_calculate_test_targets_failed'
+    | 'chromium_gtest_build_test_targets_failed'
+    | 'chromium_gtest_extract_tests_from_target'
+    | 'chromium_gtest_test_target_has_no_matching_test_cases'
+    | 'chromium_gtest_test_run_failed'
+    | 'chromium_gtest_parse_test_results_failed'
+    | 'chromium_gtest_test_item_for_test_result_failed';
+}
+
 type ChromiumIdeExtensionEvent = EventBase & {
   group: 'misc';
 } & (
@@ -88,20 +124,6 @@ type ChromiumIdeExtensionEvent = EventBase & {
         name: 'extension_activation_failed';
       }
   );
-
-interface ChromiumGtestEvent extends EventBase {
-  group: 'chromium.gtest';
-  category: 'error';
-  name:
-    | 'chromium_gtest_no_test_cases_found'
-    | 'chromium_gtest_calculate_test_targets_failed'
-    | 'chromium_gtest_build_test_targets_failed'
-    | 'chromium_gtest_extract_tests_from_target'
-    | 'chromium_gtest_test_target_has_no_matching_test_cases'
-    | 'chromium_gtest_test_run_failed'
-    | 'chromium_gtest_parse_test_results_failed'
-    | 'chromium_gtest_test_item_for_test_result_failed';
-}
 
 type ChromiumOutputDirectoriesEvent = EventBase & {
   group: 'chromium.outputDirectories';
@@ -220,6 +242,13 @@ interface DebuggingEvent extends EventBase {
   tests_count: number;
 }
 
+interface DefaultBoardEvent extends EventBase {
+  category: 'interactive';
+  group: 'misc';
+  name: 'select_target_board';
+  board: string;
+}
+
 type DeviceManagementEvent = EventBase & {group: 'device'} & (
     | {
         category: 'interactive';
@@ -284,6 +313,17 @@ type DeviceManagementEvent = EventBase & {group: 'device'} & (
       }
   );
 
+type EbuildEvent = EventBase & {
+  group: 'ebuild';
+} & {
+  category: 'background';
+  name:
+    | 'show_portage_predefined_read_only_variable_hover'
+    | 'show_ebuild_defined_variable_hover'
+    | 'show_ebuild_phase_function_hover';
+  word: string;
+};
+
 type ExtensionSuggestionEvent = EventBase & {
   group: 'misc';
 } & (
@@ -306,17 +346,6 @@ type ExtensionSuggestionEvent = EventBase & {
         name: 'misc_autosetgov_activated';
       }
   );
-
-type EbuildEvent = EventBase & {
-  group: 'ebuild';
-} & {
-  category: 'background';
-  name:
-    | 'show_portage_predefined_read_only_variable_hover'
-    | 'show_ebuild_defined_variable_hover'
-    | 'show_ebuild_phase_function_hover';
-  word: string;
-};
 
 type GerritEvent = EventBase & {
   group: 'gerrit';
@@ -434,28 +463,6 @@ type PrebuiltUtilsEvent = EventBase & {
   pattern: string;
 };
 
-type BoardsAndPackagesEvent = EventBase & {
-  group: 'boards_and_packages';
-} & (
-    | {
-        category: 'interactive';
-        name: 'boards_and_packages_open_ebuild';
-      }
-    | {
-        category: 'interactive';
-        name:
-          | 'boards_and_packages_cros_workon_start'
-          | 'boards_and_packages_cros_workon_stop';
-        package: string;
-        board: string;
-      }
-    | {
-        category: 'background';
-        name: 'boards_and_packages_get_setup_boards';
-        build_dir: string;
-      }
-  );
-
 type SpellcheckerEvent = EventBase &
   (
     | {
@@ -470,13 +477,6 @@ type SpellcheckerEvent = EventBase &
         name: 'spellchecker_error';
       }
   );
-
-interface DefaultBoardEvent extends EventBase {
-  category: 'interactive';
-  group: 'misc';
-  name: 'select_target_board';
-  board: string;
-}
 
 type TastEvent = EventBase & {
   group: 'tast';
@@ -498,7 +498,6 @@ interface VirtualdocumentOpenDocumentEvent extends EventBase {
   document: string;
 }
 
-// Add new Event interfaces to UAEventDeprecated (joint by or |).
 export type Event =
   | ActivateChromiumosEvent
   | BoardsAndPackagesEvent
@@ -512,9 +511,10 @@ export type Event =
   | CppXrefsEvent
   | CrosFormatEvent
   | DebuggingEvent
+  | DefaultBoardEvent
   | DeviceManagementEvent
-  | ExtensionSuggestionEvent
   | EbuildEvent
+  | ExtensionSuggestionEvent
   | GerritEvent
   | GitWatcherEvent
   | HintsEvent
@@ -524,7 +524,6 @@ export type Event =
   | OwnersEvent
   | PrebuiltUtilsEvent
   | SpellcheckerEvent
-  | DefaultBoardEvent
   | TastEvent
   | VirtualdocumentOpenDocumentEvent;
 
