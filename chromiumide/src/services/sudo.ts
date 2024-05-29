@@ -43,8 +43,8 @@ export async function execSudo(
       ['--askpass', '--', name, ...args],
       {
         ...options,
-        extraEnv: {
-          ...(options.extraEnv ?? {}),
+        env: {
+          ...(options.env ?? {}),
           SUDO_ASKPASS: askpass.scriptPath,
         },
       }
