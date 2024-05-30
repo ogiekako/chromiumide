@@ -1,0 +1,17 @@
+{
+  "name": "chromiumide-server",
+  "description": "language server implementation for ChromiumIDE",
+  "version": "0.0.1",
+  "author": "Google",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  },
+  "repository": "https://chromium.googlesource.com/chromiumos/infra/ide",
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11",
+    "vscode-uri": "^3.0.8"
+  },
+  "scripts": {}
+}

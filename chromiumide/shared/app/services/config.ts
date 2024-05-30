@@ -174,6 +174,7 @@ export const underDevelopment = {
     'underDevelopment.autoninjaImprovements'
   ),
   chromiumBuild: new ConfigValue<boolean>('underDevelopment.chromiumBuild'),
+  ebuildLsp: new ConfigValue<boolean>('underDevelopment.ebuildLsp'),
   platform2GtestDebugging: new ConfigValue<boolean>(
     'underDevelopment.platform2GtestDebugging'
   ),

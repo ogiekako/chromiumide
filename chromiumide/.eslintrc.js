@@ -149,6 +149,12 @@ module.exports = {
           },
         },
         {
+          files: ['server/**/*.ts'],
+          parserOptions: {
+            project: 'server/tsconfig.json',
+          },
+        },
+        {
           files: ['tools/**/*.ts'],
           parserOptions: {
             project: 'tools/tsconfig.json',

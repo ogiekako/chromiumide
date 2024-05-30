@@ -15,6 +15,7 @@ import {BoardsAndPackages} from './boards_and_packages';
 import {Coverage} from './coverage';
 import {ChromiumosCppXrefs} from './cpp_xrefs';
 import * as ebuild from './ebuild';
+import {EbuildLspClient} from './ebuild/lsp_client';
 import {Platform2Gtest} from './platform2_gtest';
 import * as platformEc from './platform_ec';
 import * as suggestAutosetgov from './suggest_autosetgov';
@@ -98,7 +99,13 @@ export class Chromiumos implements vscode.Disposable {
       );
     }
 
-    ebuild.activate(ephemeralContext, this.root);
+    if (config.underDevelopment.ebuildLsp.get()) {
+      const ebuildLspClient = new EbuildLspClient(context.extensionUri);
+      this.subscriptions.push(ebuildLspClient);
+      void ebuildLspClient.start();
+    } else {
+      ebuild.activate(ephemeralContext, this.root);
+    }
 
     const chrootService = services.chromiumos.ChrootService.maybeCreate(
       this.root

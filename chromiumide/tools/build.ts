@@ -37,6 +37,20 @@ async function buildExtension(production: boolean) {
   await build(options);
 }
 
+async function buildServer(production: boolean, outfile?: string) {
+  const options: BuildOptions = {
+    ...commonOptions(production),
+    bundle: true,
+    format: 'cjs',
+    platform: 'node',
+    outfile: outfile ?? './dist/server.js',
+    sourceRoot: './server',
+    tsconfig: './server/tsconfig.json',
+    entryPoints: ['./server/main.ts'],
+  };
+  await build(options);
+}
+
 async function buildWebview(production: boolean) {
   // Bundle files
   const options: BuildOptions = {
@@ -120,6 +134,7 @@ async function main() {
   } else {
     promises.push(
       buildExtension(production),
+      buildServer(production),
       buildWebview(production),
       runWebpack(production)
     );
