@@ -102,7 +102,7 @@ export async function buildFakeDepotTools(root: string): Promise<void> {
  * This function can be called from unit tests.
  */
 export function getExtensionUri(): vscode.Uri {
-  const dir = path.normalize(path.join(__dirname, '..', '..', '..'));
+  const dir = path.normalize(path.join(__dirname, '../../../..'));
   return vscode.Uri.file(dir);
 }
 
