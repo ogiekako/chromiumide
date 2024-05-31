@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as fs from 'fs';
 import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
-import dedent from 'dedent';
-import mockFs from 'mock-fs';
 import {EbuildLinkProvider} from '../../../../../features/chromiumos/ebuild/link_provider';
 import * as testing from '../../../../testing';
 import {
@@ -50,21 +50,21 @@ function openFolderCmdUri(
  * for given range and file path, assuming it is a directory.
  */
 function dirLinks(
+  chromiumosRoot: string,
   range: vscode.Range,
-  path: string,
-  pathToCros = '/path/to/cros',
+  subpath: string,
   remoteHost: string | undefined = undefined
 ): vscode.DocumentLink[] {
   return [
     documentLink(
       range,
-      vscode.Uri.parse(csBase + path),
-      `Open ${path} in CodeSearch`
+      vscode.Uri.parse(csBase + subpath),
+      `Open ${subpath} in CodeSearch`
     ),
     documentLink(
       range,
-      openFolderCmdUri(`${pathToCros}/${path}`, remoteHost),
-      `Open ${path} in New VS Code Window`
+      openFolderCmdUri(path.join(chromiumosRoot, subpath), remoteHost),
+      `Open ${subpath} in New VS Code Window`
     ),
   ];
 }
@@ -74,69 +74,71 @@ function dirLinks(
  * for given range and file path, assuming it is a file.
  */
 function fileLinks(
+  chromiumosRoot: string,
   range: vscode.Range,
-  path: string,
-  pathToCros = '/path/to/cros'
+  subpath: string
 ): vscode.DocumentLink[] {
   return [
     documentLink(
       range,
-      vscode.Uri.file(`${pathToCros}/${path}`),
-      `Open ${path} in New Tab`
+      vscode.Uri.file(path.join(chromiumosRoot, subpath)),
+      `Open ${subpath} in New Tab`
     ),
     documentLink(
       range,
-      vscode.Uri.parse(csBase + path),
-      `Open ${path} in CodeSearch`
+      vscode.Uri.parse(csBase + subpath),
+      `Open ${subpath} in CodeSearch`
     ),
   ];
 }
 
-/** Wrapper for mock-fs. */
-function mockEbuildFs(root: string, opts: {dirs?: string[]; files?: string[]}) {
-  // Directories are configure by `{path: {}}` objects.
-  const dirConfig = opts.dirs
-    ? opts.dirs
-        .map(dir => root + dir)
-        .reduce((obj, key) => ({...obj, [key]: {}}), {})
-    : {};
-
-  // Regular files are configure by `{path: ''}` objects.
-  const fileConfig = opts.files
-    ? opts.files
-        .map(f => root + f)
-        .reduce((obj, key) => ({...obj, [key]: ''}), {})
-    : {};
-
-  mockFs({...dirConfig, ...fileConfig});
+async function buildFs(
+  chromiumosRoot: string,
+  opts: {dirs?: string[]; files?: string[]}
+) {
+  for (const dir of opts?.dirs ?? []) {
+    await fs.promises.mkdir(path.join(chromiumosRoot, dir), {recursive: true});
+  }
+  await testing.putFiles(
+    chromiumosRoot,
+    opts.files?.reduce((obj, key) => ({...obj, [key]: ''}), {}) ?? {}
+  );
 }
 
-describe('Ebuild Link Provider for CROS_WORKON variables', () => {
-  afterEach(() => {
-    mockFs.restore();
+describe('Ebuild Link Provider', () => {
+  const tempDir = testing.tempDir();
+
+  const state = testing.cleanState(() => {
+    const chromiumosRoot = tempDir.path;
+
+    return {
+      chromiumosRoot,
+      dirLinks: dirLinks.bind(null, chromiumosRoot),
+      fileLinks: fileLinks.bind(null, chromiumosRoot),
+    };
   });
 
-  it('extracts links from string-type value', async () => {
-    const CONTENT = dedent`# copyright
-        EAPI=7
-        CROS_WORKON_USE_VCSID="1"
-        CROS_WORKON_LOCALNAME="platform2"
-        CROS_WORKON_PROJECT="chromiumos/platform2"
-        CROS_WORKON_OUTOFTREE_BUILD=1
-        CROS_WORKON_SUBTREE="common-mk biod .gn"
-        PLATFORM_SUBDIR="biod"
-        `;
+  it('on CROS_WORKON extracts links from string-type value', async () => {
+    const CONTENT = `# copyright
+EAPI=7
+CROS_WORKON_USE_VCSID="1"
+CROS_WORKON_LOCALNAME="platform2"
+CROS_WORKON_PROJECT="chromiumos/platform2"
+CROS_WORKON_OUTOFTREE_BUILD=1
+CROS_WORKON_SUBTREE="common-mk biod .gn"
+PLATFORM_SUBDIR="biod"
+`;
 
     const PLATFORM2 = 'src/platform2';
     const COMMONMK = PLATFORM2 + '/common-mk';
     const BIOD = PLATFORM2 + '/biod';
     const GN = PLATFORM2 + '/.gn';
-    mockEbuildFs('/path/to/cros/', {
+    await buildFs(state.chromiumosRoot, {
       dirs: [PLATFORM2, COMMONMK, BIOD],
       files: [GN],
     });
 
-    const ebuildLinkProvider = new EbuildLinkProvider('/path/to/cros');
+    const ebuildLinkProvider = new EbuildLinkProvider(state.chromiumosRoot);
     const textDocument = new FakeTextDocument({text: CONTENT});
 
     const documentLinks = await ebuildLinkProvider.provideDocumentLinks(
@@ -151,35 +153,35 @@ describe('Ebuild Link Provider for CROS_WORKON variables', () => {
 
     expect(documentLinks).toEqual(
       [
-        dirLinks(RANGE_PLATFORM2, PLATFORM2),
-        dirLinks(RANGE_COMMONMK, COMMONMK),
-        dirLinks(RANGE_BIOD, BIOD),
-        fileLinks(RANGE_GN, GN),
+        state.dirLinks(RANGE_PLATFORM2, PLATFORM2),
+        state.dirLinks(RANGE_COMMONMK, COMMONMK),
+        state.dirLinks(RANGE_BIOD, BIOD),
+        state.fileLinks(RANGE_GN, GN),
       ].flat()
     );
   });
 
-  it('extracts links from one-line array-type value', async () => {
-    const CONTENT = dedent`# copyright
-        EAPI=7
-        CROS_WORKON_PROJECT=("chromiumos/platform2" "chromiumos/platform/vpd")
-        CROS_WORKON_LOCALNAME=("platform2" "platform/vpd")
-        CROS_WORKON_DESTDIR=("\${S}/platform2" "\${S}/platform2/vpd")
-        CROS_WORKON_SUBTREE=("common-mk .gn" "")
+  it('on CROS_WORKON extracts links from one-line array-type value', async () => {
+    const CONTENT = `# copyright
+EAPI=7
+CROS_WORKON_PROJECT=("chromiumos/platform2" "chromiumos/platform/vpd")
+CROS_WORKON_LOCALNAME=("platform2" "platform/vpd")
+CROS_WORKON_DESTDIR=("\${S}/platform2" "\${S}/platform2/vpd")
+CROS_WORKON_SUBTREE=("common-mk .gn" "")
 
-        PLATFORM_SUBDIR="vpd"
-        `;
+PLATFORM_SUBDIR="vpd"
+`;
 
     const PLATFORM2 = 'src/platform2';
     const VPD = 'src/platform/vpd';
     const COMMONMK = PLATFORM2 + '/common-mk';
     const GN = PLATFORM2 + '/.gn';
-    mockEbuildFs('/path/to/cros/', {
+    await buildFs(state.chromiumosRoot, {
       dirs: [PLATFORM2, VPD, COMMONMK],
       files: [GN],
     });
 
-    const ebuildLinkProvider = new EbuildLinkProvider('/path/to/cros');
+    const ebuildLinkProvider = new EbuildLinkProvider(state.chromiumosRoot);
     const textDocument = new FakeTextDocument({text: CONTENT});
 
     const documentLinks = await ebuildLinkProvider.provideDocumentLinks(
@@ -194,15 +196,15 @@ describe('Ebuild Link Provider for CROS_WORKON variables', () => {
 
     expect(documentLinks).toEqual(
       [
-        dirLinks(RANGE_PLATFORM2, PLATFORM2),
-        dirLinks(RANGE_VPD, VPD),
-        dirLinks(RANGE_COMMONMK, COMMONMK),
-        fileLinks(RANGE_GN, GN),
+        state.dirLinks(RANGE_PLATFORM2, PLATFORM2),
+        state.dirLinks(RANGE_VPD, VPD),
+        state.dirLinks(RANGE_COMMONMK, COMMONMK),
+        state.fileLinks(RANGE_GN, GN),
       ].flat()
     );
   });
 
-  it('extracts links from multiple-line array-type value', async () => {
+  it('on CROS_WORKON extracts links from multiple-line array-type value', async () => {
     const CONTENT = `# copyright
 EAPI=7
 
@@ -226,7 +228,7 @@ CROS_WORKON_SUBTREE=(
 \t""
 )
 PLATFORM_SUBDIR="arc/keymint"
-    `;
+`;
 
     const PLATFORM2 = 'src/platform2';
     const SYSTEM_KEYMINT = 'src/aosp/system/keymint';
@@ -235,7 +237,7 @@ PLATFORM_SUBDIR="arc/keymint"
     const FEATURED = PLATFORM2 + '/featured';
     const ARC_KEYMINT = PLATFORM2 + '/arc/keymint';
     const GN = PLATFORM2 + '/.gn';
-    mockEbuildFs('/path/to/cros/', {
+    await buildFs(state.chromiumosRoot, {
       dirs: [
         PLATFORM2,
         SYSTEM_KEYMINT,
@@ -247,7 +249,7 @@ PLATFORM_SUBDIR="arc/keymint"
       files: [GN],
     });
 
-    const ebuildLinkProvider = new EbuildLinkProvider('/path/to/cros');
+    const ebuildLinkProvider = new EbuildLinkProvider(state.chromiumosRoot);
     const textDocument = new FakeTextDocument({text: CONTENT});
 
     const documentLinks = await ebuildLinkProvider.provideDocumentLinks(
@@ -265,28 +267,28 @@ PLATFORM_SUBDIR="arc/keymint"
 
     expect(documentLinks).toEqual(
       [
-        dirLinks(RANGE_PLATFORM2, PLATFORM2),
-        dirLinks(RANGE_SYSTEM_KEYMINT, SYSTEM_KEYMINT),
-        dirLinks(RANGE_LIBCUTILS, LIBCUTILS),
-        dirLinks(RANGE_COMMONMK, COMMONMK),
-        dirLinks(RANGE_FEATURED, FEATURED),
-        dirLinks(RANGE_ARC_KEYMINT, ARC_KEYMINT),
-        fileLinks(RANGE_GN, GN),
+        state.dirLinks(RANGE_PLATFORM2, PLATFORM2),
+        state.dirLinks(RANGE_SYSTEM_KEYMINT, SYSTEM_KEYMINT),
+        state.dirLinks(RANGE_LIBCUTILS, LIBCUTILS),
+        state.dirLinks(RANGE_COMMONMK, COMMONMK),
+        state.dirLinks(RANGE_FEATURED, FEATURED),
+        state.dirLinks(RANGE_ARC_KEYMINT, ARC_KEYMINT),
+        state.fileLinks(RANGE_GN, GN),
       ].flat()
     );
   });
 
-  it('handles local name with leading two dots', async () => {
+  it('on CROS_WORKON handles local name with leading two dots', async () => {
     const CONTENT = `# copyright
 EAPI="7"
 CROS_WORKON_PROJECT="chromiumos/platform/tpm"
 CROS_WORKON_LOCALNAME="../third_party/tpm"
-    `;
+`;
 
     const TPM = 'src/third_party/tpm';
-    mockEbuildFs('/path/to/cros/', {dirs: [TPM]});
+    await buildFs(state.chromiumosRoot, {dirs: [TPM]});
 
-    const ebuildLinkProvider = new EbuildLinkProvider('/path/to/cros');
+    const ebuildLinkProvider = new EbuildLinkProvider(state.chromiumosRoot);
     const textDocument = new FakeTextDocument({text: CONTENT});
 
     const documentLinks = await ebuildLinkProvider.provideDocumentLinks(
@@ -296,10 +298,10 @@ CROS_WORKON_LOCALNAME="../third_party/tpm"
 
     const RANGE_TPM = new vscode.Range(3, 23, 3, 41);
 
-    expect(documentLinks).toEqual([dirLinks(RANGE_TPM, TPM)].flat());
+    expect(documentLinks).toEqual([state.dirLinks(RANGE_TPM, TPM)].flat());
   });
 
-  it('does not generate subtree links when length does not match localname', async () => {
+  it('on CROS_WORKON does not generate subtree links when length does not match localname', async () => {
     const CONTENT = `# copyright
 EAPI=7
 
@@ -312,15 +314,15 @@ CROS_WORKON_SUBTREE=(
 \t"common-mk featured arc/keymint .gn"
 )
 PLATFORM_SUBDIR="arc/keymint"
-        `;
+`;
 
     const PLATFORM2 = 'src/platform2';
     const SYSTEM_KEYMINT = 'src/aosp/system/keymint';
-    mockEbuildFs('/path/to/cros/', {
+    await buildFs(state.chromiumosRoot, {
       dirs: [PLATFORM2, SYSTEM_KEYMINT],
     });
 
-    const ebuildLinkProvider = new EbuildLinkProvider('/path/to/cros');
+    const ebuildLinkProvider = new EbuildLinkProvider(state.chromiumosRoot);
     const textDocument = new FakeTextDocument({text: CONTENT});
 
     const documentLinks = await ebuildLinkProvider.provideDocumentLinks(
@@ -333,28 +335,28 @@ PLATFORM_SUBDIR="arc/keymint"
 
     expect(documentLinks).toEqual(
       [
-        dirLinks(RANGE_PLATFORM2, PLATFORM2),
-        dirLinks(RANGE_SYSTEM_KEYMINT, SYSTEM_KEYMINT),
+        state.dirLinks(RANGE_PLATFORM2, PLATFORM2),
+        state.dirLinks(RANGE_SYSTEM_KEYMINT, SYSTEM_KEYMINT),
       ].flat()
     );
   });
 
-  it('generates remote links', async () => {
-    const CONTENT = dedent`# copyright
-    EAPI=7
-    CROS_WORKON_PROJECT=("chromiumos/platform2")
-    CROS_WORKON_LOCALNAME=("platform2")
-    CROS_WORKON_DESTDIR=("\${S}/platform2")
-    CROS_WORKON_SUBTREE=("common-mk .gn")
+  it('on CROS_WORKON generates remote links', async () => {
+    const CONTENT = `# copyright
+EAPI=7
+CROS_WORKON_PROJECT=("chromiumos/platform2")
+CROS_WORKON_LOCALNAME=("platform2")
+CROS_WORKON_DESTDIR=("\${S}/platform2")
+CROS_WORKON_SUBTREE=("common-mk .gn")
 
-    PLATFORM_SUBDIR="vpd"
-    `;
+PLATFORM_SUBDIR="vpd"
+`;
 
     const PLATFORM2 = 'src/platform2';
     const COMMONMK = PLATFORM2 + '/common-mk';
     const GN = PLATFORM2 + '/.gn';
-    const CHROOT = '/path/to/cros';
-    mockEbuildFs('/path/to/cros/', {
+    const CHROOT = state.chromiumosRoot;
+    await buildFs(state.chromiumosRoot, {
       dirs: [PLATFORM2, COMMONMK],
       files: [GN],
     });
@@ -379,29 +381,29 @@ PLATFORM_SUBDIR="arc/keymint"
 
     expect(documentLinks).toEqual(
       [
-        dirLinks(RANGE_PLATFORM2, PLATFORM2, CHROOT, HOSTNAME),
-        dirLinks(RANGE_COMMONMK, COMMONMK, CHROOT, HOSTNAME),
-        fileLinks(RANGE_GN, GN),
+        state.dirLinks(RANGE_PLATFORM2, PLATFORM2, HOSTNAME),
+        state.dirLinks(RANGE_COMMONMK, COMMONMK, HOSTNAME),
+        state.fileLinks(RANGE_GN, GN),
       ].flat()
     );
   });
 
-  it('does not generate remote vscode links for non-ssh-remote', async () => {
-    const CONTENT = dedent`# copyright
-    EAPI=7
-    CROS_WORKON_PROJECT=("chromiumos/platform2")
-    CROS_WORKON_LOCALNAME=("platform2")
-    CROS_WORKON_DESTDIR=("\${S}/platform2")
-    CROS_WORKON_SUBTREE=("common-mk .gn")
+  it('on CROS_WORKON does not generate remote vscode links for non-ssh-remote', async () => {
+    const CONTENT = `# copyright
+EAPI=7
+CROS_WORKON_PROJECT=("chromiumos/platform2")
+CROS_WORKON_LOCALNAME=("platform2")
+CROS_WORKON_DESTDIR=("\${S}/platform2")
+CROS_WORKON_SUBTREE=("common-mk .gn")
 
-    PLATFORM_SUBDIR="vpd"
-    `;
+PLATFORM_SUBDIR="vpd"
+`;
 
     const PLATFORM2 = 'src/platform2';
     const COMMONMK = PLATFORM2 + '/common-mk';
     const GN = PLATFORM2 + '/.gn';
-    const CHROOT = '/path/to/cros';
-    mockEbuildFs('/path/to/cros/', {
+    const CHROOT = state.chromiumosRoot;
+    await buildFs(state.chromiumosRoot, {
       dirs: [PLATFORM2, COMMONMK],
       files: [GN],
     });
@@ -427,31 +429,31 @@ PLATFORM_SUBDIR="arc/keymint"
     // For directory, only generates the CS link but not the vscode link.
     expect(documentLinks).toEqual(
       [
-        dirLinks(RANGE_PLATFORM2, PLATFORM2, CHROOT, HOSTNAME)[0],
-        dirLinks(RANGE_COMMONMK, COMMONMK, CHROOT, HOSTNAME)[0],
-        fileLinks(RANGE_GN, GN),
+        state.dirLinks(RANGE_PLATFORM2, PLATFORM2, HOSTNAME)[0],
+        state.dirLinks(RANGE_COMMONMK, COMMONMK, HOSTNAME)[0],
+        state.fileLinks(RANGE_GN, GN),
       ].flat()
     );
   });
 
-  it('ignores missing files', async () => {
-    const CONTENT = dedent`# copyright
-        EAPI=7
-        CROS_WORKON_USE_VCSID="1"
-        CROS_WORKON_LOCALNAME="platform2"
-        CROS_WORKON_PROJECT="chromiumos/platform2"
-        CROS_WORKON_OUTOFTREE_BUILD=1
-        CROS_WORKON_SUBTREE="biod missing"
-        PLATFORM_SUBDIR="biod"
-        `;
+  it('on CROS_WORKON ignores missing files', async () => {
+    const CONTENT = `# copyright
+EAPI=7
+CROS_WORKON_USE_VCSID="1"
+CROS_WORKON_LOCALNAME="platform2"
+CROS_WORKON_PROJECT="chromiumos/platform2"
+CROS_WORKON_OUTOFTREE_BUILD=1
+CROS_WORKON_SUBTREE="biod missing"
+PLATFORM_SUBDIR="biod"
+`;
 
     const PLATFORM2 = 'src/platform2';
     const BIOD = PLATFORM2 + '/biod';
-    mockEbuildFs('/path/to/cros/', {
+    await buildFs(state.chromiumosRoot, {
       dirs: [PLATFORM2, BIOD],
     });
 
-    const ebuildLinkProvider = new EbuildLinkProvider('/path/to/cros');
+    const ebuildLinkProvider = new EbuildLinkProvider(state.chromiumosRoot);
     const textDocument = new FakeTextDocument({text: CONTENT});
 
     const documentLinks = await ebuildLinkProvider.provideDocumentLinks(
@@ -463,15 +465,14 @@ PLATFORM_SUBDIR="arc/keymint"
     const RANGE_BIOD = new vscode.Range(6, 21, 6, 25);
 
     expect(documentLinks).toEqual(
-      [dirLinks(RANGE_PLATFORM2, PLATFORM2), dirLinks(RANGE_BIOD, BIOD)].flat()
+      [
+        state.dirLinks(RANGE_PLATFORM2, PLATFORM2),
+        state.dirLinks(RANGE_BIOD, BIOD),
+      ].flat()
     );
   });
-});
 
-describe('Ebuild Link Provider for inherits', () => {
-  const tempDir = testing.tempDir();
-
-  it('handles single inherit', async () => {
+  it('on inherits handles single inherit', async () => {
     await testing.putFiles(tempDir.path, {
       'src/third_party/eclass-overlay/eclass/cros-constants.eclass':
         'cros-constants',
@@ -480,7 +481,7 @@ describe('Ebuild Link Provider for inherits', () => {
     const CONTENT = `# copyright
 EAPI=7
 inherit cros-constants
-  `;
+`;
     const ebuildLinkProvider = new EbuildLinkProvider(tempDir.path);
     const textDocument = new FakeTextDocument({text: CONTENT});
 
@@ -493,15 +494,15 @@ inherit cros-constants
       [
         // cros-constants
         fileLinks(
+          tempDir.path,
           new vscode.Range(2, 8, 2, 22),
-          'src/third_party/eclass-overlay/eclass/cros-constants.eclass',
-          tempDir.path
+          'src/third_party/eclass-overlay/eclass/cros-constants.eclass'
         ),
       ].flat()
     );
   });
 
-  it('handles multiple inherit', async () => {
+  it('on inherits handles multiple inherit', async () => {
     await testing.putFiles(tempDir.path, {
       'src/third_party/chromiumos-overlay/eclass/cros-sanitizers.eclass':
         'cros-sanitizers',
@@ -513,7 +514,7 @@ inherit cros-constants
     const CONTENT = `# copyright
 EAPI=7
 inherit cros-sanitizers cros-workon toolchain-funcs
-  `;
+`;
     const ebuildLinkProvider = new EbuildLinkProvider(tempDir.path);
     const textDocument = new FakeTextDocument({text: CONTENT});
 
@@ -526,31 +527,31 @@ inherit cros-sanitizers cros-workon toolchain-funcs
       [
         // cros-sanitizers
         fileLinks(
+          tempDir.path,
           new vscode.Range(2, 8, 2, 23),
-          'src/third_party/chromiumos-overlay/eclass/cros-sanitizers.eclass',
-          tempDir.path
+          'src/third_party/chromiumos-overlay/eclass/cros-sanitizers.eclass'
         ),
         // cros-workon
         fileLinks(
+          tempDir.path,
           new vscode.Range(2, 24, 2, 35),
-          'src/third_party/chromiumos-overlay/eclass/cros-workon.eclass',
-          tempDir.path
+          'src/third_party/chromiumos-overlay/eclass/cros-workon.eclass'
         ),
         // toolchain-funcs
         fileLinks(
+          tempDir.path,
           new vscode.Range(2, 36, 2, 51),
-          'src/third_party/chromiumos-overlay/eclass/toolchain-funcs.eclass',
-          tempDir.path
+          'src/third_party/chromiumos-overlay/eclass/toolchain-funcs.eclass'
         ),
       ].flat()
     );
   });
 
-  it('does not generate link when eclass not found', async () => {
+  it('on inherits does not generate link when eclass not found', async () => {
     const CONTENT = `# copyright
 EAPI=7
 inherit non-exist-eclass
-  `;
+`;
     const ebuildLinkProvider = new EbuildLinkProvider(tempDir.path);
     const textDocument = new FakeTextDocument({text: CONTENT});
 
