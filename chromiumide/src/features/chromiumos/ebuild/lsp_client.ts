@@ -17,7 +17,7 @@ export class EbuildLspClient implements Disposable {
   private readonly client: LanguageClient;
 
   /** Instantiates the client, `start` should be called for the feature to start working. */
-  constructor(extensionUri: vscode.Uri) {
+  constructor(extensionUri: vscode.Uri, outputChannel?: vscode.OutputChannel) {
     const serverModule = path.join(extensionUri.fsPath, 'dist/server.js');
 
     const nodeModule: NodeModule = {
@@ -38,6 +38,7 @@ export class EbuildLspClient implements Disposable {
           pattern: '**/*.{ebuild,eclass}',
         },
       ],
+      outputChannel,
     };
 
     this.client = new LanguageClient(

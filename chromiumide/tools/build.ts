@@ -110,7 +110,7 @@ async function runWebpack(production: boolean): Promise<void> {
  * Does the equivalent of `tsc -p . --outDir out` faster.
  */
 async function buildTests() {
-  const entryPoints = glob.sync('./{shared,src}/**/*.ts');
+  const entryPoints = glob.sync('./{shared,src,server}/**/*.ts');
   const options: BuildOptions = {
     ...commonOptions(/* production = */ false),
     format: 'cjs',
