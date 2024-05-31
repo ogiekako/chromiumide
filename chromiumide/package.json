@@ -1143,7 +1143,7 @@
         "chromiumide.underDevelopment.ebuildLsp": {
           "type": "boolean",
           "description": "Provide ebuild langauge support via LSP",
-          "default": false
+          "default": true
         },
         "chromiumide.underDevelopment.platform2GtestDebugging": {
           "type": "boolean",
