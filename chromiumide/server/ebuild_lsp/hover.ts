@@ -12,7 +12,7 @@ import {
   EBUILD_PHASE_FUNCTIONS_HOVER_STRING,
   PORTAGE_PREDEFINED_READ_ONLY_VARAIBLES,
   PORTAGE_PREDEFINED_READ_ONLY_VARIABLES_HOVER_STRING,
-} from './shared';
+} from './shared/constants';
 import {getEbuildWordRangeAtPosition} from './util';
 
 export function onHover(

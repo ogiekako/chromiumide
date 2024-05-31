@@ -9,7 +9,7 @@ import {
   EBUILD_PHASE_FUNCTIONS_HOVER_STRING,
   PORTAGE_PREDEFINED_READ_ONLY_VARAIBLES,
   PORTAGE_PREDEFINED_READ_ONLY_VARIABLES_HOVER_STRING,
-} from '../../../../server/ebuild_lsp/constants';
+} from '../../../../server/ebuild_lsp/shared/constants';
 import {getDriver} from '../../../../shared/app/common/driver_repository';
 
 /**

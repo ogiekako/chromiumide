@@ -4,8 +4,8 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as vscode from 'vscode';
+import * as parse from '../../../../server/ebuild_lsp/shared/parse';
 import * as eclass from '../../../common/chromiumos/portage/eclass';
-import * as parse from '../../../common/chromiumos/portage/parse';
 
 /**
  * NOTE: Migration to LSP is happening. Keep the algorithm in sync with
@@ -60,7 +60,7 @@ export class EbuildLinkProvider implements vscode.DocumentLinkProvider {
       if (path !== undefined) {
         links.push(
           ...(await this.createLinks(
-            parsedEclass.range,
+            toVscodeRange(parsedEclass.range),
             path.substring(
               path.lastIndexOf(this.chromiumosRoot) +
                 this.chromiumosRoot.length +
@@ -89,7 +89,12 @@ export class EbuildLinkProvider implements vscode.DocumentLinkProvider {
         ? localname.value.substring(3)
         : localname.value;
       pathsFromSrc.push(path);
-      links.push(...(await this.createLinks(localname.range, `src/${path}`)));
+      links.push(
+        ...(await this.createLinks(
+          toVscodeRange(localname.range),
+          `src/${path}`
+        ))
+      );
     }
 
     // Support only one (the last) subtree assignment.
@@ -211,4 +216,13 @@ export class EbuildLinkProvider implements vscode.DocumentLinkProvider {
     }
     return vscode.Uri.file(absPath);
   }
+}
+
+function toVscodeRange(range: parse.Range): vscode.Range {
+  return new vscode.Range(
+    range.start.line,
+    range.start.character,
+    range.end.line,
+    range.end.character
+  );
 }

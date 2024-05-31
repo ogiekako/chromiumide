@@ -3,13 +3,13 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
+import {parseEbuildOrThrow} from '../../../../server/ebuild_lsp/shared/parse';
 import {BoardOrHost} from '../../../../shared/app/common/chromiumos/board_or_host';
 import {
   EbuildPackage,
   ParsedEbuildFilepath,
   ebuildDefinedVariables,
 } from './ebuild';
-import {parseEbuildOrThrow} from './parse';
 
 export type Platform2Package = EbuildPackage & {
   // PLATFORM_SUBDIR the ebuild file defines.

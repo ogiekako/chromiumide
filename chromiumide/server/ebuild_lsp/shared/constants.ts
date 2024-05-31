@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/**
- * This file is imported from `src` and should not import `server` specific dependencies.
- */
+export type InitializationOptions = {
+  chromiumosRoot: string;
+};
 
 export const PORTAGE_PREDEFINED_READ_ONLY_VARIABLES_HOVER_STRING = (
   varName: string

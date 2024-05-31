@@ -2,28 +2,41 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as vscode from 'vscode';
+type Position = {
+  line: number;
+  character: number;
+};
+
+export type Range = {
+  start: Position;
+  end: Position;
+};
+
+interface TextDocument {
+  getText(): string;
+  positionAt(offset: number): Position;
+}
 
 export type EclassName = {
   name: string;
-  range: vscode.Range;
+  range: Range;
 };
 
 export type EbuildVarName = {
   name: string;
-  range: vscode.Range;
+  range: Range;
 };
 
 export type EbuildStrValue = {
   kind: 'string';
   value: string;
-  range: vscode.Range;
+  range: Range;
 };
 
 export type EbuildArrayValue = {
   kind: 'array';
   value: EbuildStrValue[];
-  range: vscode.Range; // Range of the array including '(' and ')'.
+  range: Range; // Range of the array including '(' and ')'.
 };
 
 export type EbuildValue = EbuildStrValue | EbuildArrayValue;
@@ -72,9 +85,7 @@ export class ParsedEbuild {
   }
 }
 
-export function parseEbuildOrThrow(
-  document: vscode.TextDocument
-): ParsedEbuild {
+export function parseEbuildOrThrow(document: TextDocument): ParsedEbuild {
   const content = document.getText();
   const positions = [...content].map((_c, i) => document.positionAt(i));
 
@@ -98,12 +109,12 @@ export function parseEbuildOrThrow(
     } else {
       const name = {
         name: m[1],
-        range: new vscode.Range(
+        range: {
           // Range of variable name starts from index of matched string and ends at that
           // of the matched last index, minus 1 for trailing '='.
-          positions[m.index],
-          positions[focusLineStartRE.lastIndex - 1]
-        ),
+          start: positions[m.index],
+          end: positions[focusLineStartRE.lastIndex - 1],
+        },
       };
 
       const value = scanner.nextValue();
@@ -123,7 +134,7 @@ export function parseEbuildOrThrow(
 class Scanner {
   constructor(
     private readonly content: string,
-    private readonly positions: vscode.Position[],
+    private readonly positions: Position[],
     private p: number
   ) {}
 
@@ -158,7 +169,7 @@ class Scanner {
           return {
             kind: 'array',
             value,
-            range: new vscode.Range(startPos, this.positions[this.p]),
+            range: {start: startPos, end: this.positions[this.p]},
           };
         }
         value.push(this.nextString());
@@ -218,7 +229,7 @@ class Scanner {
             return {
               kind: 'string',
               value: s,
-              range: new vscode.Range(startPos, this.positions[this.p - 1]),
+              range: {start: startPos, end: this.positions[this.p - 1]},
             };
           }
           s += c;
@@ -230,10 +241,7 @@ class Scanner {
         return {
           kind: 'string',
           value: '',
-          range: new vscode.Range( // empty range
-            this.positions[this.p],
-            this.positions[this.p]
-          ),
+          range: {start: this.positions[this.p], end: this.positions[this.p]}, // empty range
         };
       }
       default: {
@@ -246,7 +254,7 @@ class Scanner {
               kind: 'string',
               value: s,
               // Range has +1 overload for the ending position.
-              range: new vscode.Range(startPos, this.positions[this.p]),
+              range: {start: startPos, end: this.positions[this.p]},
             };
           }
           s += c;

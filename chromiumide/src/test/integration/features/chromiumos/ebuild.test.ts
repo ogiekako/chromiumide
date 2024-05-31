@@ -11,7 +11,7 @@ import {
   EBUILD_DEFINED_VARIABLES_HOVER_STRING,
   EBUILD_PHASE_FUNCTIONS_HOVER_STRING,
   PORTAGE_PREDEFINED_READ_ONLY_VARIABLES_HOVER_STRING,
-} from '../../../../../server/ebuild_lsp/constants';
+} from '../../../../../server/ebuild_lsp/shared/constants';
 import {EbuildLspClient} from '../../../../features/chromiumos/ebuild/lsp_client';
 import * as testing from '../../../testing';
 import {ConsoleOutputChannel} from '../../../testing/fakes';
