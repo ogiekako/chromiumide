@@ -54,7 +54,7 @@ export class Gcert implements vscode.Disposable {
       name: 'gcert_run',
     });
 
-    let sshAuthSock: undefined | string;
+    let mustAshSshAuthSock = false;
     const gcertStatus = await this.runGcertstatus();
     switch (gcertStatus) {
       case Gcertstatus.Success:
@@ -69,26 +69,41 @@ export class Gcert implements vscode.Disposable {
         );
         return;
       case Gcertstatus.NotFound: {
-        sshAuthSock = await this.askSshAuthSock();
-        if (!sshAuthSock) return;
+        mustAshSshAuthSock = true;
         break;
       }
       default:
         assertNever(gcertStatus);
     }
 
-    const exitCode = await this.runGcert(sshAuthSock);
+    let exitCode;
+    for (const askSshAuthSock of [false, true]) {
+      if (!askSshAuthSock && mustAshSshAuthSock) continue;
 
-    if (exitCode !== 0) {
-      driver.metrics.send({
-        group: 'gcert',
-        category: 'error',
-        description: 'gcert exit status (-1 if not available)',
-        name: 'gcert_nonzero_exit_code',
-        gcertstatus: gcertStatus,
-        exit_code: exitCode ?? -1,
-      });
+      let sshAuthSock = undefined;
+      if (askSshAuthSock) {
+        sshAuthSock = await this.askSshAuthSock();
+        if (!sshAuthSock) break;
+      }
+
+      exitCode = await this.runGcert(sshAuthSock);
+
+      if (exitCode === 0) {
+        void vscode.window.showInformationMessage('gcert succeeded');
+        return;
+      }
     }
+
+    void vscode.window.showErrorMessage('gcert failed');
+
+    driver.metrics.send({
+      group: 'gcert',
+      category: 'error',
+      description: 'gcert exit status (-1 if not available)',
+      name: 'gcert_nonzero_exit_code',
+      gcertstatus: gcertStatus,
+      exit_code: exitCode ?? -1,
+    });
   }
 
   /**
@@ -191,13 +206,7 @@ export class Gcert implements vscode.Disposable {
 
     await waitClose;
 
-    const exitCode = terminal.exitStatus?.code;
-    if (exitCode === 0) {
-      void vscode.window.showInformationMessage('gcert succeeded');
-    } else {
-      void vscode.window.showErrorMessage('gcert failed');
-    }
-    return exitCode;
+    return terminal.exitStatus?.code;
   }
 
   dispose(): void {
