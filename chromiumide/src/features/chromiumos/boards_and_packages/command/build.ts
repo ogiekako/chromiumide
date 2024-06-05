@@ -7,7 +7,10 @@ import * as vscode from 'vscode';
 import {parseEbuildOrThrow} from '../../../../../server/ebuild_lsp/shared/parse';
 import {BoardOrHost} from '../../../../../shared/app/common/chromiumos/board_or_host';
 import {CancelledError} from '../../../../../shared/app/common/exec/types';
-import {showInputBoxWithSuggestions} from '../../../../../shared/app/ui/input_box';
+import {
+  QuickPickItemWithPrefillButton,
+  showInputBoxWithSuggestions,
+} from '../../../../../shared/app/ui/input_box';
 import {
   ParsedPackageName,
   getQualifiedPackageName,
@@ -81,11 +84,12 @@ export async function buildWithFlags(
 ): Promise<void> {
   let initialValue: string | undefined = undefined;
   for (;;) {
-    const presets: vscode.QuickPickItem[] = [
-      {
-        label: 'FEATURES="nostrip"',
-        description: 'Keep debug symbols',
-      },
+    const presets = [
+      new QuickPickItemWithPrefillButton(
+        'FEATURES="nostrip"',
+        undefined,
+        'Keep debug symbols'
+      ),
     ];
     const flagString = await showInputBoxWithSuggestions(presets, {
       title: 'Build with flags',
