@@ -6,3 +6,10 @@
 export function assertNever(x: never): never {
   throw new Error(`Internal Error: assertNever(${x})`);
 }
+
+/**
+ * Statically asserts the type is never.
+ *
+ * Usage: type _ = AssertNever<X>;
+ */
+export type AssertNever<T extends never> = T;

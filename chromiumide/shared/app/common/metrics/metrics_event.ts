@@ -2,6 +2,53 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import {AssertNever} from '../typecheck';
+
+/**
+ * Custom dimensions we can set on metrics events.
+ *
+ * NOTE: Custom dimensions are not recorded unless you allowlist them on GA. If you add a string to
+ * this type, update GA as well. See http://go/chromiumide-dev-guide#bookmark=id.o7uodrgu9ekt for
+ * how to do that.
+ */
+type CustomDimensions =
+  | 'action'
+  | 'attribute'
+  | 'board'
+  | 'build_dir'
+  | 'document'
+  | 'enable'
+  | 'error'
+  | 'extension'
+  | 'feature'
+  | 'flag'
+  | 'image_type'
+  | 'language_id'
+  | 'outcome'
+  | 'package_names'
+  | 'package'
+  | 'pattern'
+  | 'selected_text'
+  | 'task_status'
+  | 'word';
+
+/**
+ * Custom metrics we can set on metrics events.
+ *
+ * NOTE: Custom metrics are not recorded unless you allowlist them on GA. If you add a string to
+ * this type, update GA as well. See http://go/chromiumide-dev-guide#bookmark=id.o7uodrgu9ekt for
+ * how to do that.
+ */
+type CustomMetrics =
+  | 'age'
+  | 'diagnostics_count'
+  | 'displayed_threads_count'
+  | 'exit_code'
+  | 'gcertstatus'
+  | 'length'
+  | 'output_directories_count'
+  | 'tests_count';
+
 // Exhaustive list of categories.
 type Category =
   // An event triggered by an explicit user action, such as VSCode command
@@ -557,3 +604,33 @@ export function sanitizeEventName(name: string): string {
     .replace(/[^a-zA-Z0-9_]/g, '')
     .slice(0, 40);
 }
+
+// Type check for metrics events follow.
+
+// Example: KeysWithType<{a: number; b: string} | {b: number; c: string}, number>  ->  'a' | 'b'
+//
+// References:
+// [1] https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types
+// [2] https://github.com/type-challenges/type-challenges/issues/2768
+type KeysWithType<T, U> =
+  // Distributive conditional types [1]
+  T extends {}
+    ? // Got the idea of using `as` from [2].
+      keyof {[P in keyof T as T[P] extends U ? P : never]: T[P]}
+    : never;
+
+type UnlistedStringKeys = Exclude<
+  KeysWithType<Event, string>,
+  CustomDimensions | 'name' | 'category' | 'group' | 'description'
+>;
+
+type UnlistedNumberKeys = Exclude<KeysWithType<Event, number>, CustomMetrics>;
+
+type _ = [
+  // See the comment on CustomDimensions if this check fails.
+  AssertNever<UnlistedStringKeys>,
+  // See the comment on CustomMetrics if this check fails.
+  AssertNever<UnlistedNumberKeys>,
+  // CustomDimensions and CustomMetrics should not conflict.
+  AssertNever<CustomDimensions & CustomMetrics>
+];
