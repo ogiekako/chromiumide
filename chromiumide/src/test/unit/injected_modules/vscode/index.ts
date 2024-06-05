@@ -34,6 +34,7 @@ export {Range} from './range';
 export {StatusBarAlignment, StatusBarItem} from './status_bar';
 export {Selection} from './selection';
 export {TabInputText} from './tab_input_text';
+export {TerminalExitReason} from './terminal_exit_reason';
 export {TestMessage} from './test_message';
 export {TestRunProfileKind} from './test_run_profile_kind';
 export {TextEdit} from './text_edit';

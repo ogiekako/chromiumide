@@ -6,7 +6,8 @@ import * as vscode from 'vscode';
 import {extensionNameLower} from '../../../shared/app/common/extension_name';
 import * as injectedVscode from '../unit/injected_modules/vscode';
 import {cleanState} from './clean_state';
-import * as fakes from './fakes';
+import {FakeCommands} from './fakes/commands';
+import {FakeWorkspaceConfiguration} from './fakes/configuration';
 
 /**
  * Spy for the `vscode` module.
@@ -330,7 +331,7 @@ export function installVscodeDouble(): {
       theVscode.workspace = double.workspace;
     }
 
-    const fakeCommands = new fakes.FakeCommands(vscode.window);
+    const fakeCommands = new FakeCommands(vscode.window);
     vscodeSpy.commands.registerCommand.and.callFake((id, callback, thisArg) =>
       fakeCommands.registerCommand(id, callback, thisArg)
     );
@@ -407,7 +408,7 @@ export function installFakeConfigs(
   beforeEach(() => {
     // Prepare fake config for the old prefix as well for testing migrator.
     for (const prefix of [extensionNameLower(), 'cros-ide']) {
-      const fakeConfig = fakes.FakeWorkspaceConfiguration.fromSection(
+      const fakeConfig = FakeWorkspaceConfiguration.fromSection(
         prefix,
         subscriptions
       );

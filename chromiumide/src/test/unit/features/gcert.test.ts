@@ -78,17 +78,17 @@ describe('Gcert', () => {
           });
       }
 
-      let text = '';
-      const terminal = {
-        show: () => {},
-        sendText: (s: string) => {
-          text += s + '\n';
-          if (s.startsWith('exec ')) {
-            vscodeEmitters.window.onDidCloseTerminal.fire(terminal);
+      const terminal = new testing.fakes.FakeTerminal({
+        onSendText: text => {
+          if (text.startsWith('exec ')) {
+            terminal.close({
+              code: 0,
+              reason: vscode.TerminalExitReason.Process,
+            });
           }
         },
-        exitStatus: {code: 0},
-      } as vscode.Terminal;
+        vscodeEmitters,
+      });
 
       vscodeSpy.window.createTerminal.and.returnValue(terminal);
 
@@ -103,7 +103,7 @@ describe('Gcert', () => {
 
       await state.runEventReader.read();
 
-      expect(text).toEqual(testCase.wantCommand);
+      expect(terminal.getTexts()).toEqual(testCase.wantCommand);
 
       expect(vscodeSpy.window.showInformationMessage).toHaveBeenCalledOnceWith(
         'gcert succeeded'
