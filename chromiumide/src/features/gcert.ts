@@ -13,6 +13,7 @@ import {getDriver} from '../../shared/app/common/driver_repository';
 import {escapeArray} from '../../shared/app/common/shutil';
 import {assertNever} from '../../shared/app/common/typecheck';
 import {vscodeRegisterCommand} from '../../shared/app/common/vscode/commands';
+import {parseLocalSyslogLine} from '../common/syslog';
 
 const driver = getDriver();
 
@@ -43,7 +44,8 @@ export class Gcert implements vscode.Disposable {
 
   constructor(
     private readonly output: vscode.OutputChannel,
-    private readonly tempDir = '/tmp'
+    private readonly tempDir = '/tmp',
+    private readonly syslogPath = '/var/log/messages'
   ) {}
 
   private async run() {
@@ -76,6 +78,10 @@ export class Gcert implements vscode.Disposable {
         assertNever(gcertStatus);
     }
 
+    const syslog = new File(this.syslogPath);
+
+    let lastSyslogError = '';
+
     let exitCode;
     for (const askSshAuthSock of [false, true]) {
       if (!askSshAuthSock && mustAshSshAuthSock) continue;
@@ -86,15 +92,31 @@ export class Gcert implements vscode.Disposable {
         if (!sshAuthSock) break;
       }
 
+      const syslogPrevSize = await syslog.size();
+
       exitCode = await this.runGcert(sshAuthSock);
 
       if (exitCode === 0) {
         void vscode.window.showInformationMessage('gcert succeeded');
         return;
       }
+
+      const syslogCurSize = await syslog.size();
+      const gcertEntries = (await syslog.read(syslogPrevSize, syslogCurSize))
+        .toString('utf8')
+        .split('\n')
+        .map(parseLocalSyslogLine)
+        .filter(x => x?.process.startsWith('gcert['));
+      if (gcertEntries.length > 0) {
+        lastSyslogError = gcertEntries[gcertEntries.length - 1]!.message;
+      } else {
+        lastSyslogError = '';
+      }
     }
 
-    void vscode.window.showErrorMessage('gcert failed');
+    void vscode.window.showErrorMessage(
+      'gcert failed' + (lastSyslogError ? ': ' + lastSyslogError : '')
+    );
 
     driver.metrics.send({
       group: 'gcert',
@@ -211,5 +233,42 @@ export class Gcert implements vscode.Disposable {
 
   dispose(): void {
     vscode.Disposable.from(...this.subscriptions.splice(0)).dispose();
+  }
+}
+
+class File {
+  constructor(private readonly filename: string) {}
+
+  async size(): Promise<number> {
+    try {
+      const stat = await fs.promises.stat(this.filename);
+      return stat.size;
+    } catch {
+      return 0;
+    }
+  }
+
+  async read(start: number, end: number): Promise<Buffer> {
+    let h;
+    try {
+      h = await fs.promises.open(this.filename);
+    } catch {
+      return Buffer.alloc(0);
+    }
+    const r = h.createReadStream({
+      start,
+      end,
+    });
+
+    const chunks: Buffer[] = [];
+    r.on('data', chunk => {
+      chunks.push(chunk as Buffer);
+    });
+
+    return new Promise(resolve => {
+      r.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+    });
   }
 }

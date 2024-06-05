@@ -23,6 +23,16 @@ export type DeviceSyslogSeverity =
   | 'EMERG'
   | 'CRIT';
 
+/** Content of a syslog entry on local machine. */
+export type LocalSyslogEntry = {
+  // timestamp like '2024-06-05T22:20:11.761573+00:00'
+  timestamp: string;
+  hostname: string;
+  // process name like 'gcert[856021]'
+  process: string;
+  message: string;
+};
+
 /**
  * The regex used for parsing syslog. The second entry is hostname on local machine, and severity
  * on DUT.
@@ -68,6 +78,21 @@ export function parseDeviceSyslogLine(
     lineNum,
     timestamp,
     severity,
+    process,
+    message,
+  };
+}
+
+/** Parses a local syslog line to get an entry. */
+export function parseLocalSyslogLine(
+  line: string
+): LocalSyslogEntry | undefined {
+  const m = SYSLOG_REGEX.exec(line.trim());
+  if (!m) return;
+  const [, timestamp, hostname, process, message] = m;
+  return {
+    timestamp,
+    hostname,
     process,
     message,
   };

@@ -2,10 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as fs from 'fs';
 import path from 'path';
 import * as vscode from 'vscode';
 import {Gcert} from '../../../features/gcert';
 import * as testing from '../../testing';
+
+const FAKE_SYSLOG_UNDER_TEMP = 'sys.log';
 
 describe('Gcert', () => {
   const tempDir = testing.tempDir();
@@ -13,11 +16,16 @@ describe('Gcert', () => {
 
   const {vscodeSpy, vscodeEmitters} = testing.installVscodeDouble();
 
-  const state = testing.cleanState(() => {
+  const state = testing.cleanState(async () => {
     const gcert = new Gcert(
-      new testing.fakes.VoidOutputChannel(),
-      tempDir.path
+      new testing.fakes.ConsoleOutputChannel(),
+      tempDir.path,
+      path.join(tempDir.path, FAKE_SYSLOG_UNDER_TEMP)
     );
+    await testing.putFiles(tempDir.path, {
+      [FAKE_SYSLOG_UNDER_TEMP]: '',
+    });
+
     const runEventReader = new testing.EventReader(gcert.onDidRun);
     return {
       gcert,
@@ -142,6 +150,49 @@ describe('Gcert', () => {
       jasmine.objectContaining({
         path: '/chromiumide-doc-gcert-ssh-auth-sock',
       })
+    );
+  });
+
+  it('should analyze syslog and add error message', async () => {
+    // Several JSON entries are reducted from the actual message for gcert.
+    const syslog = `<fake corrupted line>
+2024-06-05T23:30:39.952201+00:00 example.com gcert[930374]: logjam_tag=gcert {"Success":false,"ErrorMessage":"[gnubby] could not create SSO session: [gnubby] 🛑 your credentials were rejected (wrong password?). error message = Authenticate full ticket error: BAD_PASSWORD"}
+2024-06-05T23:30:39.952201+00:00 example.com fake[1234]: foobar
+`;
+
+    await testing.putFiles(tempDir.path, {
+      'ssh-X/agent.1': '',
+    });
+
+    fakeExec.installCallback('gcertstatus', [], async () => {
+      return {
+        stdout: '',
+        stderr: '',
+        exitStatus: 90,
+      };
+    });
+
+    const terminal = new testing.fakes.FakeTerminal({
+      onSendText: () => {
+        fs.writeFileSync(
+          path.join(tempDir.path, FAKE_SYSLOG_UNDER_TEMP),
+          syslog
+        );
+        terminal.close({
+          code: 1,
+          reason: vscode.TerminalExitReason.Process,
+        });
+      },
+      vscodeEmitters,
+    });
+    vscodeSpy.window.createTerminal.and.returnValue(terminal);
+
+    await vscode.commands.executeCommand('chromiumide.gcert.run');
+
+    await state.runEventReader.read();
+
+    expect(vscodeSpy.window.showErrorMessage).toHaveBeenCalledOnceWith(
+      'gcert failed: logjam_tag=gcert {"Success":false,"ErrorMessage":"[gnubby] could not create SSO session: [gnubby] 🛑 your credentials were rejected (wrong password?). error message = Authenticate full ticket error: BAD_PASSWORD"}'
     );
   });
 });
