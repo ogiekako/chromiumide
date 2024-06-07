@@ -286,7 +286,12 @@ class TaskTreeItem extends vscode.TreeItem {
 
     this.contextValue = contextValue;
 
-    this.iconPath = new vscode.ThemeIcon(getIcon(status));
+    this.iconPath = new vscode.ThemeIcon(
+      getIcon(status),
+      status === TaskStatus.ERROR
+        ? new vscode.ThemeColor('statusBarItem.errorBackground')
+        : undefined
+    );
     if (command) {
       this.command = command;
     } else if (outputChannel) {
