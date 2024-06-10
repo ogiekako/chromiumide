@@ -7,7 +7,7 @@ import {Driver} from '../driver';
 import {registerDriver} from './common/driver_repository';
 import {LoggingBundle, createLinterLoggingBundle} from './common/logs';
 import * as feedback from './common/metrics/feedback';
-import * as crosFormat from './features/cros_format';
+import {CrosFormatFeature} from './features/cros_format';
 import * as crosLint from './features/cros_lint';
 import * as bgTaskStatus from './ui/bg_task_status';
 
@@ -31,7 +31,9 @@ export async function activate(
   const linterLogger = createLinterLoggingBundle(context);
   crosLint.activate(context, statusManager, linterLogger);
 
-  crosFormat.activate(context, statusManager);
+  context.subscriptions.push(
+    new CrosFormatFeature(context.extension.id, statusManager)
+  );
 
   return {statusManager, linterLogger};
 }

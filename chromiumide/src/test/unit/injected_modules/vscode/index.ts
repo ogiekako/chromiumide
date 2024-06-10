@@ -51,6 +51,7 @@ export let commands = {};
 export let comments = {};
 export let env = envModule;
 export let extensions = extensionsModule;
+export let languages = {};
 export const tasks = tasksModule;
 export const tests = testsModule;
 export let window = windowModule;
@@ -61,6 +62,7 @@ export function setVscode(double: {
   comments: typeof vscode.comments;
   env: typeof vscode.env;
   extensions: typeof vscode.extensions;
+  languages: typeof vscode.languages;
   window: typeof vscode.window;
   workspace: typeof vscode.workspace;
 }): void {
@@ -68,6 +70,7 @@ export function setVscode(double: {
   comments = double.comments;
   env = double.env;
   extensions = double.extensions;
+  languages = double.languages;
   window = double.window;
   workspace = double.workspace;
 }

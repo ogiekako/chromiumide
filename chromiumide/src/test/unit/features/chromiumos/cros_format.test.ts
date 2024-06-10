@@ -5,8 +5,8 @@
 import * as vscode from 'vscode';
 import {getDriver} from '../../../../../shared/app/common/driver_repository';
 import {ExecResult} from '../../../../../shared/app/common/exec/types';
+import {CrosFormatFeature} from '../../../../../shared/app/features/cros_format';
 import {maybeConfigureOrSuggestSettingDefaultFormatter} from '../../../../../shared/app/features/cros_format/default_formatter';
-import {CrosFormatEditProvider} from '../../../../../shared/app/features/cros_format/formatting_edit_provider';
 import {isPresubmitignored} from '../../../../../shared/app/features/cros_format/presubmitignore';
 import * as config from '../../../../../shared/app/services/config';
 import {TaskStatus} from '../../../../../shared/app/ui/bg_task_status';
@@ -20,13 +20,51 @@ import {
 
 const driver = getDriver();
 
-const formatterName = 'Google.cros-ide';
+const extensionId = 'Google.cros-ide';
 
-describe('CrosFormatEditProvider', () => {
+describe('Cros format feature', () => {
   const tempDir = testing.tempDir();
   const fakeExec = testing.installFakeExec();
+  const {vscodeSpy, vscodeEmitters, vscodeGetters} =
+    testing.installVscodeDouble();
+  testing.installFakeConfigs(vscodeSpy, vscodeEmitters);
 
   const state = testing.cleanState(async () => {
+    vscodeSpy.window.createOutputChannel.and.returnValue(
+      new testing.fakes.VoidOutputChannel()
+    );
+
+    const statusManager = new FakeStatusManager();
+
+    let editProvider = {} as vscode.DocumentFormattingEditProvider;
+    vscodeSpy.languages.registerDocumentFormattingEditProvider.and.callFake(
+      (_selector, provider) => {
+        editProvider = provider;
+        return vscode.Disposable.from();
+      }
+    );
+
+    const crosFormatFeature = new CrosFormatFeature(extensionId, statusManager);
+    const subscriptions: vscode.Disposable[] = [crosFormatFeature];
+
+    const onDidHandleEvent = new testing.EventReader(
+      crosFormatFeature.onDidHandleEvent
+    );
+    subscriptions.push(onDidHandleEvent);
+
+    const source = new vscode.CancellationTokenSource();
+    subscriptions.push(source);
+
+    const format = (document: vscode.TextDocument) =>
+      editProvider.provideDocumentFormattingEdits(
+        document,
+        {
+          insertSpaces: true,
+          tabSize: 2,
+        },
+        source.token
+      );
+
     const crosRoot = driver.path.join(tempDir.path, 'os');
     await testing.buildFakeChroot(crosRoot);
 
@@ -37,17 +75,14 @@ describe('CrosFormatEditProvider', () => {
       // For crosExeFor to find the cros executable.
       'chromite/bin/cros': '',
     });
-    const statusManager = new FakeStatusManager();
-    const editProvider = new CrosFormatEditProvider(
-      statusManager,
-      new testing.fakes.VoidOutputChannel()
-    );
 
     return {
       crosRoot,
+      onDidHandleEvent,
+      format,
       statusManager,
-      editProvider,
       crosFile,
+      subscriptions,
     };
   });
 
@@ -55,12 +90,14 @@ describe('CrosFormatEditProvider', () => {
     spyOn(driver.metrics, 'send');
   });
 
+  afterEach(() => {
+    vscode.Disposable.from(...state.subscriptions.reverse()).dispose();
+  });
+
   it('shows error when the command fails (execution error)', async () => {
     fakeExec.and.resolveTo(new Error());
 
-    await state.editProvider.provideDocumentFormattingEdits(
-      new FakeTextDocument({uri: state.crosFile('foo.c')})
-    );
+    await state.format(new FakeTextDocument({uri: state.crosFile('foo.c')}));
 
     expect(state.statusManager.getStatus('Formatter')).toEqual(
       TaskStatus.ERROR
@@ -81,9 +118,7 @@ describe('CrosFormatEditProvider', () => {
     };
     fakeExec.and.resolveTo(execResult);
 
-    await state.editProvider.provideDocumentFormattingEdits(
-      new FakeTextDocument({uri: state.crosFile('foo.c')})
-    );
+    await state.format(new FakeTextDocument({uri: state.crosFile('foo.c')}));
 
     expect(state.statusManager.getStatus('Formatter')).toEqual(
       TaskStatus.ERROR
@@ -104,7 +139,7 @@ describe('CrosFormatEditProvider', () => {
     };
     fakeExec.and.resolveTo(execResult);
 
-    const edits = await state.editProvider.provideDocumentFormattingEdits(
+    const edits = await state.format(
       new FakeTextDocument({uri: state.crosFile('foo.c')})
     );
 
@@ -121,7 +156,7 @@ describe('CrosFormatEditProvider', () => {
     };
     fakeExec.and.resolveTo(execResult);
 
-    const edits = await state.editProvider.provideDocumentFormattingEdits(
+    const edits = await state.format(
       new FakeTextDocument({uri: state.crosFile('foo.c')})
     );
 
@@ -137,7 +172,7 @@ describe('CrosFormatEditProvider', () => {
   });
 
   it('does not format files outside CrOS', async () => {
-    const edits = await state.editProvider.provideDocumentFormattingEdits(
+    const edits = await state.format(
       new FakeTextDocument({
         uri: vscode.Uri.file(driver.path.join(tempDir.path, 'foo.c')),
       })
@@ -153,7 +188,7 @@ describe('CrosFormatEditProvider', () => {
       '.presubmitignore': '*.c',
     });
 
-    const edits = await state.editProvider.provideDocumentFormattingEdits(
+    const edits = await state.format(
       new FakeTextDocument({uri: state.crosFile('foo.c')})
     );
 
@@ -180,7 +215,9 @@ describe('CrosFormatEditProvider', () => {
       stdout: 'after fmt',
     });
 
-    await state.editProvider.forceFormat(textEditor);
+    vscodeGetters.window.activeTextEditor.and.returnValue(textEditor);
+    await vscode.commands.executeCommand('chromiumide.crosFormat.forceFormat');
+    await state.onDidHandleEvent.read();
 
     expect(textEditor.document.text).toEqual('after fmt');
   });
@@ -246,9 +283,7 @@ cros format: cros format --include=webrtc_apm/* --exclude=* --check --commit \${
           })
       );
 
-      const edits = await state.editProvider.provideDocumentFormattingEdits(
-        new FakeTextDocument({uri: file})
-      );
+      const edits = await state.format(new FakeTextDocument({uri: file}));
 
       expect(edits?.[0].newText).toEqual('x');
     });
@@ -335,7 +370,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
     expect(vscodeSpy.window.showInformationMessage).toHaveBeenCalledOnceWith(
       jasmine.stringContaining('default formatter in this workspace'),
@@ -354,7 +389,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
     expect(vscodeSpy.window.showInformationMessage).toHaveBeenCalledOnceWith(
       jasmine.stringContaining('default formatter in this workspace'),
@@ -371,7 +406,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirNotCros.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
     expect(vscodeSpy.window.showInformationMessage).not.toHaveBeenCalled();
   });
@@ -385,7 +420,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
     expect(vscodeSpy.window.showInformationMessage).not.toHaveBeenCalled();
   });
@@ -423,7 +458,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
 
     // Confirm default formatter is updated to the one provided by the extension.
@@ -457,7 +492,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
 
     await maybeConfigureOrSuggestSettingDefaultFormatter(
@@ -466,7 +501,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
 
     // Users will not be prompted on the second time and default formatter remains unchanged.
@@ -503,7 +538,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
 
     await maybeConfigureOrSuggestSettingDefaultFormatter(
@@ -512,7 +547,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
 
     // Users will not be prompted on the second time and default formatter remains unchanged.
@@ -545,7 +580,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirNotCros.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
     // Do nothing.
     expect(config.vscode.editor.defaultFormatter.get()).toEqual('prettier');
@@ -558,7 +593,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
     // Confirm default formatter is automatically updated to the one provided by the extension
     // without prompting user at all.
@@ -576,7 +611,7 @@ describe('maybeConfigOrSuggestSettingDefaultFormatter', () => {
           uri: vscode.Uri.file(tempDirCrosRoot.path),
         } as vscode.WorkspaceFolder,
       ],
-      formatterName
+      extensionId
     );
     // Default formatter should retain its value set and will not be updated nor prompts user.
     expect(config.vscode.editor.defaultFormatter.get()).toEqual('prettier');

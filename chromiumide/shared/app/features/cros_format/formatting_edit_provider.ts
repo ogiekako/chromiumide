@@ -37,16 +37,7 @@ export class CrosFormatEditProvider
     return [vscode.TextEdit.replace(replace.location, replace.value)];
   }
 
-  async forceFormat(editor: vscode.TextEditor): Promise<void> {
-    const replace = await this.provideReplace(editor.document, {force: true});
-    if (!replace) return;
-
-    await editor.edit(edit => {
-      edit.replace(replace.location, replace.value);
-    });
-  }
-
-  private async provideReplace(
+  async provideReplace(
     document: vscode.TextDocument,
     {force}: {force: boolean}
   ): Promise<

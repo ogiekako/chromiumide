@@ -50,6 +50,43 @@ function newVscodeSpy() {
     env: jasmine.createSpyObj<typeof vscode.env>('vscode.env', [
       'openExternal',
     ]),
+    languages: jasmine.createSpyObj<typeof vscode.languages>(
+      'vscode.languages',
+      [
+        'createDiagnosticCollection',
+        'getDiagnostics',
+        'getLanguages',
+        'match',
+        'registerCallHierarchyProvider',
+        'registerCodeActionsProvider',
+        'registerCodeLensProvider',
+        'registerColorProvider',
+        'registerCompletionItemProvider',
+        'registerDeclarationProvider',
+        'registerDefinitionProvider',
+        'registerDocumentFormattingEditProvider',
+        'registerDocumentHighlightProvider',
+        'registerDocumentLinkProvider',
+        'registerDocumentRangeFormattingEditProvider',
+        'registerDocumentRangeSemanticTokensProvider',
+        'registerDocumentSemanticTokensProvider',
+        'registerDocumentSymbolProvider',
+        'registerEvaluatableExpressionProvider',
+        'registerFoldingRangeProvider',
+        'registerHoverProvider',
+        'registerImplementationProvider',
+        'registerLinkedEditingRangeProvider',
+        'registerOnTypeFormattingEditProvider',
+        'registerReferenceProvider',
+        'registerRenameProvider',
+        'registerSelectionRangeProvider',
+        'registerSignatureHelpProvider',
+        'registerTypeDefinitionProvider',
+        'registerWorkspaceSymbolProvider',
+        'setLanguageConfiguration',
+        'setTextDocumentLanguage',
+      ]
+    ),
     window: jasmine.createSpyObj<SpiableVscodeWindow>('vscode.window', [
       'createOutputChannel',
       'createQuickPick',
@@ -307,6 +344,7 @@ export function installVscodeDouble(): {
         {},
         {}
       ),
+      languages: vscodeSpy.languages,
       window: buildNamespace(
         theVscode.window,
         vscodeSpy.window,
@@ -328,6 +366,7 @@ export function installVscodeDouble(): {
       theVscode.comments = double.comments;
       theVscode.env = double.env;
       theVscode.extensions = double.extensions;
+      theVscode.languages = double.languages;
       theVscode.window = double.window;
       theVscode.workspace = double.workspace;
     }
