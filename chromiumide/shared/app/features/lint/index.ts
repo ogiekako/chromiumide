@@ -131,36 +131,33 @@ async function updateDiagnostics(
       });
       return;
     }
-    // TODO(b/319548749): this is used to determine if the file is a generated file inside chroot.
-    // To be verified behavior when edited in cider. Cider's realpath implementation returns the
-    // input path directly and might need additional processing.
-    const realpath = await driver.fs.realpath(document.uri.fsPath);
 
     // Do not lint generated files, because it generates lots of useless warnings.
     if (
-      realpath.includes('/chroot/build/') ||
-      realpath.includes('/out/build/')
+      document.fileName.includes('/chroot/build/') ||
+      document.fileName.includes('/out/build/')
     ) {
       return;
     }
 
     const diagnosticsCollection: vscode.Diagnostic[] = [];
     for (const lintConfig of lintConfigs) {
-      const executable = await lintConfig.executable(realpath);
+      const executable = await lintConfig.executable(document.fileName);
       log.channel.appendLine(
         `${executable ? 'Applying' : 'Do not apply'} ${
           lintConfig.name
-        } lint executable to ${document.languageId} file: ${
-          document.uri.fsPath
-        }`
+        } lint executable to ${document.languageId} file: ${document.fileName}`
       );
       if (!executable) {
         continue;
       }
 
-      const args = lintConfig.arguments(realpath);
+      const args = lintConfig.arguments(document.fileName);
       const cwd = lintConfig.cwd?.(executable);
-      const extraEnv = await lintConfig.extraEnv?.(executable, realpath);
+      const extraEnv = await lintConfig.extraEnv?.(
+        executable,
+        document.fileName
+      );
       const res = await commonUtil.exec(executable, args, {
         logger: log.channel,
         ignoreNonZeroExit: true,
