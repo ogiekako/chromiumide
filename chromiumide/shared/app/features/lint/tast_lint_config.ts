@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
 import {getDriver} from '../../common/driver_repository';
-import {LintConfig} from './lint_config';
+import {LintCommand, LintConfig} from './lint_config';
 import {tastLintPath, isTastFile, parseGolintOutput} from './util';
 
 const driver = getDriver();
@@ -15,23 +15,29 @@ export class TastLintConfig implements LintConfig {
 
   readonly name = 'tast lint';
 
-  async executable(realpath: string): Promise<string | undefined> {
-    if (!isTastFile(realpath)) return;
+  async command(
+    document: vscode.TextDocument
+  ): Promise<LintCommand | undefined> {
+    if (!isTastFile(document.fileName)) return;
 
     const goFound = await checkForGo();
     if (!goFound) return;
 
-    const linterSubpath = tastLintPath(realpath);
+    const linterSubpath = tastLintPath(document.fileName);
     if (!linterSubpath) return;
 
-    const chromiumosRoot = await driver.cros.findSourceDir(realpath);
+    const chromiumosRoot = await driver.cros.findSourceDir(document.fileName);
     if (chromiumosRoot === undefined) return;
 
-    return driver.path.join(chromiumosRoot, linterSubpath);
-  }
+    const name = driver.path.join(chromiumosRoot, linterSubpath);
+    const args = [document.fileName];
+    const cwd = this.cwd(name);
 
-  arguments(path: string): string[] {
-    return [path];
+    return {
+      name,
+      args,
+      cwd,
+    };
   }
 
   parse(
@@ -42,7 +48,7 @@ export class TastLintConfig implements LintConfig {
     return parseGolintOutput(stdout, document);
   }
 
-  cwd(exePath: string): string | undefined {
+  private cwd(exePath: string): string | undefined {
     return driver.path.dirname(driver.path.dirname(exePath));
   }
 

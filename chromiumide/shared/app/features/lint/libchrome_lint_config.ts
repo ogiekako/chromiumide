@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 import {Platform} from '../../../driver';
 import {getDriver} from '../../common/driver_repository';
-import {LintConfig} from './lint_config';
+import {LintCommand, LintConfig} from './lint_config';
 import {createDiagnostic, sameFile} from './util';
 
 const driver = getDriver();
@@ -14,27 +14,28 @@ export class LibchromeLintConfig implements LintConfig {
   readonly name = 'libchrome check';
   readonly languageId = 'cpp';
 
-  async executable(realpath: string): Promise<string | undefined> {
+  async command(
+    document: vscode.TextDocument
+  ): Promise<LintCommand | undefined> {
     // For cider ChromeOS extension, libchrome check is not in scope.
     if (driver.platform() === Platform.CIDER) {
       return undefined;
     }
 
-    const chromiumosRoot = await driver.cros.findSourceDir(realpath);
+    const chromiumosRoot = await driver.cros.findSourceDir(document.fileName);
     if (chromiumosRoot === undefined) {
       return undefined;
     }
-    const filepath = realpath.slice(chromiumosRoot.length + 1); // To trim / of source dir
+    const filepath = document.fileName.slice(chromiumosRoot.length + 1); // To trim / of source dir
     for (const dir of CHECK_LIBCHROME_SRC_DIRS) {
       if (filepath.startsWith(dir)) {
-        return driver.path.join(chromiumosRoot, CHECK_LIBCHROME_PATH);
+        return {
+          name: driver.path.join(chromiumosRoot, CHECK_LIBCHROME_PATH),
+          args: [document.fileName],
+        };
       }
     }
     return undefined;
-  }
-
-  arguments(path: string): string[] {
-    return [path];
   }
 
   parse(

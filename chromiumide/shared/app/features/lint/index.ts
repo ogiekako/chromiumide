@@ -142,28 +142,22 @@ async function updateDiagnostics(
 
     const diagnosticsCollection: vscode.Diagnostic[] = [];
     for (const lintConfig of lintConfigs) {
-      const executable = await lintConfig.executable(document.fileName);
+      const cmd = await lintConfig.command(document);
       log.channel.appendLine(
-        `${executable ? 'Applying' : 'Do not apply'} ${
+        `${cmd ? 'Applying' : 'Do not apply'} ${
           lintConfig.name
         } lint executable to ${document.languageId} file: ${document.fileName}`
       );
-      if (!executable) {
+      if (!cmd) {
         continue;
       }
 
-      const args = lintConfig.arguments(document.fileName);
-      const cwd = lintConfig.cwd?.(executable);
-      const extraEnv = await lintConfig.extraEnv?.(
-        executable,
-        document.fileName
-      );
-      const res = await commonUtil.exec(executable, args, {
+      const res = await commonUtil.exec(cmd.name, cmd.args, {
         logger: log.channel,
         ignoreNonZeroExit: true,
         logStdout: true,
-        cwd: cwd,
-        extraEnv,
+        cwd: cmd.cwd,
+        extraEnv: cmd.extraEnv,
       });
       if (res instanceof Error) {
         log.channel.append(res.message);

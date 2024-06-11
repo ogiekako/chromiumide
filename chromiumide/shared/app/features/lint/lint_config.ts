@@ -13,28 +13,27 @@ export interface LintConfig {
    * Name of this lint config.
    */
   name: string;
+
   /**
-   * Returns the executable name to lint the realpath. It returns undefined in case linter should not be applied.
+   * Returns the command to run to lint the document. It returns undefined in case linter should not
+   * be applied.
    */
-  executable(realpath: string): Promise<string | undefined>;
-  arguments(path: string): string[];
+  command(document: vscode.TextDocument): Promise<LintCommand | undefined>;
+
   parse(
     stdout: string,
     stderr: string,
     document: vscode.TextDocument
   ): vscode.Diagnostic[];
 
-  /**
-   * Returns the cwd to run the executable.
-   */
-  cwd?(exePath: string): string | undefined;
-
-  /**
-   * Returns the extraEnv option to use on running the executable with `exec`.
-   */
-  extraEnv?(exePath: string, path: string): Promise<ProcessEnv | undefined>;
-
   // If true, allow empty diagnostics even when linter returned non-zero exit code.
   // Otherwise, such case is raised to an IDE error status.
   ignoreEmptyDiagnostics?: boolean | undefined;
+}
+
+export interface LintCommand {
+  name: string;
+  args: string[];
+  cwd?: string;
+  extraEnv?: ProcessEnv;
 }

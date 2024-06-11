@@ -7,7 +7,7 @@ import {crosExeFor, driver} from '../../common/chromiumos/cros';
 import {ProcessEnv} from '../../common/exec/types';
 import {assertNever} from '../../common/typecheck';
 import * as config from '../../services/config';
-import {LintConfig} from './lint_config';
+import {LintCommand, LintConfig} from './lint_config';
 import {
   createDiagnostic,
   isTastFile,
@@ -21,16 +21,29 @@ export class CrosLintConfig implements LintConfig {
     readonly languageId: 'cpp' | 'gn' | 'go' | 'python' | 'shellscript'
   ) {}
 
-  async executable(realpath: string): Promise<string | undefined> {
+  async command(
+    document: vscode.TextDocument
+  ): Promise<LintCommand | undefined> {
     // cros lint is not configured to run in PRESUBMIT.cfg in tast, tast-tests, tast-tests-private.
     // TODO(b/337138396): Honor PRESUBMIT.cfg in general.
-    if (isTastFile(realpath)) {
-      return;
-    }
-    return crosExeFor(realpath);
+    if (isTastFile(document.fileName)) return;
+
+    const exe = await crosExeFor(document.fileName);
+    if (!exe) return;
+
+    const args = this.arguments(document.fileName);
+    const cwd = this.cwd(exe);
+    const extraEnv = await this.extraEnv(exe);
+
+    return {
+      name: exe,
+      args,
+      cwd,
+      extraEnv,
+    };
   }
 
-  arguments(path: string): string[] {
+  private arguments(path: string): string[] {
     switch (this.languageId) {
       case 'cpp':
       case 'gn':
@@ -65,7 +78,7 @@ export class CrosLintConfig implements LintConfig {
     }
   }
 
-  cwd(exePath: string): string | undefined {
+  private cwd(exePath: string): string | undefined {
     switch (this.languageId) {
       case 'gn':
         // gnlint.py needs to be run inside ChromiumOS source tree,
@@ -99,7 +112,7 @@ export class CrosLintConfig implements LintConfig {
     }
   }
 
-  async extraEnv(exe: string, _path: string): Promise<ProcessEnv | undefined> {
+  private async extraEnv(exe: string): Promise<ProcessEnv | undefined> {
     if (this.languageId !== 'go') return;
 
     // Find golint executable in the chroot because cros lint
