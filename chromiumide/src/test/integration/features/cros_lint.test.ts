@@ -4,8 +4,8 @@
 
 import * as vscode from 'vscode';
 import {CrosLintConfig} from '../../../../shared/app/features/lint/cros_lint_config';
-import {GoLintConfig} from '../../../../shared/app/features/lint/go_lint_config';
 import {LibchromeLintConfig} from '../../../../shared/app/features/lint/libchrome_lint_config';
+import {TastLintConfig} from '../../../../shared/app/features/lint/tast_lint_config';
 import * as extensionTesting from '../extension_testing';
 
 const cppFileName = 'cros-disks/aaa.h';
@@ -327,7 +327,11 @@ describe('Lint Integration', () => {
   it('parses go errors in tast', async () => {
     const uri = vscode.Uri.from({scheme: scheme, path: goFileNameTast});
     const textDocument = await vscode.workspace.openTextDocument(uri);
-    const actual = new GoLintConfig().parse(goLintOutputTast, '', textDocument);
+    const actual = new TastLintConfig().parse(
+      goLintOutputTast,
+      '',
+      textDocument
+    );
     await extensionTesting.closeDocument(textDocument);
     const expected = [
       warning(
@@ -353,7 +357,7 @@ describe('Lint Integration', () => {
   it('parses go errors outside of tast', async () => {
     const uri = vscode.Uri.from({scheme: scheme, path: goFileName});
     const textDocument = await vscode.workspace.openTextDocument(uri);
-    const actual = new GoLintConfig().parse(goLintOutput, '', textDocument);
+    const actual = new TastLintConfig().parse(goLintOutput, '', textDocument);
     await extensionTesting.closeDocument(textDocument);
     const expected = [
       warning(

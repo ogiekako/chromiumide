@@ -12,9 +12,9 @@ import {TextEditorsWatcher} from '../../services/watchers/text_editors_watcher';
 import * as bgTaskStatus from '../../ui/bg_task_status';
 import {TaskStatus} from '../../ui/bg_task_status';
 import {CrosLintConfig} from './cros_lint_config';
-import {GoLintConfig} from './go_lint_config';
 import {LibchromeLintConfig} from './libchrome_lint_config';
 import {LintConfig} from './lint_config';
+import {TastLintConfig} from './tast_lint_config';
 
 const driver = getDriver();
 
@@ -64,11 +64,12 @@ export function activate(
 
 const LINT_CONFIGS: readonly LintConfig[] = [
   new CrosLintConfig('cpp'),
-  new LibchromeLintConfig(),
   new CrosLintConfig('gn'),
+  new CrosLintConfig('go'),
   new CrosLintConfig('python'),
   new CrosLintConfig('shellscript'),
-  new GoLintConfig(),
+  new LibchromeLintConfig(),
+  new TastLintConfig(),
 ];
 
 const languageToLintConfigs: Map<string, LintConfig[]> = (() => {
@@ -148,9 +149,7 @@ async function updateDiagnostics(
       const executable = await lintConfig.executable(realpath);
       log.channel.appendLine(
         `${executable ? 'Applying' : 'Do not apply'} ${
-          typeof lintConfig.name === 'string'
-            ? lintConfig.name
-            : lintConfig.name(realpath)
+          lintConfig.name
         } lint executable to ${document.languageId} file: ${
           document.uri.fsPath
         }`

@@ -12,7 +12,7 @@ export interface LintConfig {
   /**
    * Name of this lint config.
    */
-  name: string | ((p: string) => string);
+  name: string;
   /**
    * Returns the executable name to lint the realpath. It returns undefined in case linter should not be applied.
    */

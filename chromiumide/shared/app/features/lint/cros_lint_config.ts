@@ -4,15 +4,29 @@
 
 import * as vscode from 'vscode';
 import {crosExeFor, driver} from '../../common/chromiumos/cros';
+import {ProcessEnv} from '../../common/exec/types';
 import {assertNever} from '../../common/typecheck';
+import * as config from '../../services/config';
 import {LintConfig} from './lint_config';
-import {createDiagnostic, sameFile} from './util';
+import {
+  createDiagnostic,
+  isTastFile,
+  parseGolintOutput,
+  sameFile,
+} from './util';
 
 export class CrosLintConfig implements LintConfig {
   readonly name = 'cros lint';
-  constructor(readonly languageId: 'cpp' | 'gn' | 'python' | 'shellscript') {}
+  constructor(
+    readonly languageId: 'cpp' | 'gn' | 'go' | 'python' | 'shellscript'
+  ) {}
 
-  executable(realpath: string): Promise<string | undefined> {
+  async executable(realpath: string): Promise<string | undefined> {
+    // cros lint is not configured to run in PRESUBMIT.cfg in tast, tast-tests, tast-tests-private.
+    // TODO(b/337138396): Honor PRESUBMIT.cfg in general.
+    if (isTastFile(realpath)) {
+      return;
+    }
     return crosExeFor(realpath);
   }
 
@@ -20,6 +34,7 @@ export class CrosLintConfig implements LintConfig {
     switch (this.languageId) {
       case 'cpp':
       case 'gn':
+      case 'go':
       case 'python':
         return ['lint', path];
       case 'shellscript':
@@ -39,6 +54,8 @@ export class CrosLintConfig implements LintConfig {
         return parseCrosLintCpp(stdout, stderr, document);
       case 'gn':
         return parseCrosLintGn(stdout, stderr, document);
+      case 'go':
+        return paresCrosLintGo(stdout, stderr, document);
       case 'python':
         return parseCrosLintPython(stdout, stderr, document);
       case 'shellscript':
@@ -55,6 +72,7 @@ export class CrosLintConfig implements LintConfig {
         // otherwise it complains about formatting.
         return driver.path.dirname(exePath);
       case 'cpp':
+      case 'go':
       case 'python':
       case 'shellscript':
         return;
@@ -72,12 +90,42 @@ export class CrosLintConfig implements LintConfig {
       case 'python':
         // The linter exits with non-zero code when the file is not auto-formatted.
         return true;
+      case 'go':
+        // TODO(oka): remove it after confirming cros lint doesn't exit with non-zero for Go files.
+        return true;
       case 'cpp':
       case 'shellscript':
         return;
       default:
         assertNever(this.languageId);
     }
+  }
+
+  async extraEnv(exe: string, _path: string): Promise<ProcessEnv | undefined> {
+    if (this.languageId !== 'go') return;
+
+    // Find golint executable in the chroot because cros lint
+    // checks /usr/bin, where the chroot golint is located.
+    const chroot = await driver.cros.findChroot(exe);
+    if (chroot === undefined) {
+      return undefined;
+    }
+    const goBin = driver.path.join(chroot, '/usr/bin');
+    // Add goBin to the PATH so that cros lint can lint go files
+    // outside the chroot.
+    const pathVar = await driver.getUserEnvPath();
+    let newPathVar = `${
+      pathVar instanceof Error || pathVar === undefined ? '' : pathVar
+    }:${goBin}`;
+    // Prepend go.toolsGopath if available
+    if (vscode.extensions.getExtension('golang.Go')) {
+      const toolsGopathConfig = config.goExtension.toolsGopath.get();
+      if (toolsGopathConfig) {
+        newPathVar = `${toolsGopathConfig}:${newPathVar}`;
+      }
+    }
+
+    return {PATH: newPathVar};
   }
 }
 
@@ -137,6 +185,14 @@ function parseCrosLintGn(
     }
   }
   return diagnostics;
+}
+
+function paresCrosLintGo(
+  stdout: string,
+  _stderr: string,
+  document: vscode.TextDocument
+): vscode.Diagnostic[] {
+  return parseGolintOutput(stdout, document);
 }
 
 // Parse output from cros lint on Python files

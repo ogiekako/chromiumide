@@ -37,3 +37,53 @@ export function createDiagnostic(
   diagnostic.source = source;
   return diagnostic;
 }
+
+const TAST_RE = /^.*\/platform\/(tast-tests-private|tast-tests|tast).*/;
+
+/**
+ * Returns the tast linter path relative from chromeos root if and only if the file is under tast,
+ * tast-tests, or tast-tests-private directory.
+ */
+export function tastLintPath(path: string): string | undefined {
+  const m = TAST_RE.exec(path);
+  if (!m) return;
+  return `src/platform/${m[1]}/tools/run_lint.sh`;
+}
+
+export function isTastFile(path: string): boolean {
+  return tastLintPath(path) !== undefined;
+}
+
+/**
+ * Parses the output from golint that cros lint uses for linting Go files. Linter for tast tests
+ * uses the same format and its output can be parsed with this function as well.
+ *
+ * FWIW, the output of golint is constructed as in [1] by appending token.Position [2] and the
+ * message.
+ *
+ * References: [1]
+ * https://github.com/golang/lint/blob/6edffad5e6160f5949cdefc81710b2706fbcd4f6/golint/golint.go#L121
+ * [2] https://pkg.go.dev/go/token#Position.String
+ */
+export function parseGolintOutput(
+  stdout: string,
+  document: vscode.TextDocument
+): vscode.Diagnostic[] {
+  // Example:
+  // src/go.chromium.org/chromiumos/graphics-utils-go/trace_profiling/cmd/analyze/analyze/graph.go:53:1: comment on exported function PlotFrameTime should be of the form "PlotFrameTime ..."
+  const lineRE = /([^\s]+.go):(\d+):(\d+): (.*)/gm;
+  const diagnostics: vscode.Diagnostic[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = lineRE.exec(stdout)) !== null) {
+    const file = match[1];
+    const line = Number(match[2]);
+    const startCol = Number(match[3]);
+    const message = match[4];
+    if (sameFile(document.uri.fsPath, file)) {
+      diagnostics.push(
+        createDiagnostic(message, 'CrOS Go lint', line, startCol)
+      );
+    }
+  }
+  return diagnostics;
+}
