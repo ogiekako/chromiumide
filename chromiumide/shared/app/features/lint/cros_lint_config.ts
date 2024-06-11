@@ -90,10 +90,8 @@ export class CrosLintConfig implements LintConfig {
       case 'python':
         // The linter exits with non-zero code when the file is not auto-formatted.
         return true;
-      case 'go':
-        // TODO(oka): remove it after confirming cros lint doesn't exit with non-zero for Go files.
-        return true;
       case 'cpp':
+      case 'go':
       case 'shellscript':
         return;
       default:
