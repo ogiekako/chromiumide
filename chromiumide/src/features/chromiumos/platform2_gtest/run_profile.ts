@@ -3,10 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {
-  getOrSelectDefaultBoard,
-  NoBoardError,
-} from '../../../../shared/app/features/default_board';
+import {getOrPromptToSelectDefaultBoard} from '../../../../shared/app/features/default_board';
 import {GtestWorkspace} from '../../gtest/gtest_workspace';
 import {Config} from './config';
 import {Runner} from './runner';
@@ -55,8 +52,10 @@ export class RunProfile implements vscode.Disposable {
     request: vscode.TestRunRequest,
     cancellation: vscode.CancellationToken
   ) {
-    const board = await getOrSelectDefaultBoard(this.cfg.chrootService.chroot);
-    if (board === undefined || board instanceof NoBoardError) {
+    const board = await getOrPromptToSelectDefaultBoard(
+      this.cfg.chrootService.chroot
+    );
+    if (board === undefined || board instanceof Error) {
       // TODO(oka): Handle error.
       return;
     }

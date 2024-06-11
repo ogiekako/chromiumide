@@ -161,7 +161,7 @@ describe('Kernel C++ xrefs', () => {
     {
       name: 'should report if no default board was selected',
       noBoard: true,
-      wantErrorMessage: jasmine.stringContaining('No board'),
+      wantErrorMessage: jasmine.stringContaining('no board'),
     },
     {
       name: 'should report command failure',

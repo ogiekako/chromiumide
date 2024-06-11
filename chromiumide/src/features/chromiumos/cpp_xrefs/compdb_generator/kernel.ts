@@ -8,10 +8,7 @@ import * as vscode from 'vscode';
 import {TextDocument, CancellationToken} from 'vscode';
 import {findGitDir} from '../../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../../shared/app/common/driver_repository';
-import {
-  NoBoardError,
-  getOrSelectDefaultBoard,
-} from '../../../../../shared/app/features/default_board';
+import {getOrPromptToSelectDefaultBoard} from '../../../../../shared/app/features/default_board';
 import * as config from '../../../../../shared/app/services/config';
 import {
   CompdbGeneratorCore,
@@ -78,9 +75,9 @@ export class Kernel implements CompdbGeneratorCore {
     if (!gitDir) return;
 
     const chroot = this.chrootService.chroot;
-    const board = await getOrSelectDefaultBoard(chroot);
+    const board = await getOrPromptToSelectDefaultBoard(chroot);
 
-    if (board instanceof NoBoardError) {
+    if (board instanceof Error) {
       return new ErrorDetails('no board', board.message);
     }
     if (board === undefined) {

@@ -6,10 +6,7 @@ import * as vscode from 'vscode';
 import * as commonUtil from '../../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../../shared/app/common/driver_repository';
 import {assertNever} from '../../../../../shared/app/common/typecheck';
-import {
-  NoBoardError,
-  getOrSelectDefaultBoard,
-} from '../../../../../shared/app/features/default_board';
+import {getOrPromptToSelectDefaultBoard} from '../../../../../shared/app/features/default_board';
 import * as config from '../../../../../shared/app/services/config';
 import {
   CompdbGeneratorCore,
@@ -94,8 +91,8 @@ export class Platform2 implements CompdbGeneratorCore {
     _token: vscode.CancellationToken
   ): Promise<undefined | ErrorDetails | vscode.CancellationError> {
     const chroot = this.chrootService.chroot;
-    const board = await getOrSelectDefaultBoard(chroot);
-    if (board instanceof NoBoardError) {
+    const board = await getOrPromptToSelectDefaultBoard(chroot);
+    if (board instanceof Error) {
       return new ErrorDetails('no board', board.message);
     }
     if (board === undefined) {

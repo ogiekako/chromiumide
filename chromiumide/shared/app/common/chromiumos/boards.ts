@@ -9,13 +9,19 @@ import {crosExeFor} from './cros';
 
 const driver = getDriver();
 
+export class NoBoardError extends Error {
+  constructor(message: string) {
+    super(`no board available: ${message}`);
+  }
+}
+
 /**
  * @returns All ChromeOS boards that can be set up.
  * @param chromiumosRoot path to the repo root, for finding 'cros' command.
  */
 export async function getAllChromeosBoards(
   chromiumosRoot: string
-): Promise<string[] | Error> {
+): Promise<string[] | NoBoardError | Error> {
   const crosExe = await crosExeFor(chromiumosRoot);
   if (!crosExe) {
     return new Error(
@@ -23,11 +29,17 @@ export async function getAllChromeosBoards(
     );
   }
 
-  const boards = await commonUtil.exec(crosExe, ['query', 'boards']);
-  if (boards instanceof Error) {
-    return boards;
+  const output = await commonUtil.exec(crosExe, ['query', 'boards']);
+  if (output instanceof Error) {
+    return output;
   }
-  return boards.stdout.split('\n');
+  const boards = output.stdout.split('\n').filter(s => s !== '');
+  if (boards.length === 0) {
+    return new NoBoardError(
+      '`cros query boards` returns empty list unexpectedly'
+    );
+  }
+  return boards;
 }
 
 /**

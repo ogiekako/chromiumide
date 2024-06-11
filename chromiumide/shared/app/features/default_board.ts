@@ -12,6 +12,7 @@ import {
 import {
   getSetupBoardsRecentFirst,
   getAllChromeosBoards,
+  NoBoardError,
 } from '../common/chromiumos/boards';
 import {crosOutDir, crosRoot, withTimeout} from '../common/common_util';
 import {getDriver} from '../common/driver_repository';
@@ -38,9 +39,14 @@ export function activate(
 
   context.subscriptions.push(
     vscodeRegisterCommand('chromiumide.selectBoard', async () => {
-      const board = await selectAndUpdateDefaultBoard(chroot, {
-        suggestMostRecent: false,
-      });
+      const boards = await getBoards(chroot);
+      if (boards instanceof Error) {
+        await vscode.window.showErrorMessage(
+          `Selecting board: failed to get boards: ${boards.message}`
+        );
+        return;
+      }
+      const board = await selectAndUpdateDefaultBoard(boards);
       if (board instanceof Error) {
         await vscode.window.showErrorMessage(
           `Selecting board: ${board.message}`
@@ -72,109 +78,95 @@ function updateBoardStatus(boardStatusBarItem: vscode.StatusBarItem) {
   }
 }
 
-export class NoBoardError extends Error {
-  constructor() {
-    super(
-      'No board has been setup; run setup_board for the board you want to use, ' +
-        'and revisit the editor'
-    );
-  }
-}
-
 /**
  * Get the default board, or ask the user to select one.
  *
- * @returns The default board name. undefined if the user ignores popup. NoBoardError if there is no
- *   available board.
+ * @param platform The platform the extension is running on. Only for testing. Do not set (always
+ * use the default in extension code that calls driver.platform())
+ *
+ * @returns The default board name. undefined if the user ignores popup or quick pick. NoBoardError
+ * if there is no available board. Error for other kind of errors (e.g. `cros query boards` command
+ * failed).
  */
-export async function getOrSelectDefaultBoard(
-  chroot: WrapFs
-): Promise<BoardOrHost | undefined | NoBoardError> {
+export async function getOrPromptToSelectDefaultBoard(
+  chroot: WrapFs,
+  platform = driver.platform()
+): Promise<BoardOrHost | undefined | NoBoardError | Error> {
+  // Default board has been set, return directly.
   const board = config.board.get();
   if (board) {
     return parseBoardOrHost(board);
   }
-  return await selectAndUpdateDefaultBoard(chroot, {
-    // Most recent option only applicable to the vscode extension but not cider where all CrOS
-    // boards are listed as options.
-    suggestMostRecent: driver.platform() === Platform.VSCODE,
-  });
-}
 
-/**
- * Ask user to select the board to use. If user selects a board, the config
- * is updated with the board name.
- *
- * @params options If options.suggestMostRecent is true, the board most recently
- * used is proposed to the user, before showing the board picker.
- */
-async function selectAndUpdateDefaultBoard(
-  chroot: WrapFs,
-  options: {
-    suggestMostRecent: boolean;
-  }
-): Promise<BoardOrHost | undefined | Error> {
-  const chromiumosRoot = crosRoot(chroot.root);
-  const boards =
-    driver.platform() === Platform.VSCODE
-      ? await getSetupBoardsRecentFirst(
-          chroot,
-          new WrapFs(crosOutDir(chromiumosRoot))
-        )
-      : await getAllChromeosBoards(chromiumosRoot);
+  const boards = await getBoards(chroot, platform);
   if (boards instanceof Error) {
     return boards;
   }
+  // On cider where `cros query boards` is used to get the list of all board, the getBoards function
+  // will return NoBoardError (and this function returns it in above condition) if the list is
+  // empty. Therefore, this only happens on vscode where it lists only boards that have been set up
+  // and having no board is a legitimate use case.
   if (boards.length === 0) {
-    return new NoBoardError();
+    return new NoBoardError(
+      'no board has been setup; run setup_board for the board you want to use, ' +
+        'and revisit the editor'
+    );
   }
 
-  const board = await selectBoard(boards, options.suggestMostRecent);
-  if (board instanceof Error) {
+  const mostRecent = boards[0];
+  const optionYes = 'Yes';
+  const optionSelectFromList = 'Select from list';
+  const options =
+    platform === Platform.VSCODE
+      ? [optionYes, optionSelectFromList]
+      : [optionSelectFromList];
+  const prompt =
+    platform === Platform.VSCODE
+      ? `Default board is not set. Do you want to use ${mostRecent}?`
+      : 'Default board is not set.';
+  const selection = await withTimeout(
+    vscode.window.showWarningMessage(prompt, ...options),
+    30 * 1000
+  );
+  switch (selection) {
+    case optionYes:
+      await config.board.update(mostRecent);
+      return parseBoardOrHost(mostRecent);
+    case optionSelectFromList:
+      return await selectAndUpdateDefaultBoard(boards);
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Show quick pick for user to select the default board from the given list. If user selects a
+ * board, the config will be updated with the board name and return the board.
+ */
+async function selectAndUpdateDefaultBoard(
+  boards: string[]
+): Promise<BoardOrHost | undefined> {
+  const board = await vscode.window.showQuickPick(boards, {
+    title: 'Default board',
+  });
+  if (board === undefined) {
     return board;
   }
 
-  if (board) {
-    // TODO(oka): This should be per chroot (i.e. Remote) setting, instead of global (i.e. User).
-    await config.board.update(board.toString());
-  }
-  return board;
+  // TODO(oka): This should be per chroot (i.e. Remote) setting, instead of global (i.e. User).
+  await config.board.update(board);
+  return parseBoardOrHost(board);
 }
 
-async function selectBoard(
-  boards: string[],
-  suggestMostRecent: boolean
-): Promise<BoardOrHost | undefined> {
-  if (suggestMostRecent) {
-    const mostRecent = boards[0];
-    const selection = await withTimeout(
-      vscode.window.showWarningMessage(
-        `Default board is not set. Do you want to use ${mostRecent}?`,
-        {
-          title: 'Yes',
-        },
-        {
-          title: 'Customize',
-        }
-      ),
-      30 * 1000
-    );
-    if (!selection) {
-      return undefined;
-    }
-    switch (selection.title) {
-      case 'Yes':
-        return parseBoardOrHost(mostRecent);
-      case 'Customize':
-        break;
-      default:
-        return undefined;
-    }
-  }
-
-  const choice = await vscode.window.showQuickPick(boards, {
-    title: 'Default board',
-  });
-
-  return typeof choice === 'string' ? parseBoardOrHost(choice) : undefined;
+async function getBoards(
+  chroot: WrapFs,
+  platform = driver.platform()
+): Promise<string[] | NoBoardError | Error> {
+  const chromiumosRoot = crosRoot(chroot.root);
+  return platform === Platform.VSCODE
+    ? await getSetupBoardsRecentFirst(
+        chroot,
+        new WrapFs(crosOutDir(chromiumosRoot))
+      )
+    : await getAllChromeosBoards(chromiumosRoot);
 }
