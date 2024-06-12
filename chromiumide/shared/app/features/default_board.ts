@@ -28,14 +28,16 @@ export function activate(
   const boardStatusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Left
   );
+  boardStatusBarItem.tooltip = 'Click to update default board';
   boardStatusBarItem.command = 'chromiumide.selectBoard';
+  updateBoardStatus(boardStatusBarItem, config.board.get());
+  boardStatusBarItem.show();
 
   context.subscriptions.push(
-    config.board.onDidChange(() => {
-      updateBoardStatus(boardStatusBarItem);
+    config.board.onDidChange(board => {
+      updateBoardStatus(boardStatusBarItem, board);
     })
   );
-  updateBoardStatus(boardStatusBarItem);
 
   context.subscriptions.push(
     vscodeRegisterCommand('chromiumide.selectBoard', async () => {
@@ -68,13 +70,18 @@ export function activate(
   );
 }
 
-function updateBoardStatus(boardStatusBarItem: vscode.StatusBarItem) {
-  const board = config.board.get();
-  boardStatusBarItem.text = board;
+function updateBoardStatus(
+  boardStatusBarItem: vscode.StatusBarItem,
+  board: string
+) {
   if (board) {
-    boardStatusBarItem.show();
+    boardStatusBarItem.text = board;
+    boardStatusBarItem.backgroundColor = undefined; // use default
   } else {
-    boardStatusBarItem.hide();
+    boardStatusBarItem.text = '(No default board)';
+    boardStatusBarItem.backgroundColor = new vscode.ThemeColor(
+      'statusBarItem.warningBackground'
+    );
   }
 }
 
