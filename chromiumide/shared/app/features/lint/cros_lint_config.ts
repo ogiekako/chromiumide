@@ -124,7 +124,7 @@ export class CrosLintConfig implements LintConfig {
     }
   }
 
-  get ignoreEmptyDiagnostics(): boolean | undefined {
+  get ignoreEmptyDiagnostics(): boolean {
     switch (this.languageId) {
       case 'gn':
         // gnlint.py exits with non-zero code when syntax error exists,
@@ -136,7 +136,7 @@ export class CrosLintConfig implements LintConfig {
       case 'cpp':
       case 'go':
       case 'shellscript':
-        return;
+        return false;
       default:
         assertNever(this.languageId);
     }

@@ -28,7 +28,7 @@ export interface LintConfig {
 
   // If true, allow empty diagnostics even when linter returned non-zero exit code.
   // Otherwise, such case is raised to an IDE error status.
-  ignoreEmptyDiagnostics?: boolean | undefined;
+  ignoreEmptyDiagnostics?: boolean;
 }
 
 export interface LintCommand {
