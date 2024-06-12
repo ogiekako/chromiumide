@@ -91,6 +91,7 @@ async function updateDiagnosticsWrapper(
   // Clear collection if lint is disabled.
   if (!config.lint.enabled.get()) {
     collection.clear();
+    return;
   }
   try {
     await updateDiagnostics(document, collection, statusManager, log);
