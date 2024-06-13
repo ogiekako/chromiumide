@@ -1534,6 +1534,9 @@
     },
     "lint-license": {
       "command": "jsgl --local .",
+      "files": [
+        "package-lock.json"
+      ],
       "output": []
     },
     "fix": {
