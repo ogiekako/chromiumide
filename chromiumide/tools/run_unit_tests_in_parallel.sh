@@ -32,20 +32,24 @@ if [[ -n "$1" ]]; then
 
   env NODE_OPTIONS='-r source-map-support/register' NODE_PATH=out/src/test/unit/injected_modules npx jasmine --config=src/test/unit/jasmine.json --parallel=32 --color
 
-  status=$?
-
-  kill_all "${pgid}"
-
-  exit "${status}"
+  exit $?
 fi
 
 pgid_file="$(mktemp)"
 trap 'rm ${pgid_file}' EXIT
 
 setsid ./tools/run_unit_tests_in_parallel.sh "${pgid_file}" &
+test_pid=$!
 
-my_pid=$$
+trap 'kill_all $(cat ${pgid_file})' INT TERM
 
-trap 'kill_all $(cat ${pgid_file}) && kill ${my_pid}' INT TERM
+wait "${test_pid}"
 
-wait
+# When the inner command that runs that actual unit tests exists with ${status}, kill all processes
+# belong to the group logged in ${pgid_file} and exit with the same status to report the test
+# success/failure.
+status=$?
+
+kill_all "$(cat "${pgid_file}")"
+
+exit "${status}"
