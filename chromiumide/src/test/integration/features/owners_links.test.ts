@@ -10,8 +10,13 @@ import {FakeCancellationToken} from '../../testing/fakes';
 import * as extensionTesting from '../extension_testing';
 
 // Create a `vscode.TextDocument` from text and run `OwnersLinkProvider` on it.
-async function getLinks(text: string) {
-  const document = await vscode.workspace.openTextDocument({content: text});
+async function getLinks(text: string, dir: string) {
+  await testing.putFiles(dir, {
+    OWNERS: text,
+  });
+  const document = await vscode.workspace.openTextDocument(
+    path.join(dir, 'OWNERS')
+  );
   const provider = new ownersLinkProvider.OwnersLinkProvider();
   const links = await provider.provideDocumentLinks(
     document,
@@ -40,7 +45,7 @@ include project:/path
 include project:branch:/path
 `;
 
-    const {links} = await getLinks(text);
+    const {links} = await getLinks(text, tempDir.path);
     expect(links).toEqual([]);
   });
 
@@ -52,7 +57,7 @@ foo # file:/path
 foo # include /path
 `;
 
-    const {links} = await getLinks(text);
+    const {links} = await getLinks(text, tempDir.path);
     expect(links).toEqual([]);
   });
 
@@ -62,7 +67,7 @@ foo # include /path
     it(`extracts absolute ${type} links with double slashes`, async () => {
       const text = `${prefix}//tools/translation/TRANSLATION_OWNERS`;
 
-      const {links, documentUri} = await getLinks(text);
+      const {links, documentUri} = await getLinks(text, tempDir.path);
       expect(links).toEqual([
         new ownersLinkProvider.OwnersLink(
           '/tools/translation/TRANSLATION_OWNERS',
@@ -75,7 +80,7 @@ foo # include /path
     it(`extracts absolute ${type} links with a single slash`, async () => {
       const text = `${prefix}/tools/translation/TRANSLATION_OWNERS`;
 
-      const {links, documentUri} = await getLinks(text);
+      const {links, documentUri} = await getLinks(text, tempDir.path);
       expect(links).toEqual([
         new ownersLinkProvider.OwnersLink(
           '/tools/translation/TRANSLATION_OWNERS',
@@ -88,7 +93,7 @@ foo # include /path
     it(`extracts relative ${type} links`, async () => {
       const text = `${prefix}tools/../translation/TRANSLATION_OWNERS`;
 
-      const {links, documentUri} = await getLinks(text);
+      const {links, documentUri} = await getLinks(text, tempDir.path);
       expect(links).toEqual([
         new ownersLinkProvider.OwnersLink(
           'tools/../translation/TRANSLATION_OWNERS',
@@ -101,7 +106,7 @@ foo # include /path
     it(`extracts ${type} links with special characters`, async () => {
       const text = `${prefix}/styleguide/c++/OWNERS`;
 
-      const {links, documentUri} = await getLinks(text);
+      const {links, documentUri} = await getLinks(text, tempDir.path);
       expect(links).toEqual([
         new ownersLinkProvider.OwnersLink(
           '/styleguide/c++/OWNERS',
@@ -117,7 +122,7 @@ foo # include /path
   file:/path1
 per-file foo.txt =   file:/path2
   include   /path3  # test`;
-    const {links, documentUri} = await getLinks(text);
+    const {links, documentUri} = await getLinks(text, tempDir.path);
     expect(links).toEqual([
       new ownersLinkProvider.OwnersLink(
         '/path1',

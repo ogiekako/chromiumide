@@ -8,7 +8,7 @@ import {LibchromeLintConfig} from '../../../../shared/app/features/lint/libchrom
 import {TastLintConfig} from '../../../../shared/app/features/lint/tast_lint_config';
 import * as extensionTesting from '../extension_testing';
 
-const cppFileName = 'cros-disks/aaa.h';
+const cppFileName = '/cros/cros-disks/aaa.h';
 
 const cppFileContents = `#ifndef CROS_DISKS_AAA_H_
 #define CROS_DISKS_AAA_H_
@@ -27,7 +27,7 @@ Total errors found: 2
 11:21:52: ERROR: Found lint errors in 1 files.
 `;
 
-const libchromeFileName = 'cros-disks/aaa.h';
+const libchromeFileName = '/cros/cros-disks/aaa.h';
 
 const libchromeFileContents = `#ifndef CROS_DISKS_AAA_H_
 #define CROS_DISKS_AAA_H_
@@ -44,7 +44,7 @@ namespace {
 const libchromeLintOutput = `In File cros-disks/aaa.h line 4 col 2, found include <absl/types/optional.h (pattern: (include.*absl/types/optional.h|absl::(optional|make_optional|nullopt))), Use std::optional. absl::optional is an alias of std::optional. See go/use-std-optional-in-cros for discussion.
 In File cros-disks/aaa.h line 7 col 3, found absl::optional (pattern: (include.*absl/types/optional.h|absl::(optional|make_optional|nullopt))), Use std::optional. absl::optional is an alias of std::optional. See go/use-std-optional-in-cros for discussion.`;
 
-const pythonFileName = 'cros-disks/aaa.py';
+const pythonFileName = '/cros/cros-disks/aaa.py';
 
 const pythonAbsoluteFileName = '/absolute/path/to/cros-disks/aaa.py';
 
@@ -64,7 +64,7 @@ cros-disks/aaa.py:3:0: C9002: Classes should have docstrings (even a one liner) 
 cros-disks/aaa.py:8:4: W0612: Unused variable 'abc' (unused-variable)
 `;
 
-const shellFileName = 'cros-disks/aaa.sh';
+const shellFileName = '/cros/cros-disks/aaa.sh';
 
 const shellFileContents = `#!/bin/bash
 
@@ -78,7 +78,7 @@ const shellLintOutput = `cros-disks/aaa.sh:3:6: note: Double quote to prevent gl
 12:34:56: ERROR: Found lint errors in 1 files in 0.029s.
 `;
 
-const gnFileName = 'example/BUILD.gn';
+const gnFileName = '/cros/example/BUILD.gn';
 
 const gnFileContents = `executable("my_exec") {
   ldflags = [ "-lm" ]
@@ -93,9 +93,9 @@ const gnLintOutput = `12:34:56.789: ERROR: **** example/BUILD.gn: found 3 issue(
 12:34:56.789: ERROR: 1 file(s) failed linting
 `;
 
-const goFileNameTast = 'tast/aaa.go';
+const goFileNameTast = '/cros/tast/aaa.go';
 
-const goFileName = 'exmaple/aaa.go';
+const goFileName = '/cros/exmaple/aaa.go';
 
 const goFileContents = `// fooId implements api.DutServiceServer.DetectDeviceConfigId.
 func (s *Foo) FooId(

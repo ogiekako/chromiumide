@@ -3,8 +3,10 @@
 // found in the LICENSE file.
 
 import 'jasmine';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import {TEST_ONLY} from '../../../features/upstart';
+import * as testing from '../../testing';
 import {FakeCancellationToken} from '../../testing/fakes';
 import {closeDocument} from '../extension_testing';
 
@@ -47,14 +49,19 @@ exec multi\\
 
 describe('Upstart support', () => {
   let document: vscode.TextDocument;
+  const tempDir = testing.tempDir();
 
-  beforeAll(async () => {
-    document = await vscode.workspace.openTextDocument({
-      content: UPSTART_SCRIPT,
+  beforeEach(async () => {
+    const fileDirPath = path.join(tempDir.path, 'src/platform2/test');
+    await testing.putFiles(fileDirPath, {
+      'test.conf': UPSTART_SCRIPT,
     });
+    document = await vscode.workspace.openTextDocument(
+      path.join(fileDirPath, 'test.conf')
+    );
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await closeDocument(document);
   });
 
