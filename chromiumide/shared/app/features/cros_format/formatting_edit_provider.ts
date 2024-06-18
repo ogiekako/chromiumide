@@ -161,6 +161,7 @@ export class CrosFormatEditProvider
           group: 'format',
           name: 'cros_format_return_error',
           description: 'cros format returned error',
+          exit_code: formatterOutput.exitStatus ?? undefined,
         });
         return;
       }

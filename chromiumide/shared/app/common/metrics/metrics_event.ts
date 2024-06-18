@@ -282,6 +282,7 @@ type CrosFormatEvent = EventBase & {group: 'format'} & (
           | 'cros_format_call_error'
           | 'cros_format_parse_presubmit_cfg_error'
           | 'cros_format_return_error';
+        exit_code?: number;
       }
   );
 
