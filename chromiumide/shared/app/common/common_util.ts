@@ -204,6 +204,12 @@ export async function findGitDir(
   filePath: string,
   root = '/'
 ): Promise<string | undefined> {
+  if (!filePath.startsWith(root)) {
+    throw new Error(
+      `internal error: findGitDir: ${filePath} must be under ${root}`
+    );
+  }
+
   let dir: string;
   if (!(await driver.fs.exists(filePath))) {
     // tests use files that do not exist
@@ -212,10 +218,6 @@ export async function findGitDir(
     dir = filePath;
   } else {
     dir = driver.path.dirname(filePath);
-  }
-
-  if (driver.path.relative(root, dir).startsWith('..')) {
-    throw new Error(`internal error: findGitDir: ${dir} must be under ${root}`);
   }
 
   while (dir !== root) {

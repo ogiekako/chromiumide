@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../../shared/app/common/common_util';
 
@@ -107,9 +106,7 @@ export class Watcher {
   private async gitDirFor(
     document: vscode.TextDocument
   ): Promise<string | undefined> {
-    const isUnderRoot = !path
-      .relative(this.root, document.fileName)
-      .startsWith('..');
+    const isUnderRoot = document.fileName.startsWith(this.root);
     if (!isUnderRoot) {
       return undefined;
     }
