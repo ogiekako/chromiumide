@@ -22,10 +22,7 @@ import {
   ResultDisplayMode,
 } from './check_image';
 import {CommandContext} from './common';
-import {
-  connectToDeviceForShell,
-  connectToDeviceForShellWithOptions,
-} from './connect_ssh';
+import {connectToDeviceForShell} from './connect_ssh';
 import {connectToDeviceForScreen} from './connect_vnc';
 import {copyAttribute, copyHostname} from './copy_device_attribute';
 import {crosfleetLogin} from './crosfleet_login';
@@ -110,7 +107,7 @@ export function registerCommands(
     vscodeRegisterCommand(
       'chromiumide.deviceManagement.connectToDeviceForShellWithOptions',
       (item?: provider.DeviceItem) =>
-        connectToDeviceForShellWithOptions(context, item?.hostname)
+        connectToDeviceForShell(context, item?.hostname, true)
     ),
     vscodeRegisterCommand(
       'chromiumide.deviceManagement.openSystemLogViewer',

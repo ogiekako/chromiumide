@@ -64,7 +64,8 @@ interface InputBoxWithSuggestionsOptions {
  */
 export function showInputBoxWithSuggestions(
   items: vscode.QuickPickItem[],
-  options?: InputBoxWithSuggestionsOptions
+  options?: InputBoxWithSuggestionsOptions,
+  onDidShowPickerEmitterForTesting?: vscode.EventEmitter<void>
 ): Promise<string | undefined> {
   const labelSet = new Set(items.map(x => x.label));
 
@@ -98,5 +99,6 @@ export function showInputBoxWithSuggestions(
     );
 
     picker.show();
+    onDidShowPickerEmitterForTesting?.fire();
   });
 }

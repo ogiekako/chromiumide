@@ -8,10 +8,7 @@ import {escapeArray} from '../../../../../../shared/app/common/shutil';
 import {findUnusedPort, isPortUsed} from '../../../../../common/net_util';
 import {processExists} from '../../../../../common/processes';
 import {CommandContext} from '../../../../../features/device_management/commands/common';
-import {
-  connectToDeviceForShell,
-  connectToDeviceForShellWithOptions,
-} from '../../../../../features/device_management/commands/connect_ssh';
+import {connectToDeviceForShell} from '../../../../../features/device_management/commands/connect_ssh';
 import {SshIdentity} from '../../../../../features/device_management/ssh_identity';
 import * as testing from '../../../../testing';
 
@@ -38,13 +35,24 @@ describe('SSH command', () => {
 
     const onDidFinishEmitter = new vscode.EventEmitter<void>();
     const onDidFinish = new testing.EventReader(onDidFinishEmitter.event);
-    subscriptions.push(onDidFinishEmitter, onDidFinish);
+    const onDidShowPickerEmitter = new vscode.EventEmitter<void>();
+    const onDidShowPicker = new testing.EventReader(
+      onDidShowPickerEmitter.event
+    );
+    subscriptions.push(
+      onDidFinishEmitter,
+      onDidFinish,
+      onDidShowPickerEmitter,
+      onDidShowPicker
+    );
 
     return {
       context,
       terminal,
       onDidFinishEmitter,
       onDidFinish,
+      onDidShowPickerEmitter,
+      onDidShowPicker,
     };
   });
 
@@ -54,8 +62,10 @@ describe('SSH command', () => {
     await connectToDeviceForShell(
       state.context,
       'fakehost',
-      /* extraOptions = */ undefined,
-      {onDidFinishEmitter: state.onDidFinishEmitter}
+      /* withOptions = */ false,
+      {
+        onDidFinishEmitter: state.onDidFinishEmitter,
+      }
     );
 
     vscodeEmitters.window.onDidCloseTerminal.fire(state.terminal);
@@ -77,15 +87,14 @@ describe('SSH command', () => {
         label: '-4',
       },
     ];
-
     vscodeSpy.window.createTerminal.and.returnValue(state.terminal);
 
-    const command = connectToDeviceForShellWithOptions(
-      state.context,
-      'fakehost',
-      {onDidFinishEmitter: state.onDidFinishEmitter}
-    );
+    const command = connectToDeviceForShell(state.context, 'fakehost', true, {
+      onDidFinishEmitter: state.onDidFinishEmitter,
+      onDidShowPickerEmitter: state.onDidShowPickerEmitter,
+    });
 
+    await state.onDidShowPicker.read();
     picker.accept();
 
     await command;
@@ -130,12 +139,12 @@ describe('SSH command', () => {
 
       vscodeSpy.window.createTerminal.and.returnValue(state.terminal);
 
-      const command = connectToDeviceForShellWithOptions(
-        state.context,
-        'fakehost',
-        {onDidFinishEmitter: state.onDidFinishEmitter}
-      );
+      const command = connectToDeviceForShell(state.context, 'fakehost', true, {
+        onDidFinishEmitter: state.onDidFinishEmitter,
+        onDidShowPickerEmitter: state.onDidShowPickerEmitter,
+      });
 
+      await state.onDidShowPicker.read();
       picker.accept();
 
       await command;
@@ -187,12 +196,13 @@ cnc
 
     vscodeSpy.window.createTerminal.and.returnValue(state.terminal);
 
-    const command = connectToDeviceForShellWithOptions(
-      state.context,
-      'fakehost',
-      {onDidFinishEmitter: state.onDidFinishEmitter, pollInterval: 10}
-    );
+    const command = connectToDeviceForShell(state.context, 'fakehost', true, {
+      onDidFinishEmitter: state.onDidFinishEmitter,
+      onDidShowPickerEmitter: state.onDidShowPickerEmitter,
+      pollInterval: 10,
+    });
 
+    await state.onDidShowPicker.read();
     picker.accept();
 
     await command;

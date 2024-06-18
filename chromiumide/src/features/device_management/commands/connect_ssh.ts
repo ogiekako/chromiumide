@@ -7,7 +7,6 @@ import * as commonUtil from '../../../../shared/app/common/common_util';
 import {getDriver} from '../../../../shared/app/common/driver_repository';
 import {OptionsParser} from '../../../../shared/app/common/parse';
 import * as shutil from '../../../../shared/app/common/shutil';
-import {assertNever} from '../../../../shared/app/common/typecheck';
 import {
   QuickPickItemWithPrefillButton,
   showInputBoxWithSuggestions,
@@ -26,15 +25,25 @@ import {CommandContext, promptKnownHostnameIfNeeded} from './common';
 
 const driver = getDriver();
 
+enum ConnectSshAction {
+  CONNECT,
+  ABORT,
+  EDIT_OPTIONS,
+}
+
 /**
- * @returns 'edit options' if editing the extra options is requested.
+ * Run connect to device command.
+ *
+ * @param withOptions whether or not to let user enter custom options for the connection.
+ * The options will be validated before connecting (users can force run the connection on warning).
+ * If user exit the prompt the command will not be run at all.
  */
 export async function connectToDeviceForShell(
   context: CommandContext,
   selectedHostname?: string,
-  extraOptions?: string[],
+  withOptions = false,
   optsForTesting?: OptionsForTesting
-): Promise<undefined | 'edit options'> {
+): Promise<void> {
   driver.metrics.send({
     category: 'interactive',
     group: 'device',
@@ -51,21 +60,28 @@ export async function connectToDeviceForShell(
     return;
   }
 
-  const choice = await maybeWarnUsedPorts(
-    extraOptions,
-    context.output,
-    optsForTesting
-  );
-  if (choice === 'edit options') return choice;
-  if (choice === 'give up') return;
-  if (choice) assertNever(choice);
+  let options: string[] | undefined = undefined;
+  let action = withOptions
+    ? ConnectSshAction.EDIT_OPTIONS
+    : ConnectSshAction.CONNECT;
+  while (action === ConnectSshAction.EDIT_OPTIONS) {
+    options = await promptShellConnectionOptions(
+      // If user has entered options previously but was rejected, provide it as the initial value
+      // for quick edit.
+      options?.join(' '),
+      optsForTesting?.onDidShowPickerEmitter
+    );
+    if (!options) return; // User quited prompt for options, implying they want to abort connection.
+    action = await maybeWarnUsedPorts(options, context.output, optsForTesting);
+  }
+  if (action === ConnectSshAction.ABORT) return;
 
   // Create a new terminal.
   const terminal = vscode.window.createTerminal(hostname);
   terminal.sendText(
     'exec ' +
       shutil.escapeArray(
-        sshUtil.buildSshCommand(hostname, context.sshIdentity, extraOptions)
+        sshUtil.buildSshCommand(hostname, context.sshIdentity, options)
       )
   );
   terminal.show();
@@ -120,50 +136,53 @@ async function checkSshConnection(
   }
 }
 
-export async function connectToDeviceForShellWithOptions(
-  context: CommandContext,
-  selectedHostname?: string,
-  optsForTesting?: OptionsForTesting
-): Promise<void> {
-  let initialValue: string | undefined = undefined;
+/**
+ * Show input box and ask user to input options for ssh connection. Reprompt if the accepted input
+ * is not a valid option.
+ *
+ * @param initialValue value in inputbox on first prompt. Show placeholder instead if not given.
+ *
+ * @returns valid parsed options as string[], or undefined if user quits at any point.
+ */
+async function promptShellConnectionOptions(
+  initialValue?: string,
+  onDidShowPickerEmitterForTesting?: vscode.EventEmitter<void>
+): Promise<string[] | undefined> {
+  const presets = [
+    new QuickPickItemWithPrefillButton(
+      '-L 2222:localhost:22', // label
+      undefined,
+      'Forward local connections to port 2222 to device port 22' // description
+    ),
+    new QuickPickItemWithPrefillButton(
+      '-L 1234:localhost:1234',
+      undefined,
+      'Forward local connections to port 1234 to device port 1234'
+    ),
+  ];
+  let title = 'SSH with options';
+  let value = initialValue;
   for (;;) {
-    const presets = [
-      new QuickPickItemWithPrefillButton(
-        '-L 2222:localhost:22', // label
-        undefined,
-        'Forward local connections to port 2222 to device port 22' // description
-      ),
-      new QuickPickItemWithPrefillButton(
-        '-L 1234:localhost:1234',
-        undefined,
-        'Forward local connections to port 1234 to device port 1234'
-      ),
-    ];
-    const optionsString = await showInputBoxWithSuggestions(presets, {
-      title: 'SSH with options',
-      placeholder: 'Enter extra options for the SSH command',
-      value: initialValue,
-    });
+    const optionsString = await showInputBoxWithSuggestions(
+      presets,
+      {
+        title: title,
+        placeholder: 'Enter extra options for the SSH command',
+        value: value,
+      },
+      onDidShowPickerEmitterForTesting
+    );
     if (optionsString === undefined) return;
-
-    initialValue = optionsString;
 
     const options = parseOptions(optionsString.trim() + '\n');
     if (options instanceof Error) {
-      void vscode.window.showErrorMessage(options.message);
-      // Allow the user to fix the string and try again.
+      // Allow the user to fix the string and try again. Update title to explain the error and use
+      // the previously accepted input as initial value.
+      title = `Invalid SSH options, please try again: ${options.message}`;
+      value = optionsString;
       continue;
     }
-
-    const choice = await connectToDeviceForShell(
-      context,
-      selectedHostname,
-      options,
-      optsForTesting
-    );
-    if (choice === 'edit options') continue;
-
-    break;
+    return options;
   }
 }
 
@@ -179,16 +198,14 @@ function parseOptions(optionsString: string): string[] | Error {
 /**
  * Blocks until the user responds if the ports that will be assigned by the options are used.
  *
- * @returns The user's choice. undefined if we should run the SSH command, 'edit options' if we
+ * @returns The user's choice of whether we should . undefined if we should run the SSH command, 'edit options' if we
  * should let the user edit the options, and 'give up' if the entire operation should be given up.
  */
 async function maybeWarnUsedPorts(
-  extraOptions: string[] | undefined,
+  extraOptions: string[],
   output: vscode.OutputChannel,
   optsForTesting?: OptionsForTesting
-): Promise<undefined | 'edit options' | 'give up'> {
-  if (!extraOptions) return;
-
+): Promise<ConnectSshAction> {
   const ports = [];
 
   for (let i = 0; i < extraOptions.length - 1; i++) {
@@ -224,9 +241,9 @@ async function maybeWarnUsedPorts(
       RUN_ANYWAY
       // 'Cancel' is added as the last button automatically.
     );
-    if (!choice) return 'give up'; // cancel
-    if (choice === EDIT_OPTIONS) return 'edit options';
-    if (choice === RUN_ANYWAY) return;
+    if (!choice) return ConnectSshAction.ABORT;
+    if (choice === EDIT_OPTIONS) return ConnectSshAction.EDIT_OPTIONS;
+    if (choice === RUN_ANYWAY) return ConnectSshAction.CONNECT;
 
     ((_: `Kill ${string}`) => {})(choice); // typecheck
 
@@ -234,11 +251,14 @@ async function maybeWarnUsedPorts(
       output,
       interval: optsForTesting?.pollInterval,
     });
-    if (!killed) return 'give up';
+    if (!killed) return ConnectSshAction.ABORT;
   }
+
+  return ConnectSshAction.CONNECT;
 }
 
 type OptionsForTesting = {
+  onDidShowPickerEmitter?: vscode.EventEmitter<void>;
   onDidFinishEmitter?: vscode.EventEmitter<void>;
   pollInterval?: number;
 };
