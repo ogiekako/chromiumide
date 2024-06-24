@@ -1,5 +1,23 @@
 # Change Log
 
+## 0.34.0 (June 2024)
+
+- Cros format
+  - Honor .presubmitignore and PRESUBMIT.cfg
+  - Suggest to use chromiumide as default formatter
+  - Add a command to force-format
+- Lint
+  - Honor PRESUBMIT.cfg
+- Ebuild
+  - Refactor to use LSP
+- Boards and packages
+  - Add command to build package with flags
+  - Add command to SSH with flags
+  - Add command to build image
+- UI
+  - Use different color for error icon
+  - Increase default board status item discoverability when not set
+
 ## 0.32.0 (May 2024)
 
 - C++ xrefs
