@@ -107,35 +107,35 @@
       {
         "command": "chromiumide.deviceManagement.setDefaultDevice",
         "category": "CrOS",
-        "title": "Set as Default Device"
+        "title": "Set as Default"
       },
       {
         "command": "chromiumide.deviceManagement.unsetDefaultDevice",
         "category": "CrOS",
-        "title": "Unset Default Device"
+        "title": "Unset Default"
       },
       {
         "command": "chromiumide.deviceManagement.connectToDeviceForScreen",
         "category": "CrOS",
-        "title": "Connect to Device (VNC)",
+        "title": "VNC",
         "icon": "$(window)"
       },
       {
         "command": "chromiumide.deviceManagement.connectToDeviceForRotatedScreen",
         "category": "CrOS",
-        "title": "Connect to Device (VNC) with rotation",
+        "title": "VNC with Rotation",
         "icon": "$(window)"
       },
       {
         "command": "chromiumide.deviceManagement.connectToDeviceForShell",
         "category": "CrOS",
-        "title": "Connect to Device (Shell)",
+        "title": "SSH",
         "icon": "$(terminal)"
       },
       {
         "command": "chromiumide.deviceManagement.connectToDeviceForShellWithOptions",
         "category": "CrOS",
-        "title": "Connect to Device (Shell) with options"
+        "title": "SSH with Options"
       },
       {
         "command": "chromiumide.deviceManagement.openSystemLogViewer",
@@ -158,19 +158,19 @@
       {
         "command": "chromiumide.deviceManagement.deleteDevice",
         "category": "CrOS",
-        "title": "Delete Device",
+        "title": "Delete",
         "icon": "$(remove)"
       },
       {
         "command": "chromiumide.deviceManagement.flashPrebuiltImage",
         "category": "CrOS",
-        "title": "Flash Image to Device",
+        "title": "Flash Image",
         "icon": "$(cloud-download)"
       },
       {
         "command": "chromiumide.deviceManagement.checkDeviceImageCompatibilityOrSuggest",
         "category": "CrOS",
-        "title": "Check Compatibility for deploying package"
+        "title": "Check Image Compatibility"
       },
       {
         "command": "chromiumide.deviceManagement.deployPackage",
@@ -181,7 +181,7 @@
       {
         "command": "chromiumide.deviceManagement.deployToDevice",
         "category": "CrOS",
-        "title": "Deploy Package to Device",
+        "title": "Deploy Package",
         "icon": "$(package)"
       },
       {
@@ -204,7 +204,7 @@
       {
         "command": "chromiumide.deviceManagement.abandonLease",
         "category": "CrOS",
-        "title": "Abandon the Device",
+        "title": "Abandon",
         "icon": "$(close)"
       },
       {
