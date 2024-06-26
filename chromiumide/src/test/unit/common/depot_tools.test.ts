@@ -4,11 +4,9 @@
 
 import 'jasmine';
 import * as vscode from 'vscode';
-import {
-  TEST_ONLY,
-  extraEnvForDepotTools,
-} from '../../../../shared/app/common/depot_tools';
+import {extraEnvForDepotTools} from '../../../../shared/app/common/depot_tools';
 import * as config from '../../../../shared/app/services/config';
+import {TEST_ONLY} from '../../../driver/cros';
 import * as testing from '../../testing';
 import * as fakes from '../../testing/fakes';
 

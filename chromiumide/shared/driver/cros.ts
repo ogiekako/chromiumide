@@ -17,4 +17,5 @@ export type Cros = Readonly<{
    *   - on cider, returns the cog workspace ChromeOS repository with or without a path.
    */
   findSourceDir(path?: string): Promise<string | undefined>;
+  getDepotToolsPath(): Promise<string>;
 }>;
