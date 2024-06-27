@@ -92,6 +92,8 @@ export class CrosFormatEditProvider
       this.argsCache.set(fsPath, args);
     }
 
+    await vscode.commands.executeCommand('workbench.action.files.save');
+
     const formatterOutput = await commonUtil.exec(args[0], args.slice(1), {
       logger: this.output,
       ignoreNonZeroExit: true,

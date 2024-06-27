@@ -90,6 +90,7 @@ describe('Cros format feature', () => {
 
   beforeEach(() => {
     spyOn(driver.metrics, 'send');
+    vscodeSpy.commands.registerCommand('workbench.action.files.save', () => {});
   });
 
   afterEach(() => {
