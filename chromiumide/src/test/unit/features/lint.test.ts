@@ -62,9 +62,7 @@ no cros lint = echo hello
         'recipes.py', // relative path from the directory with PRESUBMIT.cfg
       ],
       cwd: path.join(state.chromeosRoot, 'infra/recipes'),
-      extraEnv: {
-        PWD: path.join(state.chromeosRoot, 'infra/recipes'),
-      },
+      extraEnv: {},
     });
 
     expect(
@@ -84,9 +82,7 @@ no cros lint = echo hello
         'recipes/test_plan_filtering.py',
       ],
       cwd: path.join(state.chromeosRoot, 'infra/recipes'),
-      extraEnv: {
-        PWD: path.join(state.chromeosRoot, 'infra/recipes'),
-      },
+      extraEnv: {},
     });
 
     expect(

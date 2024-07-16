@@ -83,7 +83,7 @@ export class CrosLintConfig implements LintConfig {
       name: command[0],
       args: command.slice(1),
       cwd,
-      extraEnv: {...(await this.extraEnv(crosExe)), PWD: cwd},
+      extraEnv: {...(await this.extraEnv(crosExe))},
     };
   }
 
