@@ -97,7 +97,6 @@ export class CrosFormatEditProvider
     const formatterOutput = await commonUtil.exec(args[0], args.slice(1), {
       logger: this.output,
       ignoreNonZeroExit: true,
-      cwd: crosRoot,
       extraEnv: await extraEnvForDepotTools(),
     });
 
