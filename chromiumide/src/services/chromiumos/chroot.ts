@@ -110,6 +110,40 @@ export class ChrootService implements vscode.Disposable {
     }
     return await execInChroot(chromiumos.root, name, args, options);
   }
+
+  /**
+   * Translates a filepath in chroot to the corresponding one in host.
+   * If the argument doesn't start with a slash, it returns the argument as is.
+   */
+  translatePathFromChroot(filepath: string): string {
+    if (filepath.startsWith('/mnt/host/source/')) {
+      return filepath.replace('/mnt/host/source/', this.chromiumosRoot + '/');
+    }
+    if (filepath.startsWith('/build/')) {
+      return filepath.replace('/build/', this.chromiumosRoot + '/out/build/');
+    }
+    if (filepath.startsWith('/')) {
+      return filepath.replace('/', this.chromiumosRoot + '/chroot/');
+    }
+    return filepath;
+  }
+
+  /**
+   * Translates a filepath in host to the corresponding one in chroot.
+   * If the argument doesn't start with the path to chromiumos root, it returns the argument as is.
+   */
+  translatePathToChroot(filepath: string): string {
+    if (filepath.startsWith(this.chromiumosRoot + '/chroot/')) {
+      return filepath.replace(this.chromiumosRoot + '/chroot/', '/');
+    }
+    if (filepath.startsWith(this.chromiumosRoot + '/out/build/')) {
+      return filepath.replace(this.chromiumosRoot + '/out/build/', '/build/');
+    }
+    if (filepath.startsWith(this.chromiumosRoot + '/')) {
+      return filepath.replace(this.chromiumosRoot + '/', '/mnt/host/source/');
+    }
+    return filepath;
+  }
 }
 
 async function showChrootNotFoundError(root: string) {
