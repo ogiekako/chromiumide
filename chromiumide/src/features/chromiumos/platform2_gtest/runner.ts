@@ -283,7 +283,7 @@ export class Runner extends AbstractRunner {
     buildDir,
   }: BuildDirectory): Promise<GTestInfo[]> {
     // We consider an executable a gtest if it contains one of the following markers.
-    const gtestMarker = new Set(['usr/include/gtest/gtest.h', 'libgtest.so']);
+    const gtestMarker = ['usr/include/gtest/gtest.h', 'libgtest.so'];
 
     const results: GTestInfo[] = [];
 
@@ -328,7 +328,11 @@ export class Runner extends AbstractRunner {
           }
           const strings = stringsResult.stdout.split('\n');
 
-          const isGtest = strings.find(s => gtestMarker.has(s));
+          const isGtest = strings.some(s =>
+            // There are cases where `startsWith` or `endsWith` alone is not sufficient (e.g.,
+            // libgtest.so.1.13.0, /build/brya/usr/include/gtest/gtest.h), so use `includes`.
+            gtestMarker.some(x => s.includes(x))
+          );
           if (!isGtest) {
             return;
           }
@@ -341,17 +345,21 @@ export class Runner extends AbstractRunner {
 
           const platform2Dirs = new Set<string>();
           for (const line of strings) {
-            // testrunner.cc is the entrypoint of all the platform2 unit tests.
-            // Use the file as a needle to find the location of the platform2
-            // directory relative to the executable, which we later use for path
-            // substitutions.
-            const m = /^(.*\/platform2)\/common-mk\/testrunner\.cc$/.exec(line);
+            // Add all the directories that end with platform2, to find the location of the
+            // platform2 directory relative to the executable, which we later use for path
+            // substitutions. We might include wrong directories, but it causes problems only when a
+            // wrong directory happens to be included in the original filepath, and this should be
+            // rare. TODO(b/356025861): Consider more robust algorithms to get path substitutions
+            // for debugging work.
+            const m = /^(.*\/platform2)\//.exec(line);
             if (m) {
               platform2Dirs.add(m[1]);
             }
           }
           if (platform2Dirs.size === 0) {
-            return;
+            this.output.appendLine(
+              'WARNING: platform2 directory not found; path substitutions for debugging may not work properly'
+            );
           }
 
           results.push({
