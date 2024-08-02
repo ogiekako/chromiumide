@@ -314,15 +314,17 @@ async function getUpstreamOrThrow(
   }
   // Find the latest local ref from reflog.
   const limit = 1000; // avoid reading arbitrarily long log.
-  for (const ref of (
+  for (const line of (
     await commonUtil.execOrThrow(
       'git',
       ['reflog', '--pretty=%D', `-${limit}`],
       {cwd: gitDir, logger: sink}
     )
   ).stdout.split('\n')) {
-    const upstream = localRefToUpstream.get(ref);
-    if (upstream) return upstream;
+    for (const ref of line.split(', ')) {
+      const upstream = localRefToUpstream.get(ref);
+      if (upstream) return upstream;
+    }
   }
   return undefined;
 }
