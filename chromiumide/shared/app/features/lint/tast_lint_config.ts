@@ -27,6 +27,13 @@ export class TastLintConfig implements LintConfig {
       return;
     }
 
+    if (!(await driver.cros.findChroot(document.fileName))) {
+      output.appendLine(
+        `Not applying ${this.name} to ${document.fileName}: chroot is required to support go linting`
+      );
+      return;
+    }
+
     const goFound = await checkForGo();
     if (!goFound) {
       output.appendLine(

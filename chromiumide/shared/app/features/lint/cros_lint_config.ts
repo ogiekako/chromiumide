@@ -35,6 +35,16 @@ export class CrosLintConfig implements LintConfig {
       return;
     }
 
+    if (
+      this.languageId === 'go' &&
+      !(await driver.cros.findChroot(document.fileName))
+    ) {
+      output.appendLine(
+        `Not applying ${this.name} to ${document.fileName}: chroot is required to support go linting`
+      );
+      return;
+    }
+
     const crosExe = await crosExeFor(document.fileName);
     if (!crosExe) {
       output.appendLine(
