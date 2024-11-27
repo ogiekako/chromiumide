@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import * as commonUtil from '../../common/common_util';
 import {getDriver} from '../../common/driver_repository';
 import {LintCommand, LintConfig} from './lint_config';
-import {parseGolintOutput} from './util';
+import {parseStaticcheckOutput} from './util';
 
 const driver = getDriver();
 
@@ -66,7 +66,7 @@ export class TastLintConfig implements LintConfig {
     _stderr: string,
     document: vscode.TextDocument
   ): vscode.Diagnostic[] {
-    return parseGolintOutput(stdout, document);
+    return parseStaticcheckOutput(stdout, document);
   }
 
   private cwd(exePath: string): string | undefined {

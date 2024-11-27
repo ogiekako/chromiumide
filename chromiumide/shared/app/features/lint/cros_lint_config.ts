@@ -11,7 +11,7 @@ import {PresubmitCfg} from '../../common/presubmit_cfg';
 import {assertNever} from '../../common/typecheck';
 import * as config from '../../services/config';
 import {LintCommand, LintConfig} from './lint_config';
-import {createDiagnostic, parseGolintOutput, sameFile} from './util';
+import {createDiagnostic, parseStaticcheckOutput, sameFile} from './util';
 
 const driver = getDriver();
 
@@ -143,7 +143,7 @@ export class CrosLintConfig implements LintConfig {
       case 'gn':
         return parseCrosLintGn(stdout, stderr, document);
       case 'go':
-        return paresCrosLintGo(stdout, stderr, document);
+        return parseCrosLintGo(stdout, stderr, document);
       case 'python':
         return parseCrosLintPython(stdout, stderr, document);
       case 'shellscript':
@@ -190,8 +190,8 @@ export class CrosLintConfig implements LintConfig {
   private async extraEnv(exe: string): Promise<ProcessEnv | undefined> {
     if (this.languageId !== 'go') return;
 
-    // Find golint executable in the chroot because cros lint
-    // checks /usr/bin, where the chroot golint is located.
+    // Find staticcheck executable in the chroot because cros lint
+    // checks /usr/bin, where the chroot staticcheck is located.
     const chroot = await driver.cros.findChroot(exe);
     if (chroot === undefined) {
       return undefined;
@@ -273,12 +273,12 @@ function parseCrosLintGn(
   return diagnostics;
 }
 
-function paresCrosLintGo(
+function parseCrosLintGo(
   stdout: string,
   _stderr: string,
   document: vscode.TextDocument
 ): vscode.Diagnostic[] {
-  return parseGolintOutput(stdout, document);
+  return parseStaticcheckOutput(stdout, document);
 }
 
 // Parse output from cros lint on Python files

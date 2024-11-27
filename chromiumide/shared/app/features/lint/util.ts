@@ -39,17 +39,17 @@ export function createDiagnostic(
 }
 
 /**
- * Parses the output from golint that cros lint uses for linting Go files. Linter for tast tests
+ * Parses the output from Staticcheck that cros lint uses for linting Go files. Linter for tast tests
  * uses the same format and its output can be parsed with this function as well.
  *
- * FWIW, the output of golint is constructed as in [1] by appending token.Position [2] and the
+ * FWIW, the output of Staticcheck is constructed as in [1] by appending token.Position [2] and the
  * message.
  *
  * References: [1]
- * https://github.com/golang/lint/blob/6edffad5e6160f5949cdefc81710b2706fbcd4f6/golint/golint.go#L121
+ * https://github.com/dominikh/go-tools/blob/cc140e9b3719aadd3b628b7a7b00523681c8b34d/lintcmd/format.go#L54
  * [2] https://pkg.go.dev/go/token#Position.String
  */
-export function parseGolintOutput(
+export function parseStaticcheckOutput(
   stdout: string,
   document: vscode.TextDocument
 ): vscode.Diagnostic[] {
