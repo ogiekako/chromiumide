@@ -8,7 +8,7 @@ public class InitializeParams {
     public int processId;
     public String rootPath;
     public URI rootUri;
-    public JsonElement initializationOptions;
+    public InitializationOptions initializationOptions;
     public String trace;
     public List<WorkspaceFolder> workspaceFolders;
 }

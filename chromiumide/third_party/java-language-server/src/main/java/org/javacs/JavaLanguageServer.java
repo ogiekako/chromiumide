@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.lang.model.element.*;
 import org.javacs.action.CodeActionProvider;
 import org.javacs.completion.CompletionProvider;
@@ -155,7 +156,11 @@ class JavaLanguageServer extends LanguageServer {
     @Override
     public InitializeResult initialize(InitializeParams params) {
         this.workspaceRoot = Paths.get(params.rootUri);
-        FileStore.setWorkspaceRoots(Set.of(Paths.get(params.rootUri)));
+        if (params.initializationOptions != null && params.initializationOptions.sourcePaths != null) {
+            FileStore.setWorkspaceRoots(Arrays.stream(params.initializationOptions.sourcePaths).map(Paths::get).collect(Collectors.toSet()));
+        } else {
+            FileStore.setWorkspaceRoots(Set.of(Paths.get(params.rootUri)));
+        }
 
         var c = new JsonObject();
         c.addProperty("textDocumentSync", 2); // Incremental
