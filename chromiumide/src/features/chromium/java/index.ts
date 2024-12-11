@@ -7,9 +7,11 @@ import {
   StatusManager,
   TaskStatus,
 } from '../../../../shared/app/ui/bg_task_status';
+import {registerCommands} from './commands';
+import {StatusBar} from './ui';
 
 export async function activate(
-  _context: vscode.ExtensionContext,
+  context: vscode.ExtensionContext,
   _chromiumDir: string,
   statusManager: StatusManager
 ): Promise<void> {
@@ -22,4 +24,10 @@ export async function activate(
     status: TaskStatus.OK,
     outputChannel: output,
   });
+
+  registerCommands(context, output);
+
+  const statusBar = new StatusBar();
+  // For now, unconditionally show the status bar to ensure it's working.
+  statusBar.show();
 }
