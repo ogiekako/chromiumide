@@ -2,17 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import path from 'path';
 import * as vscode from 'vscode';
 import {
   StatusManager,
   TaskStatus,
 } from '../../../../shared/app/ui/bg_task_status';
 import {registerCommands} from './commands';
+import {LanguageServerManager} from './language';
 import {StatusBar} from './ui';
 
 export async function activate(
   context: vscode.ExtensionContext,
-  _chromiumDir: string,
+  chromiumDir: string,
   statusManager: StatusManager
 ): Promise<void> {
   const output = vscode.window.createOutputChannel(
@@ -28,6 +30,13 @@ export async function activate(
   registerCommands(context, output);
 
   const statusBar = new StatusBar();
-  // For now, unconditionally show the status bar to ensure it's working.
-  statusBar.show();
+
+  const srcDir = path.join(chromiumDir, 'src');
+  const manager = new LanguageServerManager(
+    context.extensionPath,
+    srcDir,
+    output,
+    statusBar
+  );
+  context.subscriptions.push(manager);
 }
