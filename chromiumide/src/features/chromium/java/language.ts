@@ -152,7 +152,12 @@ class LanguageServerConnection implements vscode.Disposable {
     };
 
     this.client = new LanguageClient(
-      'javaChromium',
+      // This ID is internally used to locate the VSCode settings about debugging
+      // the protocol: "chromiumide.chromium.java.trace.server" will be checked
+      // to set the verbosity.
+      // https://code.visualstudio.com/api/language-extensions/language-server-extension-guide#logging-support-for-language-server
+      'chromiumide.chromium.java',
+      // This name is used primarily in error messages.
       'Chromium Java',
       serverOptions,
       clientOptions

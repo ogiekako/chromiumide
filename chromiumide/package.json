@@ -1074,6 +1074,17 @@
           "default": true,
           "description": "Control whether tests should be run in parallel and be retried once on failure. This uses the `--test-launcher-bot-mode` flag."
         },
+        "chromiumide.chromium.java.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "compact",
+            "verbose"
+          ],
+          "description": "Enable tracing the language server protocol in logs.",
+          "default": "off"
+        },
         "chromiumide.cppXrefs.suggestWorkspaceFolder": {
           "type": "boolean",
           "default": true,
