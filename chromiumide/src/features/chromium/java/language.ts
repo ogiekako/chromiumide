@@ -98,6 +98,7 @@ class LanguageServerConnection implements vscode.Disposable {
               java: {
                 classPath: config.classPaths,
                 docPath: config.sourcePaths,
+                importOrder: 'chromium',
               },
             };
             return this.client.sendNotification(

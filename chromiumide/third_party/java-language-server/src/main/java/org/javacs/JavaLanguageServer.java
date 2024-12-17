@@ -17,6 +17,9 @@ import org.javacs.completion.CompletionProvider;
 import org.javacs.completion.SignatureProvider;
 import org.javacs.fold.FoldProvider;
 import org.javacs.hover.HoverProvider;
+import org.javacs.imports.AutoImportProvider;
+import org.javacs.imports.AutoImportProviderFactory;
+import org.javacs.imports.SimpleAutoImportProvider;
 import org.javacs.index.SymbolProvider;
 import org.javacs.lens.CodeLensProvider;
 import org.javacs.lsp.*;
@@ -34,6 +37,7 @@ class JavaLanguageServer extends LanguageServer {
     private JsonObject cacheSettings;
     private JsonObject settings = new JsonObject();
     private boolean modifiedBuild = true;
+    private AutoImportProvider autoImportProvider = SimpleAutoImportProvider.INSTANCE;
 
     JavaCompilerService compiler() {
         if (needsCompiler()) {
@@ -231,6 +235,7 @@ class JavaLanguageServer extends LanguageServer {
         var java = change.settings.getAsJsonObject().get("java");
         LOG.fine("Received java settings " + java);
         settings = java.getAsJsonObject();
+        updateAutoImportProvider();
     }
 
     @Override
@@ -265,7 +270,7 @@ class JavaLanguageServer extends LanguageServer {
     public Optional<CompletionList> completion(TextDocumentPositionParams params) {
         if (!FileStore.isJavaFile(params.textDocument.uri)) return Optional.empty();
         var file = Paths.get(params.textDocument.uri);
-        var provider = new CompletionProvider(compiler());
+        var provider = new CompletionProvider(compiler(), autoImportProvider);
         var list = provider.complete(file, params.position.line + 1, params.position.character + 1);
         if (list == CompletionProvider.NOT_SUPPORTED) return Optional.empty();
         return Optional.of(list);
@@ -515,7 +520,7 @@ class JavaLanguageServer extends LanguageServer {
 
     @Override
     public List<CodeAction> codeAction(CodeActionParams params) {
-        var provider = new CodeActionProvider(compiler());
+        var provider = new CodeActionProvider(compiler(), autoImportProvider);
         if (params.context.diagnostics.isEmpty()) {
             return provider.codeActionsForCursor(params);
         } else {
@@ -536,6 +541,20 @@ class JavaLanguageServer extends LanguageServer {
         if (uncheckedChanges && FileStore.activeDocuments().contains(lastEdited)) {
             lint(List.of(lastEdited));
             uncheckedChanges = false;
+        }
+    }
+
+    private void updateAutoImportProvider() {
+        if (!settings.has("importOrder")) {
+            return;
+        }
+        var name = settings.getAsJsonPrimitive("importOrder").getAsString();
+        try {
+            autoImportProvider = AutoImportProviderFactory.getByName(name);
+        } catch (IllegalArgumentException e) {
+            LOG.warning("Unknown import order: " + name);
+            LOG.warning("Falling back to the default import order");
+            autoImportProvider = SimpleAutoImportProvider.INSTANCE;
         }
     }
 
