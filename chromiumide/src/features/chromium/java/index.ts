@@ -9,6 +9,7 @@ import {
   TaskStatus,
 } from '../../../../shared/app/ui/bg_task_status';
 import {registerCommands} from './commands';
+import {checkConflictingExtensions} from './conflicts';
 import {LanguageServerManager} from './language';
 import {StatusBar} from './ui';
 
@@ -39,4 +40,6 @@ export async function activate(
     statusBar
   );
   context.subscriptions.push(manager);
+
+  checkConflictingExtensions();
 }
