@@ -218,7 +218,8 @@ export class LanguageServerSession implements vscode.Disposable {
     outDir: string,
     readonly outDirInode: number,
     output: vscode.OutputChannel,
-    statusBar: StatusBar
+    statusBar: StatusBar,
+    skipCertCheck: boolean
   ) {
     output.appendLine(
       `Starting a new session for output directory (ino=${this.outDirInode})`
@@ -229,7 +230,8 @@ export class LanguageServerSession implements vscode.Disposable {
       outDir,
       output,
       statusBar,
-      this.tokenSource.token
+      this.tokenSource.token,
+      skipCertCheck
     );
     this.connection.catch(e => {
       if (e instanceof vscode.CancellationError) {
@@ -273,9 +275,12 @@ export class LanguageServerSession implements vscode.Disposable {
     outDir: string,
     output: vscode.OutputChannel,
     statusBar: StatusBar,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
+    skipCertCheck: boolean
   ): Promise<LanguageServerConnection> {
-    await ensureCert();
+    if (!skipCertCheck) {
+      await ensureCert();
+    }
 
     const config = await statusBar.withProgress(
       'Building Java configurations...',
@@ -321,7 +326,8 @@ export class LanguageServerManager implements vscode.Disposable {
     private readonly extensionPath: string,
     private readonly srcDir: string,
     private readonly output: vscode.OutputChannel,
-    private readonly statusBar: StatusBar
+    private readonly statusBar: StatusBar,
+    private readonly skipCertCheck = false
   ) {
     this.outDir = path.join(srcDir, 'out', 'current_link');
 
@@ -424,7 +430,8 @@ export class LanguageServerManager implements vscode.Disposable {
       this.outDir,
       newOutDirInode,
       this.output,
-      this.statusBar
+      this.statusBar,
+      this.skipCertCheck
     );
     session.connection.catch(() => {
       // If the language client fails to start, deactivate the session.
