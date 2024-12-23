@@ -3,8 +3,10 @@
 // found in the LICENSE file.
 
 import * as fsPromises from 'fs/promises';
+import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import pLimit from 'p-limit';
 import {exec} from '../../../../shared/app/common/common_util';
 import {statNoThrow} from './utils';
 
@@ -45,6 +47,14 @@ interface BuildConfigDepsInfo {
   is_prebuilt?: boolean;
   // Source jars needed to build targets depending on this target.
   bundled_srcjars?: string[];
+}
+
+/**
+ * Represents a task to extract a source jar.
+ */
+interface SourceJarExtractTask {
+  sourceJar: string;
+  extractDir: string;
 }
 
 /**
@@ -99,12 +109,11 @@ async function processConfigJson(
   jsonPath: string,
   srcDir: string,
   outDir: string,
-  output: vscode.OutputChannel,
-  token: vscode.CancellationToken,
   // Following arguments will be mutated as we process JSON files.
   classJarSet: Set<string>,
   sourceRootSet: Set<string>,
-  sourceDirSet: Set<string>
+  sourceDirSet: Set<string>,
+  extractTasks: SourceJarExtractTask[]
 ): Promise<void> {
   const config = JSON.parse(
     await fsPromises.readFile(jsonPath, {encoding: 'utf8'})
@@ -166,30 +175,53 @@ async function processConfigJson(
         continue;
       }
 
-      // Extract the source jar.
-      // TODO: Consider parallelizing this as it is fairly a heavy operation.
-      output.appendLine(`Extracting ${sourceJarPath}`);
-      await fsPromises.rm(extractDirPath, {
-        force: true,
-        recursive: true,
-      });
-      await fsPromises.mkdir(extractDirPath);
-      await exec(
-        path.join(srcDir, 'third_party/jdk/current/bin/jar'),
-        ['-x', '-f', sourceJarPath],
-        {
-          cwd: extractDirPath,
-          logger: output,
-          cancellationToken: token,
-        }
-      );
-      // Remove org.jni_zero placeholders, if any.
-      await fsPromises.rm(path.join(extractDirPath, 'org/jni_zero'), {
-        force: true,
-        recursive: true,
+      // Schedule a task to extract the source jar.
+      extractTasks.push({
+        sourceJar: sourceJarPath,
+        extractDir: extractDirPath,
       });
     }
   }
+}
+
+async function runSourceJarExtractTasks(
+  tasks: SourceJarExtractTask[],
+  srcDir: string,
+  output: vscode.OutputChannel,
+  token: vscode.CancellationToken
+): Promise<void> {
+  // Limit the concurrency to the number of available cores.
+  const limit = pLimit(os.cpus().length);
+
+  const jobs = [];
+  for (const {sourceJar, extractDir} of tasks) {
+    jobs.push(
+      limit(async () => {
+        output.appendLine(`Extracting ${sourceJar}`);
+        await fsPromises.rm(extractDir, {
+          force: true,
+          recursive: true,
+        });
+        await fsPromises.mkdir(extractDir);
+        await exec(
+          path.join(srcDir, 'third_party/jdk/current/bin/jar'),
+          ['-x', '-f', sourceJar],
+          {
+            cwd: extractDir,
+            logger: output,
+            cancellationToken: token,
+          }
+        );
+        // Remove org.jni_zero placeholders, if any.
+        await fsPromises.rm(path.join(extractDir, 'org/jni_zero'), {
+          force: true,
+          recursive: true,
+        });
+      })
+    );
+  }
+
+  await Promise.all(jobs);
 }
 
 /**
@@ -205,6 +237,7 @@ async function processConfigJsons(
   const classJarSet = new Set<string>();
   const sourceRootSet = new Set<string>();
   const sourceDirSet = new Set<string>();
+  const sourceJarExtractTasks: SourceJarExtractTask[] = [];
 
   // Add the Android source stub jar. It contains function argument names.
   const platformsDir = path.join(
@@ -223,13 +256,14 @@ async function processConfigJsons(
       jsonPath,
       srcDir,
       outDir,
-      output,
-      token,
       classJarSet,
       sourceRootSet,
-      sourceDirSet
+      sourceDirSet,
+      sourceJarExtractTasks
     );
   }
+
+  await runSourceJarExtractTasks(sourceJarExtractTasks, srcDir, output, token);
 
   const classPaths = [...classJarSet];
   classPaths.sort();
