@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import pLimit from 'p-limit';
 import {exec, execOrThrow} from '../../../../shared/app/common/common_util';
+import {StatusBar} from './ui';
 import {statNoThrow} from './utils';
 
 // A pattern matching a package name declaration in Java source files.
@@ -269,6 +270,7 @@ async function processConfigJsons(
   srcDir: string,
   outDir: string,
   output: vscode.OutputChannel,
+  statusBar: StatusBar,
   token: vscode.CancellationToken
 ): Promise<CompilerConfig> {
   // A set of *.jar paths to be added to the compiler's class paths.
@@ -297,14 +299,14 @@ async function processConfigJsons(
   }
 
   // Source jars are not built by list_java_targets.py. Build them by ourselves.
-  await buildSourceJars(sourceJarSet, srcDir, outDir, output, token);
+  await statusBar.withProgress('Generating source archives...', () =>
+    buildSourceJars(sourceJarSet, srcDir, outDir, output, token)
+  );
 
   // The language server cannot read source jars directly. Extract them to temporary directories.
-  const sourceJarExtractDirs = await extractSourceJars(
-    sourceJarSet,
-    srcDir,
-    output,
-    token
+  const sourceJarExtractDirs = await statusBar.withProgress(
+    'Extracting generated source archives...',
+    () => extractSourceJars(sourceJarSet, srcDir, output, token)
   );
 
   const classPaths = [...classJarSet];
@@ -382,14 +384,21 @@ export async function computeCompilerConfig(
   srcDir: string,
   outDir: string,
   output: vscode.OutputChannel,
+  statusBar: StatusBar,
   token: vscode.CancellationToken
 ): Promise<CompilerConfig> {
-  const configJsonPaths = await buildConfigJsons(srcDir, outDir, output, token);
-  return await processConfigJsons(
-    configJsonPaths,
-    srcDir,
-    outDir,
-    output,
-    token
+  const configJsonPaths = await statusBar.withProgress(
+    'Building Java configurations...',
+    () => buildConfigJsons(srcDir, outDir, output, token)
+  );
+  return await statusBar.withProgress('Processing Java configurations...', () =>
+    processConfigJsons(
+      configJsonPaths,
+      srcDir,
+      outDir,
+      output,
+      statusBar,
+      token
+    )
   );
 }

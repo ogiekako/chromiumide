@@ -282,9 +282,12 @@ export class LanguageServerSession implements vscode.Disposable {
       await ensureCert();
     }
 
-    const config = await statusBar.withProgress(
-      'Building Java configurations...',
-      () => computeCompilerConfig(srcDir, outDir, output, token)
+    const config = await computeCompilerConfig(
+      srcDir,
+      outDir,
+      output,
+      statusBar,
+      token
     );
 
     const connection = new LanguageServerConnection(
