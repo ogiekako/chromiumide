@@ -312,7 +312,7 @@ public class JavaDebugServer implements DebugServer {
                 LOG.warning(string + " is not a directory");
                 continue;
             } else {
-                LOG.info(path + " is a source root");
+                LOG.fine(path + " is a source root");
                 sourceRoots.add(path);
             }
         }
