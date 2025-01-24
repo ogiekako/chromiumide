@@ -4,31 +4,34 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as relatedFiles from '../../../../features/chromium/related_files';
+import {
+  CppRelatedFileCodeLens,
+  CppRelatedFilesProvider,
+} from '../../../../features/chromium/related_files/cpp';
 import * as testing from '../../../testing';
 import {FakeCancellationToken} from '../../../testing/fakes';
 import * as extensionTesting from '../../extension_testing';
 
-// Uses `RelatedFilesProvider` to resolve a `RelatedFileCodeLens`.
+// Uses `CppRelatedFilesProvider` to resolve a `CppRelatedFileCodeLens`.
 async function resolveLense(
-  lense: InstanceType<typeof relatedFiles.TEST_ONLY.RelatedFileCodeLens>
+  lense: InstanceType<typeof CppRelatedFileCodeLens>
 ) {
   expect(lense.command).toBeUndefined();
   expect(lense.isResolved).toBeFalse();
-  const provider = new relatedFiles.TEST_ONLY.RelatedFilesProvider();
+  const provider = new CppRelatedFilesProvider();
   await provider.resolveCodeLens(lense, new FakeCancellationToken());
 }
 
 describe('Related files', () => {
   const tempDir = testing.tempDir();
 
-  // Create a `vscode.TextDocument` from text and run `RelatedFilesProvider` on it.
+  // Create a `vscode.TextDocument` from text and run `CppRelatedFilesProvider` on it.
   async function getLenses(fileName: string) {
     const document = await vscode.workspace.openTextDocument(
       vscode.Uri.joinPath(vscode.Uri.file(tempDir.path), fileName)
     );
 
-    const provider = new relatedFiles.TEST_ONLY.RelatedFilesProvider();
+    const provider = new CppRelatedFilesProvider();
     const lenses = await provider.provideCodeLenses(
       document,
       new FakeCancellationToken()
@@ -38,9 +41,7 @@ describe('Related files', () => {
   }
 
   function expectLenses(
-    lenses: Array<
-      InstanceType<typeof relatedFiles.TEST_ONLY.RelatedFileCodeLens>
-    >,
+    lenses: Array<InstanceType<typeof CppRelatedFileCodeLens>>,
     expected: Array<{title: string; filename: string}>
   ) {
     expect(lenses).toHaveSize(expected.length);
@@ -55,7 +56,7 @@ describe('Related files', () => {
     }
   }
 
-  // This test exists because the `RelatedFilesProvider` currently has these file extensions
+  // This test exists because the `CppRelatedFilesProvider` currently has these file extensions
   // hard-coded. The provider could be changed to smartly infer the correct file extensions.
   it('ignores cpp files without .h or .cc endings', async () => {
     await testing.putFiles(tempDir.path, {'foo.cpp': ''});
@@ -110,7 +111,7 @@ describe('Related files', () => {
 
   it('resolves lense correctly if file does not exist', async () => {
     const uri = vscode.Uri.file(path.join(tempDir.path, 'foo_unittest.cc'));
-    const lense = new relatedFiles.TEST_ONLY.RelatedFileCodeLens(
+    const lense = new CppRelatedFileCodeLens(
       new vscode.Range(0, 0, 0, Number.MAX_SAFE_INTEGER),
       'unit test',
       uri
@@ -126,7 +127,7 @@ describe('Related files', () => {
   it('resolves lense correctly if file exists', async () => {
     const uri = vscode.Uri.file(path.join(tempDir.path, 'foo_unittest.cc'));
     await testing.putFiles(tempDir.path, {'foo_unittest.cc': ''});
-    const lense = new relatedFiles.TEST_ONLY.RelatedFileCodeLens(
+    const lense = new CppRelatedFileCodeLens(
       new vscode.Range(0, 0, 0, Number.MAX_SAFE_INTEGER),
       'unit test',
       uri

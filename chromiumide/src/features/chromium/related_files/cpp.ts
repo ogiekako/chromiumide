@@ -4,40 +4,8 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import {vscodeRegisterCommand} from '../../../shared/app/common/vscode/commands';
 
-export function activate(context: vscode.ExtensionContext): void {
-  context.subscriptions.push(
-    vscode.languages.registerCodeLensProvider(
-      {scheme: 'file', language: 'cpp'},
-      new RelatedFilesProvider()
-    )
-  );
-  context.subscriptions.push(
-    vscodeRegisterCommand(
-      'chromiumide.relatedFiles.create',
-      async (uri: unknown) => {
-        if (!(uri instanceof vscode.Uri)) {
-          return;
-        }
-        const workspaceEdit = new vscode.WorkspaceEdit();
-        workspaceEdit.createFile(uri, {
-          ignoreIfExists: true,
-          overwrite: false,
-        });
-        const success = await vscode.workspace.applyEdit(workspaceEdit);
-        if (!success) {
-          return vscode.window.showErrorMessage(
-            `Unable to create related file: ${uri}.`
-          );
-        }
-        return vscode.commands.executeCommand('vscode.open', uri);
-      }
-    )
-  );
-}
-
-class RelatedFileCodeLens extends vscode.CodeLens {
+export class CppRelatedFileCodeLens extends vscode.CodeLens {
   constructor(
     range: vscode.Range,
     readonly title: string,
@@ -47,9 +15,16 @@ class RelatedFileCodeLens extends vscode.CodeLens {
   }
 }
 
-class RelatedFilesProvider
-  implements vscode.CodeLensProvider<RelatedFileCodeLens>
+export class CppRelatedFilesProvider
+  implements vscode.CodeLensProvider<CppRelatedFileCodeLens>
 {
+  static activate(): vscode.Disposable {
+    return vscode.languages.registerCodeLensProvider(
+      {scheme: 'file', language: 'cpp'},
+      new CppRelatedFilesProvider()
+    );
+  }
+
   private static readonly RELATED_FILE_TEMPLATES = [
     {suffix: '.h', title: '.h file'},
     {suffix: '.cc', title: '.cc file'},
@@ -60,7 +35,7 @@ class RelatedFilesProvider
   async provideCodeLenses(
     document: vscode.TextDocument,
     _token: vscode.CancellationToken
-  ): Promise<RelatedFileCodeLens[]> {
+  ): Promise<CppRelatedFileCodeLens[]> {
     if (
       !document.fileName.endsWith('.h') &&
       !document.fileName.endsWith('.cc')
@@ -77,7 +52,7 @@ class RelatedFilesProvider
       }
     }
 
-    return RelatedFilesProvider.RELATED_FILE_TEMPLATES.flatMap(
+    return CppRelatedFilesProvider.RELATED_FILE_TEMPLATES.flatMap(
       ({suffix, title}) => {
         const uri = vscode.Uri.file(
           path.join(fileNameParts.dir, `${fileNameBase}${suffix}`)
@@ -86,7 +61,7 @@ class RelatedFilesProvider
           // Skip a code lens that would point to the file itself.
           return [];
         }
-        return new RelatedFileCodeLens(
+        return new CppRelatedFileCodeLens(
           new vscode.Range(0, 0, 0, Number.MAX_SAFE_INTEGER),
           title,
           uri
@@ -96,9 +71,9 @@ class RelatedFilesProvider
   }
 
   async resolveCodeLens(
-    codeLens: RelatedFileCodeLens,
+    codeLens: CppRelatedFileCodeLens,
     _token: vscode.CancellationToken
-  ): Promise<RelatedFileCodeLens | undefined> {
+  ): Promise<CppRelatedFileCodeLens | undefined> {
     if (await this.isFile(codeLens.uri)) {
       codeLens.command = {
         command: 'vscode.open',
@@ -128,8 +103,3 @@ class RelatedFilesProvider
     return stat.type === vscode.FileType.File;
   }
 }
-
-export const TEST_ONLY = {
-  RelatedFilesProvider,
-  RelatedFileCodeLens,
-};
