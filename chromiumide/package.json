@@ -1653,16 +1653,14 @@
       "dependencies": [
         "unit-test",
         "integration-test",
+        "java-test",
         "check",
         "lint"
       ]
     },
     "cq-test": {
       "dependencies": [
-        "unit-test",
-        "integration-test",
-        "check",
-        "lint"
+        "test"
       ]
     },
     "unit-test": {
@@ -1697,6 +1695,9 @@
       "output": [
         ".vscode-test/user-data"
       ]
+    },
+    "java-test": {
+      "command": "cd third_party/java-language-server && mvn test"
     },
     "preupload": {
       "dependencies": [
