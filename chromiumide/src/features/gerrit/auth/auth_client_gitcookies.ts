@@ -8,7 +8,7 @@ import {AuthClient, GerritRequest} from './auth_client';
 export class AuthClientGitCookies implements AuthClient {
   constructor(private readonly authCookie: string) {}
 
-  async request<T>({method, url, data}: GerritRequest): Promise<T> {
+  async request({method, url, data}: GerritRequest): Promise<string> {
     const headers: Record<string, string> = {
       cookie: this.authCookie,
     };

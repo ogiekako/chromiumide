@@ -29,7 +29,7 @@ export async function readAuthCookie(
     if ((err as {code?: unknown}).code === 'ENOENT') {
       const msg =
         'The gitcookies file for Gerrit auth was not found at ' + filePath;
-      sink.show(msg);
+      sink.appendLine(msg);
     } else {
       let msg =
         'Unknown error in reading the gitcookies file for Gerrit auth at ' +
