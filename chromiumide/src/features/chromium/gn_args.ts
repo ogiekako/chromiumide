@@ -50,27 +50,39 @@ type GnArgsJson = Array<{
   name: string;
 }>;
 
-// TODO(cmfcmf): Test whether this also works on Windows.
 export async function readGnArgs(
   srcPath: string,
   outputDirectoryName: string,
   token: vscode.CancellationToken
 ): Promise<GnArgsInfo> {
-  const result = await commonUtil.exec(
-    'gn',
-    [
-      'args',
-      path.join(srcPath, outputDirectoryName),
-      '--list',
-      '--short',
-      '--json',
-    ],
-    {
-      cwd: srcPath,
-      extraEnv: await extraEnvForDepotTools(),
-      cancellationToken: token,
-    }
-  );
+  const isWindows = os.platform() === 'win32';
+
+  const gnArgsCommandArgs = [
+    'args',
+    path.join(srcPath, outputDirectoryName),
+    '--list',
+    '--short',
+    '--json',
+  ];
+
+  let commandName: string;
+  let commandArgs: string[];
+  if (isWindows) {
+    // On Windows, execute gn.bat via cmd.exe /c to ensure shell processing
+    commandName = 'cmd.exe';
+    // Pass gn.bat and its arguments to cmd.exe using /c
+    commandArgs = ['/c', 'gn.bat', ...gnArgsCommandArgs];
+  } else {
+    // On other platforms, execute gn directly
+    commandName = 'gn';
+    commandArgs = gnArgsCommandArgs;
+  }
+
+  const result = await commonUtil.exec(commandName, commandArgs, {
+    cwd: srcPath,
+    extraEnv: await extraEnvForDepotTools(),
+    cancellationToken: token,
+  });
   if (result instanceof Error) {
     if (result instanceof CancelledError) {
       return {

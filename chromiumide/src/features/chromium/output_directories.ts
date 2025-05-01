@@ -46,7 +46,7 @@ export async function createOrUpdateSymLinkToDirectory(
       return false;
     }
   }
-  await fs.symlink(targetPath, linkPath, 'dir');
+  await fs.symlink(targetPath, linkPath, 'junction');
   return true;
 }
 
