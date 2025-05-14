@@ -18,7 +18,8 @@ import {
 import {getDriver} from '../../../../shared/app/common/driver_repository';
 import {statNoThrow} from '../../../common/fs_util';
 import {ensureOrRunGcert} from '../../../common/gcert';
-import {CompilerConfig, computeCompilerConfig} from './chromium';
+import {computeCompilerConfig} from './chromium';
+import {CompilerConfig} from './chromium/config';
 import {StatusBar} from './ui';
 import {FilePathWatcher, withPseudoCancel} from './utils';
 
@@ -200,7 +201,8 @@ export class LanguageServerSession implements vscode.Disposable {
     readonly outDirInode: number,
     output: vscode.OutputChannel,
     statusBar: StatusBar,
-    skipCertCheck: boolean
+    skipCertCheck: boolean,
+    apiVersion?: number
   ) {
     output.appendLine(
       `Starting a new session for output directory (ino=${this.outDirInode})`
@@ -212,7 +214,8 @@ export class LanguageServerSession implements vscode.Disposable {
       output,
       statusBar,
       this.tokenSource.token,
-      skipCertCheck
+      skipCertCheck,
+      apiVersion
     );
     this.connection.catch(e => {
       if (e instanceof vscode.CancellationError) {
@@ -257,7 +260,8 @@ export class LanguageServerSession implements vscode.Disposable {
     output: vscode.OutputChannel,
     statusBar: StatusBar,
     token: vscode.CancellationToken,
-    skipCertCheck: boolean
+    skipCertCheck: boolean,
+    apiVersion?: number
   ): Promise<LanguageServerConnection> {
     if (!skipCertCheck) {
       await ensureCert();
@@ -268,7 +272,8 @@ export class LanguageServerSession implements vscode.Disposable {
       outDir,
       output,
       statusBar,
-      token
+      token,
+      apiVersion
     );
 
     const connection = new LanguageServerConnection(
@@ -311,7 +316,8 @@ export class LanguageServerManager implements vscode.Disposable {
     private readonly srcDir: string,
     private readonly output: vscode.OutputChannel,
     private readonly statusBar: StatusBar,
-    private readonly skipCertCheck = false
+    private readonly skipCertCheck = false,
+    private readonly apiVersion?: number
   ) {
     this.outDir = path.join(srcDir, 'out', 'current_link');
 
@@ -427,7 +433,8 @@ export class LanguageServerManager implements vscode.Disposable {
       newOutDirInode,
       this.output,
       this.statusBar,
-      this.skipCertCheck
+      this.skipCertCheck,
+      this.apiVersion
     );
     session.connection.catch(() => {
       // If the language client fails to start, deactivate the session.

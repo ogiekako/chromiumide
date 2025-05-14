@@ -7,23 +7,15 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import pLimit from 'p-limit';
-import {exec, execOrThrow} from '../../../../shared/app/common/common_util';
-import {statNoThrow} from '../../../common/fs_util';
-import {StatusBar} from './ui';
+import {exec, execOrThrow} from '../../../../../shared/app/common/common_util';
+import {statNoThrow} from '../../../../common/fs_util';
+import {StatusBar} from '../ui';
+import {CompilerConfig} from './config';
 
 // A pattern matching a package name declaration in Java source files.
 // It is used to scrape a package name from a Java source file without
 // formally parsing it into an AST tree.
 const PACKAGE_PATTERN = /package\s+([A-Za-z0-9._]*)\s*;/;
-
-/**
- * Information needed to configure the Java compiler to process Java source
- * files in the repository.
- */
-export interface CompilerConfig {
-  classPaths: string[];
-  sourcePaths: string[];
-}
 
 /**
  * Schema of *.params.json files.
@@ -366,29 +358,16 @@ async function buildConfigJsons(
   return jsonPaths;
 }
 
-/**
- * Computes a CompilerConfig to correctly build Chromium Java files.
- *
- * NOTE: This function contains logic depending on details of Chromium's build
- * artifacts, such as the format *.params.json. Since they are Chromium
- * build's internal details and Chromium provides no guarantee of their
- * stability, it is desirable to get rid of these logic by establishing a
- * reliable protocol in the Chromium side.
- *
- * @param srcDir Path of the top-level "src" directory of a Chromium tree.
- * @param outDir Path of a Chromium build output directory.
- * @param output Output channel for logging.
- * @param token Token to cancel the function execution.
- * @returns A CompilerConfig that contains information to configure Java
- *     compilers to build Chromium Java code correctly.
- */
-export async function computeCompilerConfig(
+export async function computeCompilerConfigApiV0(
   srcDir: string,
   outDir: string,
   output: vscode.OutputChannel,
   statusBar: StatusBar,
   token: vscode.CancellationToken
 ): Promise<CompilerConfig> {
+  // This function contains logic depending on details of Chromium's build artifacts, such as the
+  // format of *.params.json. They are Chromium build's internal details and Chromium provides no
+  // guarantee of their stability. Make sure to use the latest API whenever available.
   const configJsonPaths = await statusBar.withProgress(
     'Building Java configurations...',
     () => buildConfigJsons(srcDir, outDir, output, token)
