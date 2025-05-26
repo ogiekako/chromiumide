@@ -1,5 +1,14 @@
 # Change Log
 
+## 0.44.0 (May 2025)
+
+- Chromium Java
+  - Support Chromium API endpoint
+  - Fix crash on autoimporting
+- Misc
+  - Windows: output directory handling
+  - GN: Recommend google.gn instead of msedge-dev.gnls
+
 ## 0.42.0 (May 2025)
 
 - Chromium Java
