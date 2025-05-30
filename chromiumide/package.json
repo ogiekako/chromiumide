@@ -102,7 +102,8 @@
       {
         "command": "chromiumide.crosFormat.forceFormat",
         "category": "CrOS",
-        "title": "Format Document (Forced)"
+        "title": "Format Document (Forced)",
+        "enablement": "chromiumide.crosChroot"
       },
       {
         "command": "chromiumide.deviceManagement.setDefaultDevice",
@@ -449,7 +450,8 @@
         "command": "chromiumide.chromium.gitcl.format",
         "title": "git cl format",
         "icon": "$(whitespace)",
-        "category": "Chromium"
+        "category": "Chromium",
+        "enablement": "chromiumide.chromium.src-uris"
       }
     ],
     "viewsContainers": {
