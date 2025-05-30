@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import {getDriver} from '../../../shared/app/common/driver_repository';
+import {activateCros as activateSharedCrosFeatures} from '../../../shared/app/extension';
 import * as defaultBoard from '../../../shared/app/features/default_board';
 import * as config from '../../../shared/app/services/config';
 import * as bgTaskStatus from '../../../shared/app/ui/bg_task_status';
@@ -81,6 +82,9 @@ export class Chromiumos implements vscode.Disposable {
   // TODO(oka): Cancel ongoing activation when this class is disposed.
   private async activate(context: Context) {
     const ephemeralContext = newContext(context, this.subscriptions);
+
+    this.featureName = 'sharedCros';
+    await activateSharedCrosFeatures(ephemeralContext, this.statusManager);
 
     const gitDirsWatcher = new services.GitDirsWatcher(this.root);
 

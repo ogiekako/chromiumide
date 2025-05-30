@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {Driver} from '../driver';
+import {Driver, Platform} from '../driver';
 import {registerDriver} from './common/driver_repository';
 import {createLinterLoggingBundle} from './common/logs';
 import * as feedback from './common/metrics/feedback';
@@ -26,6 +26,20 @@ export async function activate(
   feedback.activate(context);
 
   const statusManager = bgTaskStatus.activate(context);
+
+  // Outside cider, we conditionally enable cros features.
+  if (driver.platform() === Platform.CIDER) {
+    await activateCros(context, statusManager);
+  }
+
+  return {statusManager};
+}
+
+/** Activates shared cros features. */
+export async function activateCros(
+  context: vscode.ExtensionContext,
+  statusManager: bgTaskStatus.StatusManager
+): Promise<void> {
   // The logger that should be used by linters/code-formatters.
   const linterLogger = createLinterLoggingBundle(context);
   lint.activate(context, statusManager, linterLogger);
@@ -33,6 +47,4 @@ export async function activate(
   context.subscriptions.push(
     new CrosFormatFeature(context.extension.id, statusManager)
   );
-
-  return {statusManager};
 }
