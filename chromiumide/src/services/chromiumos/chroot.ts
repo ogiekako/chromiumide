@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as commonUtil from '../../../shared/app/common/common_util';
 import {WrapFs} from '../../../shared/app/common/wrap_fs';
+import {CustomContext} from '../../common/when_clause_context';
 import * as sudo from '../../services/sudo';
 
 /**
@@ -14,6 +15,7 @@ import * as sudo from '../../services/sudo';
  */
 export class ChrootService implements vscode.Disposable {
   private readonly chrootPath = path.join(this.chromiumosRoot, 'chroot');
+  private readonly disposablePromise: Promise<vscode.Disposable> | undefined;
 
   // Throws if chroot is not found.
   private constructor(
@@ -24,21 +26,16 @@ export class ChrootService implements vscode.Disposable {
       throw new Error('chroot not found');
     }
     if (setContext) {
-      void vscode.commands.executeCommand(
-        'setContext',
-        'chromiumide.chrootPath',
-        this.chrootPath
-      );
+      this.disposablePromise = CustomContext.chrootPath.set(this.chrootPath);
     }
   }
 
   dispose(): void {
     if (this.setContext) {
-      void vscode.commands.executeCommand(
-        'setContext',
-        'chromiumide.chrootPath',
-        undefined
-      );
+      void (async () => {
+        const disposable = await this.disposablePromise;
+        disposable?.dispose();
+      })();
     }
   }
 

@@ -8,6 +8,7 @@ import {getDriver} from '../../../shared/app/common/driver_repository';
 import * as config from '../../../shared/app/services/config';
 import * as bgTaskStatus from '../../../shared/app/ui/bg_task_status';
 import {CppXrefs} from '../../common/cpp_xrefs/cpp_xrefs';
+import {CustomContext} from '../../common/when_clause_context';
 import * as boilerplate from '../boilerplate';
 import * as chromiumBuild from './chromium_build';
 import {ChromiumCppXrefs} from './cpp_xrefs';
@@ -95,16 +96,12 @@ export class Chromium implements vscode.Disposable {
     }
 
     this.featureName = 'chromiumContextKeys';
-    // This can be used in `when` clauses in `package.json`. It is okay to never reset it back to
-    // an empty array, even when the user removes the Chromium folder from their workspace,
-    // because the fact that Chromium is located in these directories probably doesn't change.
-    await vscode.commands.executeCommand(
-      'setContext',
-      'chromiumide.chromium.src-uris',
+    await CustomContext.chromiumSrcUris.set(
       [
         vscode.Uri.file(path.join(this.root, 'src')),
         vscode.Uri.file(path.join(this.root, 'src-internal')),
-      ]
+      ],
+      ephemeralContext.subscriptions
     );
 
     this.featureName = 'chromiumFormat';
