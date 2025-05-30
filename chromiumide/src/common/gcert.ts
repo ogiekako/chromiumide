@@ -154,9 +154,9 @@ async function runGcertstatus(options?: {
 }): Promise<Gcertstatus | typeof GCERTSTATUS_NOT_FOUND> {
   const args = [];
   if (options?.noCheckSsh) {
-    args.push('--check_ssh=false');
+    args.push('-check_ssh=false');
   }
-  const result = await commonUtil.exec('gcertstatus', [], {
+  const result = await commonUtil.exec('gcertstatus', args, {
     logger: options?.logger,
     ignoreNonZeroExit: true,
   });
