@@ -5,6 +5,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {execOrThrow} from '../../../../../shared/app/common/common_util';
+import {extraEnvForDepotTools} from '../../../../../shared/app/common/depot_tools';
 import {StatusBar} from '../ui';
 import {CompilerConfig} from './config';
 
@@ -26,10 +27,11 @@ export async function computeCompilerConfigApiV1(
   return await statusBar.withProgress(
     'Building Java configurations...',
     async () => {
+      const extraEnv = await extraEnvForDepotTools();
       const result = await execOrThrow(
         path.join(srcDir, 'build/android/chromiumide_api.py'),
         ['build-info', '--output-dir=' + outDir],
-        {cwd: srcDir, logger: output, cancellationToken: token}
+        {cwd: srcDir, extraEnv, logger: output, cancellationToken: token}
       );
       const buildInfo = JSON.parse(result.stdout) as BuildInfoResponse;
       return {
