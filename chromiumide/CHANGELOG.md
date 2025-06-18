@@ -1,5 +1,19 @@
 # Change Log
 
+## 0.46.0 (June 2025)
+
+- Chromium
+  - Fix gcert checks to not check SSH certs
+- Chromium Java
+  - Handle broken blocks properly
+  - Ensure depot\_tools is in $PATH
+  - Fix undeterministic test failures for missing depot\_tools
+- CrOS
+  - Enable CrOS features conditionally
+  - Enable format commands only on supported CrOS repositories
+- Misc
+  - Remove gn feature
+
 ## 0.44.0 (May 2025)
 
 - Chromium Java
