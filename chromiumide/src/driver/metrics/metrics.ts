@@ -32,6 +32,7 @@ const informationMessageDetail =
   'You can opt-in or out of metrics collection anytime in settings (> extension > ChromiumIDE).\n' +
   'Metrics from external (non-googler) users will not be collected.' +
   '\n' +
+  'General Details can be found here: https://policies.google.com/privacy?hl=en.\n' +
   'Would you like to assist us by turning on metrics collection for ChromiumIDE extension?';
 
 // This variable is set by activate() to make the extension mode available globally.
