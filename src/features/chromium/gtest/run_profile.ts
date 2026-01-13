@@ -6,7 +6,10 @@ import * as vscode from 'vscode';
 import * as config from '../../../../shared/app/services/config';
 import {GtestWorkspace} from '../../gtest/gtest_workspace';
 import {TestControllerSingleton} from '../../gtest/test_controller_singleton';
-import {Runner} from './runner';
+import * as gnUtil from '../gn_util';
+import * as outputDirectories from '../output_directories';
+import {AutotestRunner} from './autotest_runner';
+import {DirectRunner} from './direct_runner';
 
 /**
  * Handles requests to run tests.
@@ -50,13 +53,27 @@ export class RunProfile implements vscode.Disposable {
     request: vscode.TestRunRequest,
     cancellation: vscode.CancellationToken
   ) {
-    const runner = new Runner(
+    const isAndroid = await gnUtil.isAndroidBuild(
       this.srcPath,
-      controller,
-      request,
-      cancellation,
-      this.gtestWorkspace
+      outputDirectories.CURRENT_LINK_NAME,
+      cancellation
     );
+
+    const runner = isAndroid
+      ? new AutotestRunner(
+          this.srcPath,
+          controller,
+          request,
+          cancellation,
+          this.gtestWorkspace
+        )
+      : new DirectRunner(
+          this.srcPath,
+          controller,
+          request,
+          cancellation,
+          this.gtestWorkspace
+        );
     await runner.run();
   }
 

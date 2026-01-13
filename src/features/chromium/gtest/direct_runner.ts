@@ -22,11 +22,11 @@ import * as testLauncherSummaryParser from './test_launcher_summary_parser';
 const driver = getDriver();
 
 /**
- * Runs gtest cases according to the given request.
+ * Runs tests by directly invoking the compiled test binaries.
  *
  * TODO(cmfcmf): Also support debugging tests.
  */
-export class Runner extends AbstractRunner {
+export class DirectRunner extends AbstractRunner {
   constructor(
     private readonly srcPath: string,
     private readonly controller: vscode.TestController,
