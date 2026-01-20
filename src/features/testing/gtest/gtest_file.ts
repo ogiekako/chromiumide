@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as vscode from 'vscode';
-import {getDriver} from '../../../shared/app/common/driver_repository';
+import {getDriver} from '../../../../shared/app/common/driver_repository';
 import {GtestCase} from './gtest_case';
 import {GtestRunnable} from './gtest_runnable';
 import {GtestSuite} from './gtest_suite';
