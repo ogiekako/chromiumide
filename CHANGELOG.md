@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.50.0 (January 2026)
+
+- Fix Java format issues
+
 ## 0.48.0 (January 2026)
 
 - Enable Java debugger by default
