@@ -8,12 +8,14 @@ on:
   push:
     branches:
       - "main"
+      - "j_test"
       - "v*.*.x"
     tags:
       - "v*.*.*"
   pull_request:
     branches:
       - "main"
+      - "j_test"
       - "v*.*.x"
 
 jobs:
