@@ -14,10 +14,11 @@ import org.junit.Test;
 
 public class MarkdownHelperTest {
     private static final CompilerProvider compiler = LanguageServerFixture.getCompilerProvider();
+    private static long timeOffset = 0;
 
     private String asMarkdown(String s) {
         var code = "/**\n * " + String.join("\n * ", s.split("\n")) + "\n */\nclass A {}\n";
-        var task = compiler.parse(new SourceFileObject(Paths.get("/A.java"), code, Instant.now()));
+        var task = compiler.parse(new SourceFileObject(Paths.get("/A.java"), code, Instant.now().plusMillis(timeOffset++)));
 
         var docs = DocTrees.instance(task.task);
 
